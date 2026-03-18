@@ -1,0 +1,3295 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Folkets Väg</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #1a1a2e;
+  --panel: #16213e;
+  --border: #0f3460;
+  --text: #e0d8c0;
+  --text-dim: #8a8472;
+  --accent: #c4a35a;
+  --accent2: #e94560;
+  --input-bg: #0a0e1a;
+  --highlight: #f0e6c8;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+#title-screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #000;
+  z-index: 100;
+  cursor: pointer;
+}
+#title-screen img {
+  max-width: 80vw; max-height: 60vh;
+  image-rendering: pixelated;
+  border: 3px solid var(--border);
+}
+#title-screen h1 {
+  font-size: 28px; color: var(--accent);
+  margin: 20px 0 8px; text-shadow: 2px 2px 0 #000;
+  letter-spacing: 4px;
+}
+#title-screen .subtitle {
+  font-size: 10px; color: var(--text-dim);
+  margin-bottom: 20px;
+}
+#title-menu { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+#title-menu button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px; padding: 10px 30px;
+  background: var(--panel); color: var(--accent);
+  border: 2px solid var(--border);
+  cursor: pointer; transition: all 0.15s;
+}
+#title-menu button:hover {
+  background: var(--border); color: var(--highlight);
+  border-color: var(--accent);
+}
+
+#game-screen {
+  display: none;
+  width: 100vw; height: 100vh;
+  flex-direction: row;
+}
+
+#image-panel {
+  flex: 0 0 55%;
+  display: flex; flex-direction: column;
+  background: #000;
+  border-right: 3px solid var(--border);
+  position: relative;
+}
+#game-image-container {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  padding: 8px;
+}
+#game-image {
+  max-width: 100%; max-height: 100%;
+  image-rendering: auto;
+  border: 2px solid var(--border);
+}
+#image-label {
+  text-align: center;
+  padding: 6px;
+  font-size: 9px;
+  color: var(--text-dim);
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+}
+
+#text-panel {
+  flex: 1;
+  display: flex; flex-direction: column;
+  min-width: 0;
+}
+
+#status-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--panel);
+  border-bottom: 2px solid var(--border);
+  font-size: 9px;
+  flex-shrink: 0;
+}
+#status-bar .gen-label { color: var(--accent); }
+#status-bar .act-label { color: var(--text-dim); }
+.status-buttons { display: flex; gap: 6px; }
+.status-buttons button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px; padding: 3px 8px;
+  background: var(--input-bg); color: var(--text-dim);
+  border: 1px solid var(--border); cursor: pointer;
+}
+.status-buttons button:hover { color: var(--accent); border-color: var(--accent); }
+
+#text-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  scroll-behavior: smooth;
+}
+#text-output .msg { margin-bottom: 10px; }
+#text-output .msg.narrator { color: var(--text); }
+#text-output .msg.speaker { color: var(--accent); }
+#text-output .msg.system { color: var(--text-dim); font-size: 9px; }
+#text-output .msg.error { color: var(--accent2); }
+#text-output .msg.cutscene {
+  color: var(--highlight);
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+}
+#text-output .msg.knowledge {
+  background: rgba(196,163,90,0.1);
+  border: 1px solid var(--accent);
+  padding: 8px; margin: 8px 0;
+  font-size: 10px;
+}
+#text-output .msg.knowledge .k-title {
+  color: var(--accent); font-size: 11px;
+  margin-bottom: 6px;
+}
+#text-output .dialogue-options {
+  margin: 8px 0;
+}
+#text-output .dialogue-options .opt {
+  cursor: pointer; color: var(--accent);
+  padding: 3px 0;
+}
+#text-output .dialogue-options .opt:hover {
+  color: var(--highlight);
+}
+
+#inventory-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 8px; color: var(--text-dim);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  min-height: 30px;
+}
+#inventory-bar .inv-label { color: var(--text-dim); margin-right: 4px; }
+#inventory-bar .inv-item {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  color: var(--text);
+  font-size: 8px;
+}
+#inventory-bar .inv-item.key-item {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+#input-area {
+  display: flex; align-items: center;
+  padding: 8px 12px;
+  background: var(--input-bg);
+  border-top: 2px solid var(--border);
+  flex-shrink: 0;
+}
+#input-area .prompt-char {
+  color: var(--accent); margin-right: 8px; font-size: 12px;
+}
+#input-area input {
+  flex: 1;
+  background: transparent;
+  border: none; outline: none;
+  color: var(--highlight);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  caret-color: var(--accent);
+}
+#input-area input::placeholder { color: var(--text-dim); font-size: 9px; }
+
+#save-modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 200;
+  align-items: center; justify-content: center;
+}
+#save-modal .modal-content {
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  padding: 20px; max-width: 420px; width: 90%;
+}
+#save-modal h2 {
+  color: var(--accent); font-size: 14px;
+  margin-bottom: 16px; text-align: center;
+}
+.save-slot {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  padding: 10px; margin: 8px 0;
+  cursor: pointer; transition: all 0.15s;
+}
+.save-slot:hover { border-color: var(--accent); }
+.save-slot .slot-title { color: var(--accent); font-size: 10px; }
+.save-slot .slot-info { color: var(--text-dim); font-size: 8px; margin-top: 4px; }
+.modal-close {
+  display: block; margin: 12px auto 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px; padding: 6px 16px;
+  background: var(--panel); color: var(--text-dim);
+  border: 1px solid var(--border); cursor: pointer;
+}
+.modal-close:hover { color: var(--accent); }
+
+#text-output::-webkit-scrollbar { width: 6px; }
+#text-output::-webkit-scrollbar-track { background: var(--input-bg); }
+#text-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+@media (max-width: 900px) {
+  #game-screen { flex-direction: column; }
+  #image-panel { flex: 0 0 35vh; border-right: none; border-bottom: 3px solid var(--border); }
+  #text-panel { flex: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="title-screen">
+  <img src="../images/titel.png" alt="Folkets Väg">
+  <h1>FOLKETS VÄG</h1>
+  <div class="subtitle">Ett textäventyr om Sveriges 1800-tal</div>
+  <div id="title-menu">
+    <button onclick="startNewGame()">NYTT SPEL</button>
+    <button onclick="showLoadModal()">LADDA SPEL</button>
+  </div>
+</div>
+
+<div id="game-screen">
+  <div id="image-panel">
+    <div id="game-image-container">
+      <img id="game-image" src="../images/akt1_torpet.png" alt="">
+    </div>
+    <div id="image-label">AKT 1 - KRIGETS SKUGGA</div>
+  </div>
+  <div id="text-panel">
+    <div id="status-bar">
+      <div>
+        <span class="gen-label">GEN I: BRITTA</span>
+        <span class="act-label"> | AKT <span id="act-num">1</span>/13</span>
+      </div>
+      <div class="status-buttons">
+        <button onclick="showSaveModal('save')">SPARA</button>
+        <button onclick="showSaveModal('load')">LADDA</button>
+        <button onclick="showKnowledge()">KUNSKAP</button>
+      </div>
+    </div>
+    <div id="text-output"></div>
+    <div id="inventory-bar">
+      <span class="inv-label">FÖREMÅL:</span>
+    </div>
+    <div id="input-area">
+      <span class="prompt-char">&gt;</span>
+      <input type="text" id="player-input" placeholder="Skriv kommando..." autofocus autocomplete="off">
+    </div>
+  </div>
+</div>
+
+<div id="save-modal">
+  <div class="modal-content">
+    <h2 id="modal-title">SPARA SPEL</h2>
+    <div id="save-slots"></div>
+    <button class="modal-close" onclick="closeSaveModal()">STÄNG</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// FOLKETS VÄG - Game Engine
+// Generation I: Britta (Acts 1-3)
+// ============================================================
+
+// ---- GAME STATE ----
+const defaultState = () => ({
+  generation: 1,
+  act: 1,
+  scene: 'start',
+  room: null,
+  inventory: [],
+  flags: {},
+  visitedRooms: [],
+  hintsUsed: 0,
+  hintsThisAct: 0,
+  knowledge: [],
+  dialogueState: null, // { id, unlockedOptions:[], saidOptions:[] }
+  turnCount: 0,
+  generationItems: { broschen: true },
+  stats: { peopleMet: [], puzzlesSolved: 0 }
+});
+
+let state = defaultState();
+let inputEnabled = true;
+let saveMode = null;
+
+// ---- SYNONYMS ----
+const synonyms = {
+  'titta': ['se', 'undersök', 'undersok', 'betrakta', 'granska', 'kolla'],
+  'ta': ['plocka', 'hämta', 'hamta', 'grip', 'tag'],
+  'prata': ['tala', 'snacka', 'fråga', 'fraga', 'säg', 'sag'],
+  'gå': ['ga', 'spring', 'vandra', 'rör', 'ror'],
+  'öppna': ['oppna', 'lås upp', 'las upp'],
+  'använd': ['anvand', 'nyttja', 'bruka'],
+  'läs': ['las'],
+  'ge': ['giv'],
+  'lägg': ['lagg', 'släpp', 'slapp'],
+  'stäng': ['stang']
+};
+
+const directionMap = {
+  'n': 'norr', 'norr': 'norr', 'north': 'norr',
+  's': 'söder', 'söder': 'söder', 'soder': 'söder', 'south': 'söder',
+  'ö': 'öster', 'öster': 'öster', 'oster': 'öster', 'o': 'öster', 'east': 'öster',
+  'v': 'väster', 'väster': 'väster', 'vaster': 'väster', 'west': 'väster',
+  'in': 'in', 'ut': 'ut', 'upp': 'upp', 'ner': 'ner'
+};
+
+// ---- NORMALIZE for parser ----
+function norm(s) {
+  return s.toLowerCase().replace(/å/g,'a').replace(/ä/g,'a').replace(/ö/g,'o').trim();
+}
+
+function resolveVerb(word) {
+  const w = norm(word);
+  for (const [verb, syns] of Object.entries(synonyms)) {
+    if (norm(verb) === w) return verb;
+    for (const s of syns) { if (norm(s) === w) return verb; }
+  }
+  return word.toLowerCase();
+}
+
+// ---- ROOMS ----
+// Rule: IN/UT for entering/exiting buildings. NORR/SÖDER/ÖSTER/VÄSTER only outdoors.
+const rooms = {
+  akt1_torpet_inne: {
+    name: "Torpets inre",
+    act: 1, image: "akt1_torpet.png",
+    imageLabel: "AKT 1 - KRIGETS SKUGGA (1809)",
+    description: "Du står i torpets enda rum. Väggarnas stockar har mörknat av rök från spisens ständiga eld. Halmbritsen där ni sover tar upp halva rummet. Spinnrocken står i hörnet. Det är kallt trots elden.\n\nMor sitter vid spisen. Far ligger på britsen och hostar.\n\nDörren leder UT till gården.",
+    objects: ['spinnrock', 'halmbrits', 'spis', 'hinken'],
+    characters: ['mor_ingrid', 'far_per'],
+    exits: { 'ut': 'akt1_garden' },
+    firstVisitText: null
+  },
+  akt1_garden: {
+    name: "Gården",
+    act: 1, image: "scene_akt1_brunnen.png",
+    imageLabel: "GÅRDEN - Brunnen (1809)",
+    description: "Gården framför torpet är täckt av smutsig snö. Staketet lutar.\n\nVid husväggen står en nästan tom VEDTRAVE. BRUNNEN ligger mitt på gården, frusen.\n\nVägen leder NORR mot byn och kyrkan.\nGÅ IN för att gå tillbaka till torpet.",
+    objects: ['vedtrave', 'brunn'],
+    characters: [],
+    exits: { 'in': 'akt1_torpet_inne', 'norr': 'akt1_vagen_kyrkan' },
+    firstVisitText: "Du kliver ut i kylan. Snön knarrar under dina fötter."
+  },
+  akt1_vagen_kyrkan: {
+    name: "Vägen mot kyrkan",
+    act: 1, image: "scene_akt1_brunnen.png",
+    imageLabel: "VÄGEN MOT KYRKAN (1809)",
+    description: "En smal väg leder genom det snötäckta landskapet mot kyrkbyn.\n\nSÖDER leder tillbaka till torpet.\nNORR leder till kyrkan.",
+    objects: [],
+    characters: [],
+    exits: { 'söder': 'akt1_garden', 'norr': 'akt1_kyrkan' },
+    firstVisitText: "Vägen är hård och frusen. Spåren av en häst och vagn syns i snön.",
+    condition: () => true
+  },
+  akt1_kyrkan: {
+    name: "Kyrkan",
+    act: 1, image: "scene_akt1_kyrkan.png",
+    imageLabel: "KYRKAN (1809)",
+    description: "Den vita stenkyrkan tornar upp sig mot den grå himlen. Kyrkogården syns bakom kyrkan. Prästgården skymtar bortom kyrkbacken.\n\nVägen leder SÖDER tillbaka mot ert torp.\n\nFolk samlas på kyrkbacken. De viskar om nyheterna.\nKLOCKAREN står vid kyrkporten.",
+    objects: ['anslagstavla'],
+    characters: ['klockaren'],
+    exits: { 'söder': 'akt1_vagen_kyrkan' },
+    firstVisitText: "Du har aldrig sett så många människor samlade utanför gudstjänst.",
+    condition: () => state.flags.far_is_dead
+  },
+
+  // ACT 2 rooms
+  akt2_garden_persson: {
+    name: "Perssons gård",
+    act: 2, image: "akt2_3_garden.png",
+    imageLabel: "AKT 2 - PIGAN (1812-1818)",
+    description: "Storbondens gård är den största i socknen. Mangårdsbyggnaden har två våningar. Ladugården ligger på andra sidan gårdsplanen.\n\nDu har arbetat här i tre år nu. Som piga lyder du under hustavlans lag.\n\nGÅ IN till köket. Ladugården ligger NORR.\nVägen går SÖDER bort från gården.",
+    objects: ['hustavlan'],
+    characters: ['husmor_persson', 'drang_anders'],
+    exits: { 'in': 'akt2_koket', 'norr': 'akt2_ladugarden', 'söder': 'akt2_vagen' },
+    firstVisitText: null
+  },
+  akt2_koket: {
+    name: "Köket",
+    act: 2, image: "scene_akt2_koket.png",
+    imageLabel: "KÖKET - Perssons gård (1812)",
+    description: "Det stora köket i mangårdsbyggnaden. Spisen är enorm - stor nog att stå i. Kopparkastruller hänger på väggen.\n\nDörren leder UT till gården.",
+    objects: ['spisen_stor', 'kopparkastruller'],
+    characters: [],
+    exits: { 'ut': 'akt2_garden_persson' },
+    firstVisitText: "Här spenderar du de flesta av dina vakna timmar."
+  },
+  akt2_ladugarden: {
+    name: "Ladugården",
+    act: 2, image: "scene_akt2_ladugarden.png",
+    imageLabel: "LADUGÅRDEN - Perssons gård (1812)",
+    description: "Ladugården luktar hö och kor. Tjugo kor står på rad. Mjölkpallen står vid ingången.\n\nGÅ UT för att gå tillbaka till gården.",
+    objects: ['mjolkpall', 'korna'],
+    characters: [],
+    exits: { 'ut': 'akt2_garden_persson' },
+    firstVisitText: "Korna vänder sina stora ögon mot dig."
+  },
+  akt2_vagen: {
+    name: "Vägen från gården",
+    act: 2, image: "akt2_3_garden.png",
+    imageLabel: "AKT 2 - PIGAN (1812-1818)",
+    description: "Vägen leder bort från Perssons gård. Sommarens grönska breder ut sig.\n\nNORR leder tillbaka till gården.",
+    objects: [],
+    characters: [],
+    exits: { 'norr': 'akt2_garden_persson' },
+    firstVisitText: "En vacker dag. Men du har inte tid att njuta av den."
+  },
+
+  // =============== GENERATION II: LENA ===============
+
+  // ACT 4 rooms
+  akt4_bruket_stuga: {
+    name: "Stugan vid bruket",
+    act: 4, image: "akt3_4_bruket.png",
+    imageLabel: "AKT 4 - JORDBRUKETS KRIS (1835)",
+    description: "Er stuga vid järnbruket. Liten men varm. Spinnrocken snurrar i hörnet där mor Britta sitter.\n\nFar Anders vilar efter arbetet. Hans händer är svartnade av sot.\n\nGÅ UT till bruksgatan.",
+    objects: ['spinnrock_lena', 'psalmbok'],
+    characters: ['mor_britta', 'far_anders_old'],
+    exits: { 'ut': 'akt4_bruksgatan' },
+    firstVisitText: null
+  },
+  akt4_bruksgatan: {
+    name: "Bruksgatan",
+    act: 4, image: "akt3_4_bruket.png",
+    imageLabel: "BRUKSGATAN (1835)",
+    description: "Huvudgatan mellan arbetarstugorna och fabriken. Masugnen glöder NORR. Brukshandeln ligger ÖSTER. Sockenkyrkan är SÖDER.\n\nStugan är GÅ IN.",
+    objects: ['anslagstavla_bruket'],
+    characters: ['smeden_eriksson'],
+    exits: { 'in': 'akt4_bruket_stuga', 'norr': 'akt4_masugnen', 'öster': 'akt4_handeln', 'söder': 'akt4_kyrkan' },
+    firstVisitText: "Rök från masugnen hänger tungt över gatan."
+  },
+  akt4_masugnen: {
+    name: "Masugnen",
+    act: 4, image: "akt3_4_bruket.png",
+    imageLabel: "MASUGNEN (1835)",
+    description: "Masugnen tornar upp sig som ett glödande berg. Hettan känns redan på avstånd. Män arbetar vid smältorna med svettiga ansikten.\n\nGÅ SÖDER tillbaka till bruksgatan.",
+    objects: [],
+    characters: [],
+    exits: { 'söder': 'akt4_bruksgatan' },
+    firstVisitText: "Hettan slår emot dig som en vägg."
+  },
+  akt4_handeln: {
+    name: "Brukshandeln",
+    act: 4, image: "akt3_4_bruket.png",
+    imageLabel: "BRUKSHANDELN (1835)",
+    description: "Brukshandeln säljer allt från mjöl till tyg. Priserna är höga - allt köps på kredit mot lönen.\n\nGÅ VÄSTER tillbaka till bruksgatan.",
+    objects: [],
+    characters: [],
+    exits: { 'väster': 'akt4_bruksgatan' },
+    firstVisitText: "Handlaren noterar varje öre i sin stora bok."
+  },
+  akt4_kyrkan: {
+    name: "Sockenkyrkan",
+    act: 4, image: "akt3_4_bruket.png",
+    imageLabel: "SOCKENKYRKAN (1835)",
+    description: "Den gamla sockenkyrkan står tyst bland lindarna. Kyrkogården sträcker sig bakom.\n\nGÅ NORR tillbaka till bruksgatan.",
+    objects: [],
+    characters: [],
+    exits: { 'norr': 'akt4_bruksgatan' },
+    firstVisitText: "Kyrkklockorna ringer till aftonbön."
+  },
+
+  // ACT 5 rooms
+  akt5_stuga_svalt: {
+    name: "Stugan under svälten",
+    act: 5, image: "akt5_nodaren.png",
+    imageLabel: "AKT 5 - NÖDÅREN (1847)",
+    description: "Stugan känns kall. Elden brinner svagt - veden är nästan slut. Skafferiet är nästan tomt.\n\nMor Britta ligger sjuk i sängen. Far Anders sitter vid bordet och stirrar tomt.\n\nGÅ UT till bruksgatan.",
+    objects: ['skafferiet'],
+    characters: ['mor_britta_sick', 'far_anders_despair'],
+    exits: { 'ut': 'akt5_bruksgatan' },
+    firstVisitText: null
+  },
+  akt5_bruksgatan: {
+    name: "Bruksgatan",
+    act: 5, image: "akt5_nodaren.png",
+    imageLabel: "BRUKSGATAN - Nödåren (1847)",
+    description: "Gatan är tystare än vanligt. Många stugor står tomma - familjerna har gett sig av.\n\nKyrkan ligger SÖDER. Herrgården NORR. Handeln ÖSTER.\nStugan är GÅ IN.",
+    objects: [],
+    characters: [],
+    exits: { 'in': 'akt5_stuga_svalt', 'söder': 'akt5_kyrkan', 'norr': 'akt5_herrgarden', 'öster': 'akt5_handeln' },
+    firstVisitText: "En tunn hund sniffar bland soporna."
+  },
+  akt5_kyrkan: {
+    name: "Kyrkan",
+    act: 5, image: "akt5_nodaren.png",
+    imageLabel: "KYRKAN (1847)",
+    description: "Prästen står vid dörren. Han ser trött ut - många familjer behöver hjälp.\n\nGÅ NORR tillbaka.",
+    objects: [],
+    characters: ['prasten_act5'],
+    exits: { 'norr': 'akt5_bruksgatan' },
+    firstVisitText: "Kyrkan har blivit en tillflyktsort för de mest desperata."
+  },
+  akt5_herrgarden: {
+    name: "Herrgården",
+    act: 5, image: "akt5_nodaren.png",
+    imageLabel: "HERRGÅRDEN (1847)",
+    description: "Herrgården är den enda byggnaden som fortfarande ser välmående ut. Rök stiger ur skorstenen. Köket syns genom fönstret.\n\nGÅ SÖDER tillbaka.",
+    objects: [],
+    characters: ['hushallerska_act5'],
+    exits: { 'söder': 'akt5_bruksgatan' },
+    firstVisitText: "Lukten av mat från köket gör dig yr av hunger."
+  },
+  akt5_handeln: {
+    name: "Handeln",
+    act: 5, image: "akt5_nodaren.png",
+    imageLabel: "HANDELN (1847)",
+    description: "Handlaren sitter bakom disken. Hyllorna är halvtomma. Priserna är skyhöga.\n\nGÅ VÄSTER tillbaka.",
+    objects: [],
+    characters: ['handlaren_act5'],
+    exits: { 'väster': 'akt5_bruksgatan' },
+    firstVisitText: "\"Jag tar bara kontant nu\", säger handlaren innan du ens öppnar munnen."
+  },
+
+  // ACT 6 rooms
+  akt6_familjen_stuga: {
+    name: "Familjens stuga",
+    act: 6, image: "akt6_7_hamnen.png",
+    imageLabel: "AKT 6 - AVGÖRANDET (1858)",
+    description: "Er egen stuga nu. Enkel men er. Maria sitter vid bordet och läser i psalmboken.\n\nFar Anders arm hänger slappt - skadan från masugnen läker aldrig helt.\n\nEtt brev med utländska frimärken ligger på bordet.\n\nGÅ UT.",
+    objects: ['amerikabrevet'],
+    characters: ['anders_tornqvist', 'maria_ung'],
+    exits: { 'ut': 'akt6_bruksgatan' },
+    firstVisitText: null
+  },
+  akt6_bruksgatan: {
+    name: "Bruksgatan",
+    act: 6, image: "akt6_7_hamnen.png",
+    imageLabel: "BRUKSGATAN (1858)",
+    description: "Gatan vid bruket. Masugnen glöder fortfarande men färre arbetar nu.\n\nStugan är GÅ IN.",
+    objects: [],
+    characters: [],
+    exits: { 'in': 'akt6_familjen_stuga' },
+    firstVisitText: "Fler och fler stugor står tomma. Folk reser västerut."
+  },
+
+  // ACT 7 rooms
+  akt7_stockholm_ankomst: {
+    name: "Stockholm",
+    act: 7, image: "akt6_7_hamnen.png",
+    imageLabel: "AKT 7 - RESAN (1865)",
+    description: "Stockholms gator öppnar sig framför er. Stenhus i fem våningar. Hästar, vagnar, sopare, tiggare, fina damer.\n\nLukten av rök och avfall. Ljudet av tusen röster.\n\nMaria gömmer ansiktet i din kjol.\n\nErt nya hem ligger NORR.",
+    objects: [],
+    characters: [],
+    exits: { 'norr': 'akt7_sodermalm' },
+    firstVisitText: "Ingenting kunde förbereda er på detta."
+  },
+  akt7_sodermalm: {
+    name: "Södermalm",
+    act: 7, image: "akt8_9_fabriken.png",
+    imageLabel: "SÖDERMALM (1868)",
+    description: "Ert trånga rum på Södermalm. Tre år har gått. Anders arbetar som portvakt. Du syr hemma.\n\nMaria är 16 nu och arbetar på bomullsspinneriet.\n\nGÅ UT till gatan.",
+    objects: [],
+    characters: ['anders_tornqvist_old', 'maria_16'],
+    exits: { 'ut': 'akt7_stockholm_ankomst' },
+    firstVisitText: "Rummet är trångt men det är ert."
+  },
+
+  // =============== GENERATION III: MARIA ===============
+
+  // ACT 8 rooms
+  akt8_fabrikskvarteret: {
+    name: "Fabrikskvarteret",
+    act: 8, image: "akt8_9_fabriken.png",
+    imageLabel: "AKT 8 - FABRIKEN (1875)",
+    description: "Hyreshusen reser sig fem våningar höga. Tvätt hänger mellan husen. Barn leker i gränderna.\n\nBomullsspinneriet ligger NORR med sin rykande skorsten.\nFolkets Hus är VÄSTER.\nLägenheten är GÅ IN.\nTorget ligger SÖDER.",
+    objects: ['anslagstavla_fabrik'],
+    characters: [],
+    exits: { 'in': 'akt8_lagenheten', 'norr': 'akt8_fabriken', 'väster': 'akt8_folkets_hus', 'söder': 'akt8_torget' },
+    firstVisitText: null
+  },
+  akt8_lagenheten: {
+    name: "Lägenheten",
+    act: 8, image: "akt8_9_fabriken.png",
+    imageLabel: "LÄGENHETEN - Södermalm (1875)",
+    description: "Ert trånga rum i hyreshuset. En säng, ett bord, en stol. Men det är ert.\n\nGÅ UT till kvarteret.",
+    objects: [],
+    characters: [],
+    exits: { 'ut': 'akt8_fabrikskvarteret' },
+    firstVisitText: "Trångt, men hemma."
+  },
+  akt8_fabriken: {
+    name: "Bomullsspinneriet",
+    act: 8, image: "akt8_9_fabriken.png",
+    imageLabel: "BOMULLSSPINNERIET (1875)",
+    description: "Öronbedövande maskiner. Luften full av bomullsdamm. Hundra kvinnor vid vävstolarna.\n\nFabriksklockan på väggen: 06:00 börjar arbetet. 18:00 slutar det. Varje dag.\n\nGÅ UT till kvarteret.",
+    objects: ['fabriksklocka'],
+    characters: ['anna_arbetare', 'forestandaren_svensson'],
+    exits: { 'ut': 'akt8_fabrikskvarteret' },
+    firstVisitText: "Dammet biter i halsen. Maskinerna dånar."
+  },
+  akt8_folkets_hus: {
+    name: "Folkets Hus",
+    act: 8, image: "akt10_folkets_hus.png",
+    imageLabel: "FOLKETS HUS (1875)",
+    description: "En enkel lokal med bänkar och en talarstol. Röda fanor på väggarna.\n\nHär samlas arbetarna på lördagskvällarna.\n\nGÅ UT till kvarteret.",
+    objects: [],
+    characters: [],
+    exits: { 'ut': 'akt8_fabrikskvarteret' },
+    firstVisitText: "Lokalen luktar svett och hopp.",
+    condition: () => state.flags.knows_about_meeting
+  },
+  akt8_torget: {
+    name: "Torget",
+    act: 8, image: "akt8_9_fabriken.png",
+    imageLabel: "TORGET (1875)",
+    description: "Torget är livligt. Stånd med frukt och grönsaker. Tidningspojkar ropar ut rubrikerna.\n\nGÅ NORR tillbaka till kvarteret.",
+    objects: [],
+    characters: [],
+    exits: { 'norr': 'akt8_fabrikskvarteret' },
+    firstVisitText: "Stockholms puls slår hårt på torget."
+  },
+
+  // ACT 9 rooms (reuse akt8 rooms with updated descriptions via triggers)
+
+  // ACT 10 rooms
+  akt10_folkets_hus: {
+    name: "Folkets Hus",
+    act: 10, image: "akt10_folkets_hus.png",
+    imageLabel: "AKT 10 - SEKELSKIFTE (1889)",
+    description: "Folkets Hus är fullsatt. Röda fanor hänger från taket. Porträtt av arbetarledare pryder väggarna.\n\nErik har just kommit hem med ett medlemskort.\n\nGÅ UT.",
+    objects: [],
+    characters: ['erik_lindgren'],
+    exits: { 'ut': 'akt10_gatan' },
+    firstVisitText: null
+  },
+  akt10_gatan: {
+    name: "Stockholms gator",
+    act: 10, image: "akt10_folkets_hus.png",
+    imageLabel: "STOCKHOLM (1889)",
+    description: "Stockholms gator. Staden växer. Elektriska lyktor börjar ersätta gaslyktorna.\n\nFolkets Hus är GÅ IN. Lägenheten ligger NORR.",
+    objects: [],
+    characters: [],
+    exits: { 'in': 'akt10_folkets_hus', 'norr': 'akt10_hemmet' },
+    firstVisitText: null
+  },
+  akt10_hemmet: {
+    name: "Hemmet",
+    act: 10, image: "akt10_folkets_hus.png",
+    imageLabel: "HEMMET (1889)",
+    description: "Ert hem. Tre rum nu istället för ett. Erik skriver vid sitt skrivbord. Elsa läser vid fönstret.\n\nGÅ UT till gatan.",
+    objects: [],
+    characters: [],
+    exits: { 'ut': 'akt10_gatan' },
+    firstVisitText: "Inte rika, men mycket bättre än förr."
+  },
+
+  // =============== GENERATION IV: ELSA ===============
+
+  // ACT 11 rooms
+  akt11_stockholm: {
+    name: "Stockholms gator",
+    act: 11, image: "akt11_12_rostratt.png",
+    imageLabel: "AKT 11 - DEN NYA TIDEN (1905)",
+    description: "Staden har förändrats. Elektriska spårvagnar rullar på gatorna. Bilar börjar synas.\n\nHemmet ligger ÖSTER. Fars tidning VÄSTER.\nHornsplan och rösträrmötet SÖDER.",
+    objects: ['tidningskiosk'],
+    characters: ['suffragetten'],
+    exits: { 'öster': 'akt11_hemmet', 'väster': 'akt11_tidningen', 'söder': 'akt11_hornsplan' },
+    firstVisitText: null
+  },
+  akt11_hemmet: {
+    name: "Hemmet",
+    act: 11, image: "akt11_12_rostratt.png",
+    imageLabel: "HEMMET - Södermalm (1905)",
+    description: "Hemmet på Södermalm. Far Erik sitter och skriver. Mor Maria syr.\n\nGÅ UT till gatan.",
+    objects: [],
+    characters: ['erik_lindgren_old', 'maria_old'],
+    exits: { 'ut': 'akt11_stockholm' },
+    firstVisitText: null
+  },
+  akt11_tidningen: {
+    name: "Tidningsredaktionen",
+    act: 11, image: "akt11_12_rostratt.png",
+    imageLabel: "TIDNINGEN (1905)",
+    description: "Fars arbetsplats. Tryckpressarna dånar. Lukten av trycksvärta fyller rummet.\n\nGÅ UT till gatan.",
+    objects: [],
+    characters: [],
+    exits: { 'ut': 'akt11_stockholm' },
+    firstVisitText: "Här trycks framtidens ord."
+  },
+  akt11_hornsplan: {
+    name: "Hornsplan",
+    act: 11, image: "akt11_12_rostratt.png",
+    imageLabel: "HORNSPLAN (1905)",
+    description: "Ett öppet torg där folk samlas. En kvinna delar ut flygblad om kvinnlig rösträtt.\n\nGÅ NORR tillbaka till gatan.",
+    objects: [],
+    characters: [],
+    exits: { 'norr': 'akt11_stockholm' },
+    firstVisitText: "Röster höjs för förändring."
+  },
+
+  // ACT 12 rooms (reuse akt11 with updated state)
+
+  // ACT 13 rooms
+  akt13_midsommarstuga: {
+    name: "Midsommarstuga",
+    act: 13, image: "akt13_kyrkogarden.png",
+    imageLabel: "AKT 13 - SLUTET OCH BÖRJAN (1914)",
+    description: "En enkel röd stuga med veranda. Björkarna doftar i sommarkvällen.\n\nMormor Lena sitter i gungstolen NORR.\nMor Maria dukar bordet ÖSTER.\nSonen Erik leker på gräsmattan SÖDER.",
+    objects: [],
+    characters: ['mormor_lena', 'mor_maria_act13', 'erik_son'],
+    exits: {},
+    firstVisitText: "Midsommarafton. Den vackraste kvällen på året."
+  }
+};
+
+// ---- ITEMS ----
+const items = {
+  spinnrock: {
+    name: "Spinnrock", description: "Mors spinnrock. Nystan av ull ligger bredvid.",
+    takeable: false, examineText: "Spinnrocken har snurrat i generationer. Ullen är grov men varm."
+  },
+  halmbrits: {
+    name: "Halmbrits", description: "Britsen är fylld av halm. Här sover hela familjen.",
+    takeable: false, examineText: "Under halmen skymtar något blankt.",
+    revealsItem: 'soldatknappen', revealFlag: 'found_soldier_button'
+  },
+  soldatknappen: {
+    name: "Soldatknappen", description: "En mässingsknapp från fars militärrock.",
+    takeable: true, keyItem: false, generationTransfer: true,
+    examineText: "Knappen bär kronans emblem. Far bar den i kriget.",
+    hidden: true, revealedBy: 'halmbrits'
+  },
+  spis: {
+    name: "Spis", description: "Spisens eld sprakar svagt. En gryta hänger över.",
+    takeable: false, examineText: "Grytan är nästan tom. Bara lite vattnig soppa kvar."
+  },
+  hinken: {
+    name: "Trähink", description: "En trähink för vatten.",
+    takeable: true, keyItem: false,
+    examineText: "En enkel trähink med järnband. Den är tom."
+  },
+  vedtrave: {
+    name: "Vedtrave", description: "Vedtraven är nästan tom. Bara några pinnar kvar.",
+    takeable: false,
+    examineText: "Bland vedpinnarna ser du en kort yxa.",
+    revealsItem: 'yxa', revealFlag: 'found_axe'
+  },
+  yxa: {
+    name: "Yxa", description: "En liten yxa.",
+    takeable: true, keyItem: false,
+    examineText: "Yxan är slö men användbar.",
+    hidden: true, revealedBy: 'vedtrave'
+  },
+  brunn: {
+    name: "Brunn", description: "Brunnen ligger vid vägen.",
+    takeable: false,
+    examineText: "Brunnen verkar frusen. En tjock isskorpa täcker vattnet."
+  },
+  hink_med_vatten: {
+    name: "Hink med vatten", description: "En trähink fylld med kallt vatten.",
+    takeable: true, keyItem: false,
+    examineText: "Vattnet är iskallt men klart."
+  },
+  broschen: {
+    name: "Mammas brosch", description: "En enkel silverbrosch med ett litet mönster.",
+    takeable: true, keyItem: true, generationTransfer: true,
+    examineText: "Broschen har tillhört din mormors mormor. Den glänser svagt i ljuset."
+  },
+  psalmbok: {
+    name: "Psalmbok", description: "En sliten psalmbok.",
+    takeable: true, keyItem: false, generationTransfer: true,
+    examineText: "Psalmboken är gammal och nött. Mors namn står skrivet på insidan."
+  },
+  anslagstavla: {
+    name: "Anslagstavla", description: "En tavla med meddelanden från socknen.",
+    takeable: false,
+    readText: "KUNGÖRELSE: Konungen Gustav Adolf är avsatt.\nHertigen av Södermanland har utropats till Kung Karl XIII.\nRiksdagen samlas för att välja ny tronföljare."
+  },
+  hustavlan: {
+    name: "Hustavlan", description: "En tryckt tavla hänger på väggen vid dörren.",
+    takeable: false,
+    readText: "HUSTAVLAN\n\"Tjänstehjon, varen edra jordiska herrar lydiga, med fruktan och bävan, i edert hjärtas enfaldighet, såsom Kristo.\"",
+    onRead: () => { unlockKnowledge('hustavlan_kunskap'); }
+  },
+  spisen_stor: {
+    name: "Stor spis", description: "Spisen är enorm - stor nog att stå i.",
+    takeable: false, examineText: "En välbyggd spis med plats för flera grytor."
+  },
+  kopparkastruller: {
+    name: "Kopparkastruller", description: "Blanka kopparkastruller hänger på väggen.",
+    takeable: false, examineText: "Du har putsat dem så många gånger att du kan se ditt ansikte i dem."
+  },
+  mjolkpall: {
+    name: "Mjölkpall", description: "En liten pall att sitta på vid mjölkning.",
+    takeable: false, examineText: "En enkel trebent pall."
+  },
+  korna: {
+    name: "Korna", description: "Tjugo kor står på rad i ladugården.",
+    takeable: false, examineText: "De är feta och välmående. Perssons gård har det bra."
+  },
+  // Gen II items
+  spinnrock_lena: {
+    name: "Spinnrock", description: "Mors spinnrock. Den har följt familjen i generationer.",
+    takeable: false, examineText: "Spinnrocken snurrar stadigt. Mor Brittas händer rör sig vant."
+  },
+  psalmbok: {
+    name: "Psalmbok", description: "En sliten psalmbok.",
+    takeable: true, keyItem: false, generationTransfer: true,
+    examineText: "Psalmboken är gammal och nött. Mors namn står skrivet på insidan."
+  },
+  anslagstavla_bruket: {
+    name: "Anslagstavla", description: "En anslagstavla vid bruksgatan.",
+    takeable: false,
+    readText: "KUNGÖRELSE: Laga skifte genomföres i socknen.\nAlla markägare kallas till sammanträde.\n\n\"Det gamla Sverige förändras\" - står skrivet med kol undertill.",
+    onRead: () => { unlockKnowledge('laga_skifte'); }
+  },
+  skafferiet: {
+    name: "Skafferiet", description: "Skafferiet i stugan.",
+    takeable: false, examineText: "Nästan tomt. Lite mjöl på botten av en säck. Några potatisar. Det räcker inte."
+  },
+  amerikabrevet: {
+    name: "Amerikabrevet", description: "Ett brev med utländska frimärken.",
+    takeable: true, keyItem: true, generationTransfer: true,
+    readText: "\"Kära syster Lena,\n\nHär i Minnesota har vi 80 tunnland egen jord. Ingen hustavla. Ingen indelning. Man är fri.\n\nKom till oss. Biljettpriset är 150 riksdaler per person.\n\nDin bror Johan\"\n\nDaterat: 15 maj 1858",
+    examineText: "Brevet luktar fortfarande av havsluft.",
+    onRead: () => { unlockKnowledge('emigrationen'); }
+  },
+  // Gen III items
+  anslagstavla_fabrik: {
+    name: "Anslagstavla", description: "En anslagstavla med affischer.",
+    takeable: false,
+    readText: "ARBETARMÖTE\nFolkets Hus, lördag kväll\n\nOm arbetarnas rätt till åtta timmars arbetsdag\n\nTalare: August Palm",
+    onRead: () => { state.flags.knows_about_meeting = true; }
+  },
+  fabriksklocka: {
+    name: "Fabriksklocka", description: "En stor klocka på väggen.",
+    takeable: false, examineText: "06:00 börjar arbetet. 18:00 slutar det. Varje dag. Tolv timmar."
+  },
+  flygblad: {
+    name: "Flygblad", description: "Fem flygblad om fackföreningen.",
+    takeable: true, keyItem: false,
+    examineText: "\"ARBETARE FÖRENA ER! Gå med i fackföreningen. Tillsammans är vi starka.\""
+  },
+  partimedlemskort: {
+    name: "Medlemskort SAP", description: "Medlemskort i Sveriges socialdemokratiska arbetareparti.",
+    takeable: true, keyItem: true, generationTransfer: true,
+    examineText: "Medlemskort #847. Socialdemokratiska Arbetarepartiet. Grundat 1889."
+  },
+  // Gen IV items
+  tidningskiosk: {
+    name: "Tidningskiosk", description: "En kiosk med dagens tidningar.",
+    takeable: false,
+    readText: "UNIONEN UPPLÖST!\nNORGE SJÄLVSTÄNDIGT!\n\nKung Oscar II har abdikerat som Norges kung.\nFredlig separation efter 91 års union.",
+    onRead: () => { unlockKnowledge('unionsupplosningen'); }
+  },
+  flygblad_rostratt: {
+    name: "Flygblad om rösträtt", description: "Ett flygblad om kvinnlig rösträtt.",
+    takeable: true, keyItem: false,
+    examineText: "\"RÖSTRÄTT ÅT KVINNOR! Möte vid Hornsplan. LKPR - Landsföreningen för Kvinnans Politiska Rösträtt.\""
+  },
+  medlemskort_lkpr: {
+    name: "Medlemskort LKPR", description: "Medlemskort i LKPR.",
+    takeable: true, keyItem: true,
+    examineText: "Landsföreningen för Kvinnans Politiska Rösträtt. \"Rösträtt är en mänsklig rätt.\""
+  }
+};
+
+// ---- CHARACTERS ----
+const characters = {
+  mor_ingrid: {
+    name: "Mor", fullName: "Mor Ingrid",
+    description: "Din mor Ingrid sitter vid spisen. Hon ser trött ut.",
+    dialogue: 'mor_ingrid_start',
+    location: 'akt1_torpet_inne'
+  },
+  far_per: {
+    name: "Far", fullName: "Far Per",
+    description: "Din far Per ligger på britsen. Han hostar tungt.",
+    dialogue: 'far_per_sick',
+    location: 'akt1_torpet_inne'
+  },
+  lansman: {
+    name: "Länsman", fullName: "Länsman",
+    description: "En man i tjänstekläder. Han ser allvarlig ut.",
+    dialogue: 'lansman_news',
+    location: 'akt1_torpet_inne',
+    spawned: false
+  },
+  klockaren: {
+    name: "Klockaren", fullName: "Klockaren Svensson",
+    description: "Klockaren Svensson står vid kyrkporten.",
+    dialogue: 'klockare_nyheter',
+    location: 'akt1_kyrkan'
+  },
+  husmor_persson: {
+    name: "Husmodern", fullName: "Fru Persson",
+    description: "Fru Persson ser sträng ut men är rättvis.",
+    dialogue: 'husmor_persson_1',
+    location: 'akt2_garden_persson'
+  },
+  drang_anders: {
+    name: "Anders", fullName: "Anders Svensson",
+    description: "Anders Svensson är dräng på gården. Han är några år äldre än dig.",
+    dialogue: 'anders_default',
+    location: 'akt2_garden_persson'
+  },
+  // Gen II characters
+  mor_britta: {
+    name: "Mor Britta", fullName: "Britta Svensson",
+    description: "Din mor Britta. Hennes hår har grånat men ögonen är fortfarande skarpa.",
+    dialogue: 'mor_britta_act4', location: 'akt4_bruket_stuga'
+  },
+  far_anders_old: {
+    name: "Far Anders", fullName: "Anders Svensson",
+    description: "Din far Anders. Hans händer är skadade av åratal vid masugnen.",
+    dialogue: 'far_anders_act4', location: 'akt4_bruket_stuga'
+  },
+  smeden_eriksson: {
+    name: "Smeden", fullName: "Smeden Eriksson",
+    description: "Smeden Eriksson. Gammal och vis, han har arbetat vid bruket hela sitt liv.",
+    dialogue: 'smeden_act4', location: 'akt4_bruksgatan'
+  },
+  mor_britta_sick: {
+    name: "Mor Britta", fullName: "Britta Svensson",
+    description: "Mor Britta ligger sjuk i sängen. Andningen är tung.",
+    dialogue: 'mor_britta_act5', location: 'akt5_stuga_svalt'
+  },
+  far_anders_despair: {
+    name: "Far Anders", fullName: "Anders Svensson",
+    description: "Far Anders sitter vid bordet. Han stirrar tomt framför sig.",
+    dialogue: 'far_anders_act5', location: 'akt5_stuga_svalt'
+  },
+  prasten_act5: {
+    name: "Prästen", fullName: "Prästen Holmberg",
+    description: "Prästen ser trött ut. Många familjer behöver hjälp.",
+    dialogue: 'prasten_food', location: 'akt5_kyrkan'
+  },
+  hushallerska_act5: {
+    name: "Hushållerskan", fullName: "Fru Bergström",
+    description: "Hushållerskan vid herrgården. Hon ser medlidsam ut.",
+    dialogue: 'hushallerska_food', location: 'akt5_herrgarden'
+  },
+  handlaren_act5: {
+    name: "Handlaren", fullName: "Handlare Nilsson",
+    description: "Handlaren sitter bakom disken med en ledsen min.",
+    dialogue: 'handlaren_food', location: 'akt5_handeln'
+  },
+  anders_tornqvist: {
+    name: "Anders", fullName: "Anders Törnqvist",
+    description: "Din man Anders Törnqvist. Hans hand är skadad från olyckan vid masugnen.",
+    dialogue: 'anders_t_act6', location: 'akt6_familjen_stuga'
+  },
+  maria_ung: {
+    name: "Maria", fullName: "Maria Törnqvist",
+    description: "Din dotter Maria, 6 år. Hon sitter och läser i psalmboken.",
+    dialogue: 'maria_ung_act6', location: 'akt6_familjen_stuga'
+  },
+  anders_tornqvist_old: {
+    name: "Anders", fullName: "Anders Törnqvist",
+    description: "Anders arbetar som portvakt nu. Ryggen böjer sig av åren.",
+    dialogue: 'anders_t_act7', location: 'akt7_sodermalm'
+  },
+  maria_16: {
+    name: "Maria", fullName: "Maria Törnqvist",
+    description: "Maria är 16 nu. Stark, självständig, full av frågor.",
+    dialogue: 'maria_16_act7', location: 'akt7_sodermalm'
+  },
+  // Gen III characters
+  anna_arbetare: {
+    name: "Anna", fullName: "Anna Johansson",
+    description: "Anna arbetar vid maskinen bredvid din. Hon viskar om mötet på lördag.",
+    dialogue: 'anna_act8', location: 'akt8_fabriken'
+  },
+  forestandaren_svensson: {
+    name: "Föreståndaren", fullName: "Föreståndare Svensson",
+    description: "Föreståndaren Svensson går runt och tar anteckningar. Hans ögon missar inget.",
+    dialogue: 'forestandaren_act8', location: 'akt8_fabriken'
+  },
+  erik_lindgren: {
+    name: "Erik", fullName: "Erik Lindgren",
+    description: "Din man Erik Lindgren. Typograf och aktivist. Hans ögon brinner av övertygelse.",
+    dialogue: 'erik_act10', location: 'akt10_folkets_hus'
+  },
+  // Gen IV characters
+  suffragetten: {
+    name: "Suffragetten", fullName: "Fru Lindqvist",
+    description: "En välklädd kvinna som delar ut flygblad om kvinnlig rösträtt.",
+    dialogue: 'suffragetten_act11', location: 'akt11_stockholm'
+  },
+  erik_lindgren_old: {
+    name: "Far Erik", fullName: "Erik Lindgren",
+    description: "Din far Erik. Äldre nu men fortfarande engagerad.",
+    dialogue: 'erik_old_act11', location: 'akt11_hemmet'
+  },
+  maria_old: {
+    name: "Mor Maria", fullName: "Maria Lindgren",
+    description: "Din mor Maria. Hon syr vid fönstret.",
+    dialogue: 'maria_old_act11', location: 'akt11_hemmet'
+  },
+  mormor_lena: {
+    name: "Mormor Lena", fullName: "Lena Törnqvist",
+    description: "Mormor Lena, 94 år. Nästan blind men hon hör allt.",
+    dialogue: 'mormor_lena_act13', location: 'akt13_midsommarstuga'
+  },
+  mor_maria_act13: {
+    name: "Mor Maria", fullName: "Maria Lindgren",
+    description: "Din mor Maria bär ut kaffe.",
+    dialogue: 'mor_maria_act13_d', location: 'akt13_midsommarstuga'
+  },
+  erik_son: {
+    name: "Erik", fullName: "Erik Gustavsson",
+    description: "Din son Erik, 5 år. Han leker med träsoldater på gräsmattan.",
+    dialogue: 'erik_son_act13', location: 'akt13_midsommarstuga'
+  }
+};
+
+// ---- DIALOGUES ----
+const dialogues = {
+  mor_ingrid_start: {
+    speaker: "Mor",
+    opening: "Mor tittar upp. Hennes ögon är röda av trötthet.\n\"Du är vaken, Britta. Bra.\"",
+    options: [
+      {
+        id: 1, text: "Hur mår far?",
+        response: "Mor skakar på huvudet. \"Inte bra. Hostan blir värre. Vi behöver hjälp, men...\"\nHon tystnar och tittar på den tomma vedkorgen.",
+        setsFlag: 'asked_about_far',
+        condition: () => !state.flags.asked_about_far
+      },
+      {
+        id: 2, text: "Vad kan jag göra?",
+        response: "\"Hämta vatten från brunnen. Ta hinken vid dörren. Och sedan... sedan får vi se.\"",
+        setsFlag: 'quest_fetch_water',
+        condition: () => !state.flags.quest_fetch_water
+      },
+      {
+        id: 3, text: "Kommer far att bli frisk?",
+        response: "Mor blir tyst länge. När hon svarar är rösten tunn.\n\"Bara Gud vet, barn. Bara Gud vet.\"",
+        setsFlag: 'mother_worried',
+        condition: () => !state.flags.mother_worried
+      },
+      { id: 0, text: "[Avsluta samtalet]", response: "Mor vänder sig mot spisen igen." }
+    ]
+  },
+  far_per_sick: {
+    speaker: "Far",
+    opening: "Far öppnar ögonen när du närmar dig. Han försöker le, men det blir mest en grimas. Hostan skakar hans magra kropp.",
+    options: [
+      {
+        id: 1, text: "Far, hur känns det?",
+        response: "\"Litet... bättre idag.\" Han ljuger. Ni vet båda det.\nHan tar din hand. Hans hud är het av feber."
+      },
+      {
+        id: 2, text: "Vill du att jag hämtar något?",
+        response: "\"Vatten... om du kan. Och Britta...\"\nHan hostar länge innan han kan fortsätta.\n\"...ta hand om din mor. Och syskonen.\"",
+        setsFlag: 'far_last_words',
+        condition: () => !state.flags.far_last_words
+      },
+      {
+        id: 3, text: "Berätta om kriget, far.",
+        response: "Hans ögon får ett avlägset uttryck.\n\"Finland... vi förlorade Finland. Så många dog. Jag hade tur. Kom hem.\"\nHan hostar. \"Mest tur.\"",
+        setsFlag: 'heard_war_story',
+        condition: () => !state.flags.heard_war_story,
+        onSelect: () => { unlockKnowledge('finska_kriget'); }
+      },
+      { id: 0, text: "[Låt far vila]", response: "Far sluter ögonen. Hans andning är rosslande." }
+    ]
+  },
+  lansman_news: {
+    speaker: "Länsman",
+    opening: "Länsman harklar sig och läser från ett papper:\n\n\"Soldatnummer 891, Per Jonsson, har på grund av sjukdom och oförmåga att fullgöra sin tjänst... avskiljts från indelningsverket.\"\n\nHan sänker pappret. \"Torpet tillhör kronan. Ni har till vårens slut.\"",
+    options: [
+      {
+        id: 1, text: "Men var ska vi bo?",
+        response: "Länsman ser nästan medlidsam ut. Nästan.\n\"Fattigstugan finns. Eller ni kan söka arbete hos storbonden Persson. Han behöver folk.\"",
+        onSelect: () => { unlockKnowledge('indelningsverket'); }
+      },
+      {
+        id: 2, text: "Min far är sjuk! Han kan inte arbeta!",
+        response: "\"Jag vet, flicka.\" Länsman stoppar undan pappret.\n\"Kriget tog många. Er far hade åtminstone turen att komma hem.\""
+      },
+      {
+        id: 3, text: "[Tyst]",
+        response: "Länsman väntar. När ingen säger något bockar han lätt och går.",
+        setsFlag: 'lansman_gone',
+        condition: () => !state.flags.lansman_gone
+      },
+      {
+        id: 0, text: "[Avsluta]",
+        response: "Länsman lämnar stugan.",
+        setsFlag: 'lansman_gone'
+      }
+    ]
+  },
+  klockare_nyheter: {
+    speaker: "Klockaren Svensson",
+    opening: "Klockaren ser dig och nickar allvarligt.\n\"Britta Persdotter. Jag hörde om din far. Må Gud ta emot hans själ.\"",
+    options: [
+      {
+        id: 1, text: "Vad händer i Stockholm? Folk pratar om kungen.",
+        response: "Klockaren sänker rösten.\n\"Gustav Adolf är avsatt. Kuppmakarna tog honom. Nu lär de välja en ny kronprins. En fransman, säger ryktet. En av Napoleons marskalkar!\"",
+        setsFlag: 'heard_about_coup',
+        onSelect: () => { unlockKnowledge('statskuppen'); },
+        condition: () => !state.flags.heard_about_coup
+      },
+      {
+        id: 2, text: "En fransman som kung?",
+        response: "\"Kronprins bara. Än så länge. Men ja, en fransman. Jean-Baptiste Bernadotte heter han. Tiderna förändras, flicka. Tiderna förändras.\"",
+        condition: () => state.flags.heard_about_coup && !state.flags.heard_bernadotte_klockaren,
+        setsFlag: 'heard_bernadotte_klockaren',
+        onSelect: () => { unlockKnowledge('bernadotte'); }
+      },
+      {
+        id: 3, text: "Vi har förlorat torpet. Vad ska vi göra?",
+        response: "Klockaren tänker efter.\n\"Storbonden Persson söker pigor och drängar. Det är hårt arbete, men tak över huvudet.\"\n\nHan lägger en hand på din axel.\n\"Gå hem och berätta för din mor. Ni kan ta er dit tillsammans.\"",
+        setsFlag: 'knows_about_persson',
+        condition: () => state.flags.heard_about_coup && !state.flags.knows_about_persson
+      },
+      { id: 0, text: "[Avsluta]", response: "Klockaren nickar och vänder sig mot kyrkan." }
+    ]
+  },
+  husmor_persson_1: {
+    speaker: "Fru Persson",
+    opening: "Husmodern betraktar dig med sträng blick.\n\"Britta. Har du gjort dina sysslor?\"",
+    options: [
+      {
+        id: 1, text: "Ja, fru Persson.",
+        response: "Hon nickar kort. \"Bra. Du lär dig. Det är mer än jag kan säga om den förra pigan.\""
+      },
+      {
+        id: 2, text: "Hur länge har ni bott här?",
+        response: "\"Perssons gård har funnits i fyra generationer. Min mans farfar byggde mangårdsbyggnaden.\" Hon ser stolt ut."
+      },
+      { id: 0, text: "[Avsluta]", response: "Husmodern vänder sig till sina sysslor." }
+    ]
+  },
+  anders_default: {
+    speaker: "Anders Svensson",
+    opening: "Anders stannar i arbetet och tittar på dig.\n\"Hej, Britta.\"",
+    options: [
+      {
+        id: 1, text: "Hur länge har du arbetat här?",
+        response: "\"Fem år nu. Min far var torpare i Småland, som din. Men jag ville se mer av världen.\" Han ler lite. \"Det blev Perssons gård.\"",
+        setsFlag: 'knows_anders_well',
+        condition: () => !state.flags.knows_anders_well
+      },
+      {
+        id: 2, text: "Vad tycker du om Bernadotte?",
+        response: "\"Han är slug, det säger alla. Och han vill ha Norge istället för Finland. Kanske lyckas han.\" Anders rycker på axlarna. \"Bättre än den förra kungen i alla fall.\"",
+        setsFlag: 'discussed_bernadotte',
+        condition: () => state.flags.heard_bernadotte_news && !state.flags.discussed_bernadotte
+      },
+      {
+        id: 3, text: "Vill du stanna här för alltid?",
+        response: "Anders tittar på dig med ett märkligt uttryck.\n\"Nej. Jag har sparat pengar. Jag tänker bli bruksarbetare. De säger att det finns arbete vid järnbruket i Bergslagen.\"\n\nHan pausar. \"Och du, Britta? Vad drömmer du om?\"",
+        setsFlag: 'anders_shared_dream',
+        condition: () => state.flags.knows_anders_well && !state.flags.anders_shared_dream
+      },
+      {
+        id: 4, text: "Jag vet inte än.",
+        response: "Anders ler. \"Du vet. Du säger det bara inte.\"\nHan vänder sig om och går tillbaka till arbetet.\n\nDu känner något konstigt i magen. Inte hunger. Något annat.",
+        setsFlag: 'romantic_interest_anders',
+        onSelect: () => { setSceneImage('scene_akt2_anders.png', 'ANDERS OCH BRITTA'); },
+        condition: () => state.flags.anders_shared_dream && !state.flags.romantic_interest_anders
+      },
+      { id: 0, text: "[Gå tillbaka till arbetet]", response: "Anders nickar och återgår till sitt." }
+    ]
+  },
+  mor_ingrid_after: {
+    speaker: "Mor",
+    opening: "Mor sitter vid spisen. Hennes ögon är torra nu. Inga tårar kvar.",
+    options: [
+      {
+        id: 1, text: "Vad ska vi göra nu, mor?",
+        response: "\"Vi måste bestämma oss. Storbonden Persson tar emot oss, har klockaren sagt. Det är det bästa vi kan göra.\"",
+        condition: () => state.flags.knows_about_persson && !state.flags.talked_to_mor_after,
+        setsFlag: 'talked_to_mor_after'
+      },
+      {
+        id: 2, text: "Jag saknar far.",
+        response: "Mor tar din hand. \"Jag med, Britta. Jag med.\"\n\nNi sitter tysta en stund."
+      },
+      { id: 0, text: "[Avsluta]", response: "Mor vänder sig bort." }
+    ]
+  },
+
+  // =============== GENERATION II DIALOGUES ===============
+  mor_britta_act4: {
+    speaker: "Mor Britta",
+    opening: "Mor tittar upp från spinnrocken. \"Lena, du ser fundersam ut.\"",
+    options: [
+      {
+        id: 1, text: "Hur var det förr, mor? På torpet?",
+        response: "Mors ögon blir fjärran. \"Vi hade ingenting. Din farfar dog i kriget. Vi förlorade torpet. Men vi klarade oss.\"\n\nHon tar din hand. \"Vi klarar oss alltid.\"",
+        condition: () => !state.flags.britta_told_story,
+        setsFlag: 'britta_told_story'
+      },
+      {
+        id: 2, text: "Folk pratar om laga skifte. Vad betyder det?",
+        response: "\"Marken ska delas om. Byarna sprids. Det gamla Sverige dör, Lena.\"\n\nMor skakar på huvudet. \"Men kanske föds något nytt.\"",
+        condition: () => !state.flags.asked_laga_skifte,
+        setsFlag: 'asked_laga_skifte',
+        onSelect: () => { unlockKnowledge('laga_skifte'); }
+      },
+      { id: 0, text: "[Avsluta]", response: "Mor återgår till spinnrocken." }
+    ]
+  },
+  far_anders_act4: {
+    speaker: "Far Anders",
+    opening: "Far tittar på sina svartnade händer. \"Lena. Skönt att du är här.\"",
+    options: [
+      {
+        id: 1, text: "Hur mår du, far?",
+        response: "\"Händerna värker. Masugnen tar sin tribut.\" Han ler svagt. \"Men vi har mat och tak. Det är mer än de flesta.\""
+      },
+      {
+        id: 2, text: "Tror du tiderna förändras?",
+        response: "\"Skråväsendet ska bort, säger de. Näringsfrihet istället.\" Han ser fundersam ut. \"Kanske är det bra. Kanske inte. Förändring är aldrig lätt.\"",
+        condition: () => !state.flags.anders_about_change,
+        setsFlag: 'anders_about_change'
+      },
+      { id: 0, text: "[Avsluta]", response: "Far sluter ögonen en stund." }
+    ]
+  },
+  smeden_act4: {
+    speaker: "Smeden Eriksson",
+    opening: "Smeden torkar svetten ur pannan. \"Unga Lena! Vad gör du ute?\"",
+    options: [
+      {
+        id: 1, text: "Hur går det vid bruket?",
+        response: "\"Sämre. Järnpriserna faller. Engelskt järn är billigare.\" Han spottar. \"Snart behövs vi inte.\"\n\nHan ser orolig ut. \"Folk svälter redan i Småland, säger de som kommer norrifrån.\"",
+        setsFlag: 'heard_famine_rumor',
+        condition: () => !state.flags.heard_famine_rumor
+      },
+      {
+        id: 2, text: "Vad vet du om skråväsendet?",
+        response: "\"Skråna? De ska bort. Snart kan vem som helst bli smed, utan att ha lärt sig ordentligt!\" Han ser upprörd ut.\n\n\"Men kanske är det dags. Världen förändras.\"",
+        condition: () => !state.flags.heard_skra,
+        setsFlag: 'heard_skra',
+        onSelect: () => { unlockKnowledge('skravasendet'); }
+      },
+      { id: 0, text: "[Avsluta]", response: "Smeden återgår till sitt arbete." }
+    ]
+  },
+  mor_britta_act5: {
+    speaker: "Mor Britta",
+    opening: "Mor hostar svagt. \"Lena... är det du?\"",
+    options: [
+      {
+        id: 1, text: "Jag är här, mor. Hur mår du?",
+        response: "\"Trött. Så trött.\" Hon tar din hand. Hennes hud är het.\n\"Ta hand om far. Och glöm inte varifrån vi kommer.\"",
+        setsFlag: 'britta_last_words'
+      },
+      { id: 0, text: "[Låt mor vila]", response: "Mor sluter ögonen." }
+    ]
+  },
+  far_anders_act5: {
+    speaker: "Far Anders",
+    opening: "Far stirrar tomt framför sig. \"Vi har inget att äta, Lena.\"",
+    options: [
+      {
+        id: 1, text: "Jag ska hitta mat, far.",
+        response: "\"Hur?\" Han ser upp. \"Bruket har stängt. Handlaren tar bara kontant.\"\n\nHan tystnar. \"Kyrkan kanske. Eller herrgården. Eller...\" Han tittar på broschen.\n\"Handlaren skulle ge bra betalt för den.\"",
+        setsFlag: 'quest_find_food',
+        condition: () => !state.flags.quest_find_food
+      },
+      { id: 0, text: "[Avsluta]", response: "Far vänder sig bort." }
+    ]
+  },
+  prasten_food: {
+    speaker: "Prästen Holmberg",
+    opening: "Prästen ser på dig med trötta ögon. \"Ännu en som behöver hjälp...\"",
+    options: [
+      {
+        id: 1, text: "Vi svälter, herr prästen. Har kyrkan något att ge?",
+        response: "Han suckar djupt. \"Fattigkassan är nästan tom. Men...\" Han går in och kommer tillbaka med ett bröd.\n\n\"Det är allt jag kan ge. Må Gud hjälpa er.\"",
+        setsFlag: 'food_from_church',
+        condition: () => state.flags.quest_find_food && !state.flags.found_food
+      },
+      { id: 0, text: "[Avsluta]", response: "Prästen vänder sig mot altaret." }
+    ]
+  },
+  hushallerska_food: {
+    speaker: "Fru Bergström",
+    opening: "Hushållerskan öppnar bakdörren. \"Vad vill du, flicka?\"",
+    options: [
+      {
+        id: 1, text: "Jag söker arbete. Vi behöver mat.",
+        response: "Hon betraktar dig. \"Kan du skura? Laga mat? Vi behöver hjälp i köket tre dagar i veckan.\"\n\nHon nickar. \"Arbeta här och du får mat för en vecka. Börja imorgon.\"",
+        setsFlag: 'food_from_manor',
+        condition: () => state.flags.quest_find_food && !state.flags.found_food
+      },
+      { id: 0, text: "[Avsluta]", response: "Hon stänger dörren." }
+    ]
+  },
+  handlaren_food: {
+    speaker: "Handlare Nilsson",
+    opening: "\"Jag tar bara kontant.\" Handlaren ser ovillig ut.",
+    options: [
+      {
+        id: 1, text: "Jag har den här broschen. Vad är den värd?",
+        response: "Hans ögon lyser upp. \"Silver? Låt mig se...\" Han undersöker broschen.\n\n\"Femtio riksdaler. Räcker för en månads mat.\"\n\nDu tvingar dig att le. Broschen har följt familjen i generationer.",
+        condition: () => state.flags.quest_find_food && !state.flags.found_food && state.inventory.includes('broschen'),
+        setsFlag: 'food_from_selling_brosch'
+      },
+      { id: 0, text: "[Avsluta]", response: "Handlaren vänder sig bort." }
+    ]
+  },
+  anders_t_act6: {
+    speaker: "Anders Törnqvist",
+    opening: "Anders ser på sin skadade hand. \"Det fungerar inte längre, Lena.\"",
+    options: [
+      {
+        id: 1, text: "Vad gör vi nu?",
+        response: "\"Jag kan inte arbeta vid masugnen längre. Tre fingrar...\" Han skakar på huvudet.\n\n\"Men Johan skriver att det finns plats i Amerika. Eller så finns det Stockholm...\"\n\nHan tittar på dig. \"Vi måste bestämma oss.\"",
+        setsFlag: 'anders_injured_talk',
+        condition: () => !state.flags.anders_injured_talk
+      },
+      {
+        id: 2, text: "Läs Johans brev igen.",
+        response: "Anders tar upp brevet. \"Åttio tunnland egen jord. Ingen hustavla. Man är fri.\"\n\nHan lägger ner det. \"Men det är så långt bort.\"",
+        condition: () => state.flags.anders_injured_talk
+      },
+      { id: 0, text: "[Avsluta]", response: "Anders stryker dig över håret." }
+    ]
+  },
+  // =============== GENERATION III DIALOGUES ===============
+  anna_act8: {
+    speaker: "Anna",
+    opening: "Anna viskar vid maskinen bredvid. \"Maria! Har du hört?\"",
+    options: [
+      {
+        id: 1, text: "Hört vad?",
+        response: "\"Det är möte på lördag. Folkets Hus. August Palm ska tala!\"\n\nHon ser sig om efter föreståndaren.\n\"Förra veckan fick Greta handen i maskinen. Förlorade två fingrar. Ingen ersättning. Sparkad.\"\n\nAnnas ögon brinner. \"Vi måste göra något, Maria.\"",
+        setsFlag: 'knows_about_meeting',
+        condition: () => !state.flags.knows_about_meeting
+      },
+      {
+        id: 2, text: "Ska du gå på mötet?",
+        response: "\"Föreståndaren gillar det inte. Men jag tänker gå.\"\n\nHon tar din hand. \"Kom med mig. Snälla.\"",
+        condition: () => state.flags.knows_about_meeting && !state.flags.agreed_to_meeting,
+        setsFlag: 'agreed_to_meeting'
+      },
+      { id: 0, text: "[Tillbaka till arbetet]", response: "Anna vänder sig till sin maskin." }
+    ]
+  },
+  forestandaren_act8: {
+    speaker: "Föreståndare Svensson",
+    opening: "Föreståndaren stannar vid din maskin. \"Törnqvist.\"",
+    options: [
+      {
+        id: 1, text: "Ja, herr Svensson?",
+        response: "\"Du sköter dig. Bra.\" Han tittar på dig med smala ögon.\n\"Se till att det fortsätter. Och håll dig borta från... olämpliga sammankomster.\"",
+        setsFlag: 'forestandaren_warning'
+      },
+      { id: 0, text: "[Nicka och arbeta vidare]", response: "Föreståndaren går vidare till nästa maskin." }
+    ]
+  },
+  erik_act10: {
+    speaker: "Erik Lindgren",
+    opening: "Erik kommer hem med skinande ögon och ett papper i handen.",
+    options: [
+      {
+        id: 1, text: "Vad har hänt?",
+        response: "\"Partiet! Sveriges socialdemokratiska arbetareparti! Det är grundat!\"\n\nHan visar upp ett medlemskort. \"Medlemskort nummer 847. Branting leder oss.\"\n\n\"Det är vår tid nu, Maria. Vår tid!\"",
+        setsFlag: 'heard_sap_news',
+        condition: () => !state.flags.heard_sap_news,
+        onSelect: () => { unlockKnowledge('socialdemokraterna'); }
+      },
+      {
+        id: 2, text: "Ge mig också ett.",
+        response: "Erik ser på dig med kärlek och stolthet.\n\"Här.\" Han räcker dig ett kort.\n\nDu tänker på mor Lena som aldrig fick ha en röst. På mormor Britta som var piga utan rättigheter.\n\n\"Ja\", säger du. \"Det är dags.\"",
+        setsFlag: 'sap_member',
+        condition: () => state.flags.heard_sap_news && !state.flags.sap_member
+      },
+      { id: 0, text: "[Avsluta]", response: "Erik kramar dig." }
+    ]
+  },
+  // =============== GENERATION IV DIALOGUES ===============
+  suffragetten_act11: {
+    speaker: "Fru Lindqvist",
+    opening: "\"Rösträtt för kvinnor, fröken. Är du intresserad?\"",
+    options: [
+      {
+        id: 1, text: "Berätta mer.",
+        response: "\"LKPR - Landsföreningen för Kvinnans Politiska Rösträtt. Vi samlar namnunderskrifter.\"\n\nHon ger dig ett flygblad. \"Möte vid Hornsplan imorgon kväll.\"",
+        setsFlag: 'knows_lkpr',
+        condition: () => !state.flags.knows_lkpr,
+        onSelect: () => { unlockKnowledge('kvinnlig_rostratt'); }
+      },
+      {
+        id: 2, text: "Jag vill gå med.",
+        response: "Hennes ögon lyser upp. \"Underbart! Vi behöver varje röst.\"\n\nHon skriver ner ditt namn. \"Välkommen till kampen, Elsa.\"",
+        setsFlag: 'lkpr_member',
+        condition: () => state.flags.knows_lkpr && !state.flags.lkpr_member
+      },
+      { id: 0, text: "[Avsluta]", response: "Hon ler och vänder sig till nästa förbipasserande." }
+    ]
+  },
+  erik_old_act11: {
+    speaker: "Far Erik",
+    opening: "Far lägger ner pennan. \"Elsa. Hur var din dag?\"",
+    options: [
+      {
+        id: 1, text: "Jag har gått med i rösträttsrörelsen.",
+        response: "Far ler brett. \"Bra. Det är dags.\"\n\nHan blir allvarlig. \"Varför är det så viktigt för dig?\"\n\nDu tänker på mormor Lena som aldrig fick rösta. På gammelmormor Britta.\n\n\"För att det har varit dags länge, far.\"",
+        condition: () => state.flags.lkpr_member && !state.flags.told_father_lkpr,
+        setsFlag: 'told_father_lkpr'
+      },
+      {
+        id: 2, text: "Hur är det med strejken?",
+        response: "\"Svårt. Arbetsgivarna vägrar förhandla.\" Han ser trött ut.\n\"Men vi ger inte upp. Det handlar om mer än pengar. Det handlar om värdighet.\"",
+        condition: () => state.flags.storstrejk_pagar
+      },
+      { id: 0, text: "[Avsluta]", response: "Far återgår till sitt skrivande." }
+    ]
+  },
+  maria_old_act11: {
+    speaker: "Mor Maria",
+    opening: "Mor lägger ner sömnaden. \"Sätt dig, Elsa.\"",
+    options: [
+      {
+        id: 1, text: "Berätta om fabriken, mor.",
+        response: "\"Tolv timmar om dagen. Dammet. Maskinerna.\" Hon ser på sina händer.\n\"Men vi organiserade oss. Vi kämpade. Och sakta, långsamt, blev det bättre.\"\n\nHon ler. \"Nu kämpar du. Det gör mig stolt.\"",
+        condition: () => !state.flags.maria_factory_story,
+        setsFlag: 'maria_factory_story'
+      },
+      { id: 0, text: "[Avsluta]", response: "Mor klappar dig på kinden." }
+    ]
+  },
+  maria_ung_act6: {
+    speaker: "Maria",
+    opening: "Maria tittar upp från psalmboken med stora ögon.",
+    options: [
+      { id: 1, text: "Vad läser du, Maria?", response: "\"Psalmboken, mamma! Titta, jag kan läsa orden själv nu!\" Hon ler stolt." },
+      { id: 0, text: "[Krama Maria]", response: "Du stryker Maria över håret. Hon lutar sig mot dig." }
+    ]
+  },
+  anders_t_act7: {
+    speaker: "Anders",
+    opening: "Anders ser trött ut men ler mot dig.",
+    options: [
+      { id: 1, text: "Hur mår du?", response: "\"Ryggen värker. Portvaktsarbetet är tungt på sitt sätt.\" Han pausar. \"Men vi klarar oss. Vi klarar oss alltid.\"" },
+      { id: 0, text: "[Avsluta]", response: "Anders nickar och återgår till sitt." }
+    ]
+  },
+  maria_16_act7: {
+    speaker: "Maria",
+    opening: "Maria torkar sina händer. De är röda av arbete.",
+    options: [
+      { id: 1, text: "Hur är det på fabriken?", response: "\"Hårt, mamma. Maskinerna stannar aldrig.\" Hon ser bestämd ut. \"Men jag tänker inte stanna där hela livet. Jag ska hitta något bättre.\"" },
+      { id: 0, text: "[Avsluta]", response: "Maria ler och går till sitt." }
+    ]
+  },
+  mor_maria_act13_d: {
+    speaker: "Mor Maria",
+    opening: "Mor Maria bär ut kaffe på verandan.",
+    options: [
+      { id: 1, text: "Fin kväll, mor.", response: "\"Midsommar.\" Hon ler. \"Min favorithögtid. Hela familjen samlad.\"\n\nHon tittar på mormor Lena i gungstolen. \"Prata med mormor. Hon har saker hon vill säga dig.\"" },
+      { id: 0, text: "[Avsluta]", response: "Mor klappar dig på kinden och går in igen." }
+    ]
+  },
+  erik_son_act13: {
+    speaker: "Erik",
+    opening: "Erik tittar upp från sina träsoldater.",
+    options: [
+      { id: 1, text: "Vad leker du?", response: "\"Soldater, mamma! De slåss!\" Han krockar två träfigurer mot varandra.\n\nDu ser på honom. Fem år. Hel och oskadd. Fri." },
+      { id: 0, text: "[Lämna honom att leka]", response: "Erik återgår till sina soldater. Du hör honom göra exploderande ljud." }
+    ]
+  },
+  mormor_lena_act13: {
+    speaker: "Mormor Lena",
+    opening: "Mormor Lena sträcker ut handen. \"Sätt dig, Elsa. Jag vill berätta något.\"",
+    options: [
+      {
+        id: 1, text: "Berätta, mormor.",
+        response: "\"Fyra generationer. Krig, svält, arbete, kamp.\"\n\nHennes blinda ögon glänser.\n\n\"Min mors far dog i kriget. Min mor var piga utan rättigheter. Jag levde genom svälten. Din mor kämpade vid fabrikerna.\"\n\n\"Och nu sitter vi här. En midsommarkväll. Tillsammans.\"",
+        setsFlag: 'lena_story_part1',
+        condition: () => !state.flags.lena_story_part1
+      },
+      {
+        id: 2, text: "Vad vill du att jag ska minnas?",
+        response: "\"Att det aldrig var givet. Ingenting.\"\n\n\"Varje litet steg framåt betalades med tårar. Men vi gav aldrig upp. Vi tog oss vidare.\"\n\n\"Det är det du ska minnas, Elsa. Och det ska du berätta för Erik. Och hans barn.\"",
+        setsFlag: 'lena_final_words',
+        condition: () => state.flags.lena_story_part1 && !state.flags.lena_final_words
+      },
+      { id: 0, text: "[Håll mormors hand]", response: "Ni sitter tysta tillsammans. Björkarna susar." }
+    ]
+  }
+};
+
+// ---- KNOWLEDGE ----
+const knowledgePosts = {
+  finska_kriget: {
+    title: "Finska kriget 1808-1809",
+    text: "Sverige förlorade Finland till Ryssland år 1809 efter ett förödande krig. Finland hade varit en del av Sverige i över 600 år.\n\nTusentals svenska soldater dog eller togs som fångar. Kung Gustav IV Adolf fick skulden och avsattes i en statskupp.\n\nFör vanliga familjer som din betydde kriget att fäder, söner och bröder inte kom hem."
+  },
+  indelningsverket: {
+    title: "Indelningsverket",
+    text: "Indelningsverket var Sveriges system för att ha en armé. Varje grupp av bönder fick tillsammans hålla en soldat. Soldaten bodde på ett litet torp - ett soldattorp.\n\nNär soldaten dog, blev skadad eller för gammal fick han lämna torpet. Då flyttade en ny soldat in.\n\nFör familjen betydde detta att de kunde förlora sitt hem över en natt."
+  },
+  statskuppen: {
+    title: "Statskuppen 1809",
+    text: "I mars 1809 greps kung Gustav IV Adolf av höga militärer. De ansåg att hans krig mot Ryssland hade förstört Sverige.\n\nKungen avsattes och förvisades från Sverige för alltid. Hans farbror blev kung Karl XIII, men han var gammal och sjuk.\n\nSverige behövde en ny kronprins - och valet föll på en fransk militär vid namn Jean-Baptiste Bernadotte."
+  },
+  bernadotte: {
+    title: "Jean-Baptiste Bernadotte",
+    text: "Bernadotte föddes 1763 i Frankrike som son till en advokat. Han blev soldat och steg i graderna under franska revolutionen. Som Napoleons marskalk var han en av Europas mäktigaste män.\n\nÅr 1810 valdes han till svensk kronprins och tog namnet Karl Johan. År 1818 blev han kung Karl XIV Johan.\n\nHans ättlingar sitter fortfarande på den svenska tronen."
+  },
+  hustavlan_kunskap: {
+    title: "Hustavlan",
+    text: "Hustavlan var en samling regler för hur hushållet skulle fungera. Den hängde i nästan varje hem i Sverige.\n\nEnligt hustavlan hade alla sin plats:\n- Husbonden var som en kung i sitt hus\n- Hustrun lydde sin man\n- Barnen lydde föräldrarna\n- Tjänstefolket lydde husbondfolket\n\nAlla lydde Gud och kungen.\n\nDetta system kallades \"det gamla samhället\" och förändrades långsamt under 1800-talet."
+  },
+  husforhor_kunskap: {
+    title: "Husförhör",
+    text: "Husförhören var prästens årliga kontroll av sockenborna. Prästen reste runt till gårdarna och förhörde alla i hushållet om deras kristendomskunskaper.\n\nResultatet skrevs in i husförhörslängden - en viktig historisk källa som berättar om alla som bodde i socknen.\n\nOm man inte kunde läsa eller inte kunde sin katekes kunde man vägras nattvardsgång - vilket var en stor skam.\n\nHusförhören pågick ända fram till 1900-talet."
+  },
+  // Generation II knowledge
+  laga_skifte: {
+    title: "Laga skifte (1827-1860-tal)",
+    text: "Laga skifte var en jordreform som delade upp byarnas gemensamma marker i enskilda lotter. Varje bonde fick sin mark samlad istället för utspridd i smala tegar.\n\nDet innebar att hela byar splittrades. Gårdar som legat tätt i hundratals år flyttades ut på åkrarna. Det gamla bysamhället dog.\n\nFör många innebar reformen bättre jordbruk och högre avkastning. Men för de fattigaste betydde det att de förlorade sin rätt till gemensam mark."
+  },
+  skravasendet: {
+    title: "Skråväsendet (avskaffat 1846)",
+    text: "Skråväsendet var det gamla systemet där varje hantverk hade sin egen organisation - ett skrå. Bara medlemmar fick utöva yrket.\n\nFör att bli smed, skräddare eller bagare måste man först vara lärling i flera år, sedan gesäll, och slutligen mästare.\n\nNär skråna avskaffades 1846 infördes näringsfrihet - vem som helst kunde starta ett hantverk eller en affär. Det var ett avgörande steg mot det moderna Sverige."
+  },
+  emigrationen: {
+    title: "Emigrationen till Amerika (1850-1930)",
+    text: "Mellan 1850 och 1930 emigrerade över en miljon svenskar till Nordamerika. Det var ungefär en femtedel av hela befolkningen.\n\nOrsakerna var många: svält, fattigdom, brist på jord, och drömmen om frihet och egna möjligheter.\n\nDe flesta bosatte sig i Minnesota, Illinois och andra stater i mellanvästern. Många behöll kontakten med hemlandet genom brev.\n\nEmigrationen förändrade Sverige - de som blev kvar började kräva bättre villkor."
+  },
+  // Generation III knowledge
+  arbetarrorelsen: {
+    title: "Arbetarrörelsen",
+    text: "Under 1800-talets andra hälft växte en arbetarrörelse fram i Sverige. August Palm (1849-1922) var en av pionjärerna som spred socialistiska idéer.\n\nArbetarna krävde kortare arbetstid (8 timmar), förbud mot barnarbete, bättre löner och rösträtt för alla.\n\nUr rörelsen växte fackföreningar (LO grundades 1898) och det socialdemokratiska partiet (1889). Arbetarrörelsen förändrade Sverige i grunden."
+  },
+  sundsvallsstrejken: {
+    title: "Sundsvallsstrejken (1879)",
+    text: "Sundsvallsstrejken var Sveriges första stora strejk. I maj 1879 lade 10 000 sågverksarbetare ner arbetet i protest mot lönesänkningar.\n\nMyndigheterna svarade med militär och massarresteringar. Strejkledarna fängslades.\n\nStrejken misslyckades tillfälligt - arbetarna tvingades tillbaka. Men den visade att arbetare kunde organisera sig och kämpa tillsammans. Den blev en symbol för hela arbetarrörelsen."
+  },
+  socialdemokraterna: {
+    title: "Socialdemokraterna (grundat 1889)",
+    text: "Sveriges socialdemokratiska arbetareparti grundades 1889 av Hjalmar Branting och andra.\n\nPartiet kämpade för allmän rösträtt (även arbetare och kvinnor), åtta timmars arbetsdag och sociala reformer.\n\nHjalmar Branting blev Sveriges första socialdemokratiske statsminister 1920.\n\nSocialdemokraterna har sedan dess varit ett av Sveriges största partier och format det moderna välfärdssamhället."
+  },
+  // Generation IV knowledge
+  unionsupplosningen: {
+    title: "Unionsupplösningen (1905)",
+    text: "Norge och Sverige hade varit i union sedan 1814. Men norrmännen krävde självständighet.\n\nÅr 1905 upplöstes unionen fredligt. Kung Oscar II abdikerade som Norges kung.\n\nDet var en av historiens mest fredliga separationer mellan nationer och ett tecken på att demokratiska principer hade slagit rot i Norden."
+  },
+  kvinnlig_rostratt: {
+    title: "Kvinnlig rösträtt",
+    text: "Svenska kvinnor fick inte rösta förrän 1919 (kommunalt) och 1921 (riksdag).\n\nLKPR (Landsföreningen för Kvinnans Politiska Rösträtt) bildades 1903 och samlade över 350 000 namnunderskrifter.\n\nLedande gestalter var Ellen Key (pedagog och författare) och Selma Lagerlöf (Nobelpristagare 1909).\n\nMotståndet var hårt - \"Kvinnor är för känslosamma\" och \"Politik är en manlig sfär\" var vanliga argument.\n\nTill slut segrade rättvisan."
+  },
+  storstrejken_1909: {
+    title: "Storstrejken 1909",
+    text: "I augusti 1909 bröt Sveriges största arbetskonflikt ut. 300 000 arbetare strejkade i tre veckor.\n\nArbetsgivarna vägrade förhandla. Pengarna tog slut. Arbetarna tvingades tillbaka utan seger.\n\nMen strejken visade arbetarklassens styrka och samhörighet. Den stärkte kravet på allmän rösträtt som till slut genomfördes 1919-1921."
+  },
+  forsta_varldskriget: {
+    title: "Första världskriget (1914-1918)",
+    text: "I juni 1914 mördades ärkehertig Franz Ferdinand i Sarajevo. Inom veckor var hela Europa i krig.\n\nSverige förklarade sig neutralt - landet drogs inte in i striderna. Men kriget påverkade ändå: matbrist, ransonering och oro.\n\nMedan miljoner dog i skyttegravarna i Frankrike och Belgien kämpade Sverige med interna frågor: demokrati, rösträtt och jämlikhet.\n\nKriget förändrade Europa för alltid och ledde till nya demokratier."
+  }
+};
+
+// ---- HINTS ----
+function getContextualHints() {
+  if (state.act === 1) {
+    if (!state.flags.quest_fetch_water) {
+      return [
+        "PRATA MED MOR och fråga vad du kan göra.",
+        "Mor berättar att du ska hämta vatten. GÅ UT till gården."
+      ];
+    }
+    if (!state.flags.har_vatten) {
+      return [
+        "Du behöver hämta vatten. GÅ UT till gården om du är inne.",
+        "Brunnen verkar frusen. Du behöver bryta isen. TITTA PÅ VEDTRAVE.",
+        "TITTA PÅ VEDTRAVE för att hitta yxan. TA YXA. TA HINK. Sedan ANVÄND YXA PÅ BRUNN."
+      ];
+    }
+    if (!state.flags.lansman_arrived) {
+      return ["GÅ IN till torpet med vattnet."];
+    }
+    if (state.flags.lansman_arrived && !state.flags.lansman_gone) {
+      return ["Prata med länsman. Välj alternativ i dialogen. Tryck 0 för att avsluta."];
+    }
+    if (state.flags.far_is_dead && !state.flags.heard_about_coup) {
+      return [
+        "Du måste hitta en ny plats att bo. GÅ UT och sedan NORR mot kyrkan.",
+        "PRATA MED KLOCKAREN vid kyrkan. Fråga vad som hänt i Stockholm.",
+        "PRATA MED KLOCKAREN och välj 'Vad händer i Stockholm?'"
+      ];
+    }
+    if (state.flags.heard_about_coup && !state.flags.knows_about_persson) {
+      return [
+        "PRATA MED KLOCKAREN igen och fråga vad ni ska göra.",
+        "PRATA MED KLOCKAREN och välj 'Vi har förlorat torpet.'"
+      ];
+    }
+    if (state.flags.knows_about_persson && !state.flags.talked_to_mor_after) {
+      return [
+        "Gå tillbaka till torpet och prata med mor. GÅ SÖDER och sedan GÅ IN.",
+        "PRATA MED MOR och välj 'Vad ska vi göra nu, mor?'"
+      ];
+    }
+    return ["Fortsätt utforska och prata med personerna du möter."];
+  }
+  if (state.act === 2) {
+    if (!state.flags.knows_anders_well) {
+      return ["Utforska gården. PRATA MED ANDERS.", "Fråga Anders hur länge han har arbetat här.", "PRATA MED ANDERS och välj 'Hur länge har du arbetat här?'"];
+    }
+    if (!state.flags.anders_shared_dream) {
+      return ["Prata med Anders igen.", "Fråga Anders om han vill stanna här.", "PRATA MED ANDERS och välj 'Vill du stanna här för alltid?'"];
+    }
+    if (!state.flags.romantic_interest_anders) {
+      return ["Prata med Anders en gång till.", "Svara på hans fråga.", "PRATA MED ANDERS och välj 'Jag vet inte än.'"];
+    }
+    if (!state.flags.heard_bernadotte_news) return ["Fortsätt utforska. Något kommer att hända snart."];
+    if (!state.flags.husforhor_triggered) return ["Fortsätt utforska gården. Tiden går."];
+    if (state.flags.in_husforhor) return ["Svara på prästens frågor med a, b eller c."];
+    return ["Fortsätt spela. Historien utvecklas."];
+  }
+  if (state.act === 4) {
+    if (!state.flags.heard_famine_rumor) {
+      return ["Utforska bruksgatan. PRATA MED SMEDEN.", "Fråga smeden om hur det går vid bruket."];
+    }
+    if (!state.flags.heard_skra) {
+      return ["Prata med smeden igen. Fråga om skråväsendet.", "LÄS ANSLAGSTAVLA vid bruksgatan."];
+    }
+    return ["Utforska bruket. Prata med mor och far. Tiden går."];
+  }
+  if (state.act === 5) {
+    if (!state.flags.quest_find_food) {
+      return ["PRATA MED FAR ANDERS. Familjen behöver mat.", "Fråga far vad ni ska göra."];
+    }
+    if (!state.flags.found_food) {
+      return [
+        "Du behöver hitta mat. Besök kyrkan SÖDER, herrgården NORR eller handeln ÖSTER.",
+        "Kyrkan har fattigkassan. Herrgården söker hjälp i köket. Handlaren köper värdesaker.",
+        "Gå till en av platserna och PRATA MED personen där."
+      ];
+    }
+    return ["Fortsätt spela. Tiden går."];
+  }
+  if (state.act === 6) {
+    if (!state.flags.anders_injured_talk) {
+      return ["PRATA MED ANDERS om situationen.", "LÄS AMERIKABREVET på bordet."];
+    }
+    if (!state.flags.act6_choice_shown) {
+      return ["Utforska. Beslutet närmar sig."];
+    }
+    return ["Välj väg: Amerika, staden eller stanna."];
+  }
+  if (state.act === 7) return ["Fortsätt utforska Stockholm."];
+  if (state.act === 8) {
+    if (!state.flags.knows_about_meeting) {
+      return ["Gå till fabriken NORR. PRATA MED ANNA.", "Anna vet om ett hemligt möte."];
+    }
+    if (!state.flags.agreed_to_meeting) {
+      return ["PRATA MED ANNA igen och gå med på mötet.", "Fråga Anna om du ska följa med."];
+    }
+    if (!state.flags.palm_speech_heard) {
+      return ["Gå till Folkets Hus VÄSTER för mötet.", "LÄS ANSLAGSTAVLA för information om mötet."];
+    }
+    return ["Fortsätt utforska. Tiden går."];
+  }
+  if (state.act === 9) {
+    if (!state.flags.leaflets_distributed) {
+      return ["Du har flygblad att dela ut. ANVÄND FLYGBLAD PÅ arbetare i fabriken.", "Dela ut till Anna, Karl och andra arbetare."];
+    }
+    return ["Fortsätt spela. Historien utvecklas."];
+  }
+  if (state.act === 10) {
+    if (!state.flags.sap_member) {
+      return ["PRATA MED ERIK. Han har nyheter.", "Fråga om medlemskap i partiet."];
+    }
+    return ["Utforska. Sekelskiftet närmar sig."];
+  }
+  if (state.act === 11) {
+    if (!state.flags.knows_lkpr) {
+      return ["PRATA MED SUFFRAGETTEN på gatan.", "Fråga om rösträttsrörelsen."];
+    }
+    if (!state.flags.lkpr_member) {
+      return ["Gå med i LKPR. PRATA MED SUFFRAGETTEN igen."];
+    }
+    return ["Utforska staden. Strejken pågår."];
+  }
+  if (state.act === 12) {
+    if (!state.flags.signatures_collected) {
+      return ["Samla namnunderskrifter. Knacka dörr i kvarteret.", "Gå SÖDER till torget och PRATA MED folk."];
+    }
+    return ["Fortsätt spela. Historien utvecklas."];
+  }
+  if (state.act === 13) {
+    if (!state.flags.lena_final_words) {
+      return ["PRATA MED MORMOR LENA. Hon vill berätta något.", "Fråga mormor vad du ska minnas."];
+    }
+    return ["Historien närmar sig sitt slut."];
+  }
+  return ["Fortsätt utforska."];
+}
+
+// ---- SCENE/EVENT SYSTEM ----
+function checkSceneTriggers() {
+  // Länsman arrives after getting water
+  if (state.flags.har_vatten && state.room === 'akt1_torpet_inne' && !state.flags.lansman_arrived) {
+    state.flags.lansman_arrived = true;
+    characters.lansman.spawned = true;
+    setTimeout(() => {
+      setSceneImage('scene_akt1_lansman.png', 'LÄNSMAN ANLÄNDER (1809)');
+      printCutscene("Du har just gett far vatten att dricka när det knackar på dörren.\n\nMor öppnar. En man i tjänstekläder står utanför.\nDet är länsman.\n\n\"Fru Persdotter\", säger han stelt. \"Jag har ett meddelande från regementet. Angående er mans tjänst...\"\n\nDu ser hur mor griper om dörrposten.");
+      setTimeout(() => {
+        startDialogue('lansman_news');
+      }, 500);
+    }, 300);
+    return true;
+  }
+
+  // Father dies
+  if (state.flags.lansman_gone && !state.flags.far_is_dead) {
+    state.flags.far_is_dead = true;
+    state.flags.quest_find_new_home = true;
+    setTimeout(() => {
+      setSceneImage('scene_akt1_fars_dod.png', 'FARS DÖD (1809)');
+      printCutscene("[EN VECKA SENARE]\n\nFar somnade in i natt. Stilla. Mor höll hans hand.\n\nDu stod vid väggen och såg på. Det fanns inget att göra. Inget hade kunnat göras.\n\nNu ligger han på britsen. Stilla. Kall.\n\nMor gråter inte. Hon sitter bara där. Stirrar.\n\nPrästen måste underrättas. Och sedan... sedan måste ni hitta någonstans att bo.");
+      // Switch dialogue for mor
+      characters.mor_ingrid.dialogue = 'mor_ingrid_after';
+      // Remove far from room
+      const room = rooms.akt1_torpet_inne;
+      room.characters = room.characters.filter(c => c !== 'far_per');
+      room.description = "Du står i torpets enda rum. Väggarnas stockar har mörknat av rök. Halmbritsen är tom nu. Spinnrocken står i hörnet.\n\nMor sitter vid spisen.\n\nGÅ UT till gården.";
+      // Remove lansman
+      room.characters = room.characters.filter(c => c !== 'lansman');
+    }, 300);
+    return true;
+  }
+
+  // The choice - transition to Act 2
+  if (state.flags.talked_to_mor_after && !state.flags.act1_choice_shown) {
+    state.flags.act1_choice_shown = true;
+    setTimeout(() => {
+      showActChoice();
+    }, 500);
+    return true;
+  }
+
+  // Act 2: Bernadotte news — triggers after romance chain complete, not before
+  if (state.act === 2 && state.room === 'akt2_garden_persson' && !state.flags.heard_bernadotte_news && state.flags.romantic_interest_anders) {
+    state.flags.heard_bernadotte_news = true;
+    setTimeout(() => {
+      setSceneImage('scene_akt2_napoleon_nyhet.png', 'NYHETEN OM NAPOLEON (1812)');
+      printCutscene("SOMMAREN 1812\n\nHusbonden kommer in med en tidning. Han läser sällan, men idag är hans ögon stora.\n\n\"Napoleon marscherar mot Ryssland!\" ropar han. \"Med en halv miljon soldater!\"\n\nDrängen Anders stannar i arbetet.\n\"Vad gör vår kronprins? Han var ju Napoleons man.\"\n\n\"Bernadotte väntar\", säger husbonden. \"Och planerar.\"");
+    }, 800);
+    return true;
+  }
+
+  // Act 2: Husförhör trigger — after Bernadotte news and a few turns
+  if (state.act === 2 && state.flags.heard_bernadotte_news && !state.flags.husforhor_triggered && state.turnCount > (state.flags.act2_start_turn || 0) + 8) {
+    state.flags.husforhor_triggered = true;
+    setTimeout(() => {
+      triggerHusforhor();
+    }, 300);
+    return true;
+  }
+
+  // Act 2 → Act 3 transition: after husförhör
+  if (state.act === 2 && state.flags.husforhor_complete && !state.flags.act2_ending_shown) {
+    state.flags.act2_ending_shown = true;
+    setTimeout(() => { triggerAct2Ending(); }, 500);
+    return true;
+  }
+
+  // ===== GENERATION II: LENA =====
+
+  // Act 4 → Act 5: after exploring and talking to people (wait 5 turns after both flags)
+  if (state.act === 4 && state.flags.heard_famine_rumor && state.flags.heard_skra && !state.flags.act5_triggered
+      && state.turnCount > (state.flags.act4_start_turn || 0) + 10) {
+    state.flags.act5_triggered = true;
+    setTimeout(() => { triggerAct5(); }, 500);
+    return true;
+  }
+
+  // Act 5: Food quest resolution
+  if (state.act === 5 && !state.flags.found_food &&
+      (state.flags.food_from_church || state.flags.food_from_manor || state.flags.food_from_selling_brosch)) {
+    handleFoodChoice();
+    return true;
+  }
+
+  // Act 5: Britta dies after finding food (wait 5 turns)
+  if (state.act === 5 && state.flags.found_food && !state.flags.britta_is_dead && state.flags.food_found_turn && state.turnCount > state.flags.food_found_turn + 5) {
+    setTimeout(() => { triggerBrittaDeath(); }, 500);
+    return true;
+  }
+
+  // Act 5 → Act 6: after Britta dies and some turns
+  if (state.act === 5 && state.flags.britta_is_dead && !state.flags.act6_triggered && state.turnCount > (state.flags.food_found_turn || 0) + 10) {
+    state.flags.act6_triggered = true;
+    setTimeout(() => { triggerAct6(); }, 500);
+    return true;
+  }
+
+  // Act 6: Show choice after talking to Anders about injury
+  if (state.act === 6 && state.flags.anders_injured_talk && !state.flags.act6_choice_shown) {
+    state.flags.act6_choice_shown = true;
+    setTimeout(() => { showAct6Choice(); }, 1000);
+    return true;
+  }
+
+  // Act 7 → Gen III: mark first visit to Södermalm, then transition after a few turns
+  if (state.act === 7 && state.room === 'akt7_sodermalm' && !state.flags.sodermalm_visited) {
+    state.flags.sodermalm_visited = true;
+    state.flags.sodermalm_visit_turn = state.turnCount;
+  }
+  if (state.act === 7 && state.flags.sodermalm_visited && !state.flags.gen2_ending_shown && state.turnCount > (state.flags.sodermalm_visit_turn || 0) + 3) {
+    state.flags.gen2_ending_shown = true;
+    setTimeout(() => { triggerGen2Ending(); }, 800);
+    return true;
+  }
+
+  // ===== GENERATION III: MARIA =====
+
+  // Act 8: August Palm speech at Folkets Hus
+  if (state.act === 8 && state.room === 'akt8_folkets_hus' && state.flags.agreed_to_meeting && !state.flags.palm_speech_heard) {
+    setTimeout(() => { triggerPalmSpeech(); }, 500);
+    return true;
+  }
+
+  // Act 8 → Act 9: after Palm speech and some turns
+  if (state.act === 8 && state.flags.palm_speech_heard && !state.flags.act9_triggered && state.turnCount > (state.flags.palm_speech_turn || 0) + 5) {
+    state.flags.act9_triggered = true;
+    setTimeout(() => { triggerAct9(); }, 500);
+    return true;
+  }
+
+  // Act 9 → family scene after leaflets
+  if (state.act === 9 && state.flags.leaflets_distributed && !state.flags.act9_ending_shown && state.turnCount > (state.flags.act9_start_turn || 0) + 5) {
+    state.flags.act9_ending_shown = true;
+    setTimeout(() => { triggerAct9Ending(); }, 500);
+    return true;
+  }
+
+  // Act 9 → Act 10: after family scene
+  if (state.act === 9 && state.flags.family_improved && !state.flags.act10_triggered) {
+    state.flags.act10_triggered = true;
+    setTimeout(() => { transitionToAct10(); }, 2000);
+    return true;
+  }
+
+  // Act 10: sekelskifte after joining SAP
+  if (state.act === 10 && state.flags.sap_member && !state.flags.sekelskifte_shown && state.turnCount > (state.flags.act10_start_turn || 0) + 5) {
+    state.flags.sekelskifte_shown = true;
+    setTimeout(() => { triggerSekelskifte(); }, 500);
+    return true;
+  }
+
+  // ===== GENERATION IV: ELSA =====
+
+  // Act 11: Storstrejk after joining LKPR
+  if (state.act === 11 && state.flags.lkpr_member && !state.flags.storstrejk_triggered && state.turnCount > (state.flags.act11_start_turn || 0) + 5) {
+    state.flags.storstrejk_triggered = true;
+    setTimeout(() => { triggerStorstrejk(); }, 500);
+    return true;
+  }
+
+  // Act 11 → Act 12: after storstrejk
+  if (state.act === 11 && state.flags.storstrejk_pagar && !state.flags.act12_triggered && state.turnCount > (state.flags.storstrejk_turn || 0) + 5) {
+    state.flags.act12_triggered = true;
+    setTimeout(() => { triggerAct12(); }, 500);
+    return true;
+  }
+
+  // Act 12: Ellen Key after signatures
+  if (state.act === 12 && state.flags.signatures_collected && !state.flags.ellen_key_met) {
+    setTimeout(() => { triggerEllenKey(); }, 1000);
+    return true;
+  }
+
+  // Act 12 → Act 13: after Ellen Key
+  if (state.act === 12 && state.flags.ellen_key_met && !state.flags.act13_triggered && state.turnCount > (state.flags.act12_start_turn || 0) + 5) {
+    state.flags.act13_triggered = true;
+    setTimeout(() => { triggerAct13(); }, 500);
+    return true;
+  }
+
+  // Act 13: War news after talking to Lena
+  if (state.act === 13 && state.flags.lena_final_words && !state.flags.sarajevo_news) {
+    setTimeout(() => { triggerWarNews(); }, 1500);
+    return true;
+  }
+
+  return false;
+}
+
+function showActChoice() {
+  setSceneImage('scene_akt1_valet.png', 'VALET (1809)');
+  printCutscene("Du sitter med mor vid spisen. Torpet är tomt utan far.\n\n\"Vi måste bestämma oss\", säger mor. \"Innan snön smälter.\"");
+  printMsg("system", "\nVälj genom att skriva siffran:\n");
+  printMsg("narrator", "1. Gå till storbonden Persson och be om arbete\n2. Gå till fattigstugan\n3. Försöka klara sig själva");
+  state.flags.awaiting_act1_choice = true;
+}
+
+function handleAct1Choice(choice) {
+  state.flags.awaiting_act1_choice = false;
+  if (choice === '2') {
+    printMsg("narrator", "Mor skakar på huvudet bestämt.\n\"Nej. Vi är inte fattighjon ännu. Vi kan arbeta. Storbonden Persson tar emot oss.\"");
+    setTimeout(() => transitionToAct2(), 1000);
+  } else if (choice === '3') {
+    printMsg("narrator", "\"Hur då, Britta?\" Mor låter trött. \"Vi har ingenting. Torpet är inte vårt. Vi måste be om hjälp.\"");
+    setTimeout(() => transitionToAct2(), 1000);
+  } else {
+    transitionToAct2();
+  }
+}
+
+function transitionToAct2() {
+  state.flags.chose_storbonden = true;
+  printCutscene("Mor nickar långsamt. \"Det är det bästa vi kan göra. Du och jag arbetar. Småsyskonen får stanna hos faster tills vi har ordning på saker.\"\n\nDet är inte det liv du drömde om. Men det är ett liv.");
+  setTimeout(() => {
+    state.act = 2;
+    state.flags.act2_started = true;
+    state.flags.act2_start_turn = state.turnCount;
+    state.room = 'akt2_garden_persson';
+    state.hintsThisAct = 0;
+    if (!state.visitedRooms.includes('akt2_garden_persson')) state.visitedRooms.push('akt2_garden_persson');
+    updateUI();
+    printCutscene("[TRE ÅR SENARE - 1812]\n\nDu arbetar nu som piga på storbonden Perssons gård. Det är hårt arbete, men du har tak över huvudet och mat för dagen.\n\nSommarens grönska lyser utanför.");
+    setTimeout(() => { describeRoom(); }, 500);
+  }, 1500);
+}
+
+function triggerHusforhor() {
+  setSceneImage('scene_akt2_husforhor.png', 'HUSFÖRHÖRET (1815)');
+  printCutscene("VÅREN 1815\n\nPrästen kommer till gården för husförhör. Alla i hushållet samlas i storstugan.\n\nPrästen Lundberg sätter sig vid bordet. Han slår upp kyrkboken.\n\n\"Då börjar vi. Vi ska se hur det står till med kristendomskunskaperna i detta hus.\"\n\nHan tittar på dig. \"Britta Persdotter. Vi tar dig först.\"");
+  setTimeout(() => {
+    startHusforhor();
+  }, 800);
+}
+
+let husforhorState = { questionIndex: 0, correct: 0 };
+const husforhorQuestions = [
+  {
+    question: "\"Vad är det första budet?\"",
+    options: { a: "Du skall inga andra gudar hava jämte mig.", b: "Du skall icke stjäla.", c: "Hedra din fader och din moder." },
+    correct: 'a',
+    correctResp: "\"Rätt. Du kan din katekes.\"",
+    wrongResp: "\"Fel. Första budet handlar om att Gud är en.\""
+  },
+  {
+    question: "\"Hur många böcker finns i Bibeln?\"",
+    options: { a: "Femtio", b: "Sextiosex", c: "Trettiotre" },
+    correct: 'b',
+    correctResp: "\"Rätt. Sextiosex böcker.\"",
+    wrongResp: "\"Fel. Det är sextiosex böcker.\""
+  },
+  {
+    question: "\"Vem döpte Jesus?\"",
+    options: { a: "Petrus", b: "Paulus", c: "Johannes Döparen" },
+    correct: 'c',
+    correctResp: "\"Rätt.\"",
+    wrongResp: "\"Fel. Det var Johannes Döparen vid floden Jordan.\""
+  }
+];
+
+function startHusforhor() {
+  husforhorState = { questionIndex: 0, correct: 0 };
+  state.flags.in_husforhor = true;
+  askHusforhorQuestion();
+}
+
+function askHusforhorQuestion() {
+  const q = husforhorQuestions[husforhorState.questionIndex];
+  printMsg("speaker", "Prästen Lundberg: " + q.question);
+  printMsg("narrator", "\n  a) " + q.options.a + "\n  b) " + q.options.b + "\n  c) " + q.options.c);
+}
+
+function handleHusforhorAnswer(answer) {
+  const a = answer.toLowerCase().trim();
+  const q = husforhorQuestions[husforhorState.questionIndex];
+  if (!['a','b','c'].includes(a)) {
+    printMsg("system", "Svara med a, b eller c.");
+    return;
+  }
+  if (a === q.correct) {
+    husforhorState.correct++;
+    printMsg("speaker", "Prästen: " + q.correctResp);
+  } else {
+    printMsg("speaker", "Prästen: " + q.wrongResp);
+  }
+  husforhorState.questionIndex++;
+  if (husforhorState.questionIndex < husforhorQuestions.length) {
+    setTimeout(() => askHusforhorQuestion(), 500);
+  } else {
+    finishHusforhor();
+  }
+}
+
+function finishHusforhor() {
+  state.flags.in_husforhor = false;
+  state.flags.husforhor_complete = true;
+  state.stats.puzzlesSolved++;
+  const c = husforhorState.correct;
+  if (c === 3) {
+    printCutscene("Prästen skriver i kyrkboken. \"Utmärkt. Britta Persdotter läser väl och kan sin kristendom.\"\n\nDu känner en varm känsla av stolthet.");
+  } else if (c === 2) {
+    printCutscene("Prästen nickar. \"Godtagbart. Men du bör öva mer.\"\nHan skriver något i kyrkboken.");
+  } else {
+    printCutscene("Prästen skakar på huvudet. \"Otillräckligt. Du måste komma till prästgården för extra undervisning.\"\n\nSkammen bränner i kinderna. Men livet går vidare.");
+  }
+  unlockKnowledge('husforhor_kunskap');
+}
+
+function triggerAct2Ending() {
+  setSceneImage('scene_akt3_brollop.png', 'BRÖLLOPET (1818)');
+  printCutscene("VÅREN 1818\n\nKarl XIII har dött. Bernadotte är nu kung Karl XIV Johan.\n\nMen på Perssons gård är det en annan nyhet som betyder mer.\n\nAnders Svensson har bett om din hand.\n\nNi står i kyrkan. Prästen läser texten.\n\"Vill du, Britta Persdotter, ta denne man...\"\n\nDu tittar på Anders. Han ler.\n\n\"Ja\", säger du. \"Det vill jag.\"");
+  state.flags.britta_married = true;
+  setTimeout(() => {
+    setSceneImage('scene_akt3_bruket_stuga.png', 'STUGAN VID BRUKET (1821)');
+    printCutscene("[TRE ÅR SENARE - 1821]\n\nNi bor nu vid järnbruket i Bergslagen. Anders arbetar vid masugnen. Det är farligt arbete, men det betalar bra.\n\nEr dotter Lena fyller just ett år.\n\nUtanför fönstret reser sig fabriksskorstenen mot himlen. En ny tid har börjat.");
+    state.flags.lena_born = true;
+    setTimeout(() => {
+      triggerAct3();
+    }, 1500);
+  }, 2000);
+}
+
+function triggerAct3() {
+  state.act = 3;
+  state.flags.britta_story_told = true;
+  updateUI();
+  // Override image after updateUI resets it
+  setSceneImage('scene_akt3_bruket_stuga.png', 'ÅREN GÅR (1820-1835)');
+  printCutscene("ÅREN GÅR.\n\n1820: Lena växer. Hon är en nyfiken flicka.\n1825: Befolkningen ökar. Vaccinet räddar barnens liv.\n1830: Sverige förändras. Fabriker byggs. Järnvägar planeras.\n1835: Lena är 15 år nu. Samma ålder som du var när din fars liv tog slut.\n\nDu sitter i er stuga vid bruket. Anders har precis kommit hem från arbetet. Hans händer är svartnade av sot.\n\nLena sitter vid bordet och läser i psalmboken. Du lärde henne läsa själv - det var du stolt över.\n\n\"Mor\", säger Lena. \"Berätta om farmor. Om hur det var förr.\"\n\nDu ser på din dotter. Så lik dig. Så annorlunda.\n\n\"Förr\", börjar du, \"var allt annorlunda...\"");
+
+  setTimeout(() => {
+    showGenerationShift();
+  }, 2500);
+}
+
+function showGenerationShift() {
+  printMsg("cutscene", "\n══════════════════════════════════════\n\n         GENERATION I: BRITTA\n              AVSLUTAD\n\n══════════════════════════════════════");
+  setTimeout(() => { transitionToGen2(); }, 2000);
+}
+
+// =============== GENERATION II: LENA ===============
+function transitionToGen2() {
+  state.generation = 2;
+  state.act = 4;
+  state.flags.gen2_started = true;
+  state.flags.act4_start_turn = state.turnCount;
+  // Transfer items
+  state.inventory = state.inventory.filter(i => items[i] && items[i].generationTransfer);
+  if (!state.inventory.includes('broschen') && !state.flags.food_from_selling_brosch) {
+    state.inventory.push('broschen');
+  }
+  if (!state.inventory.includes('psalmbok')) state.inventory.push('psalmbok');
+  state.room = 'akt4_bruket_stuga';
+  state.visitedRooms = ['akt4_bruket_stuga'];
+  updateUI();
+  setSceneImage('akt3_4_bruket.png', 'AKT 4 - JORDBRUKETS KRIS (1835)');
+  printCutscene("══════════════════════════════════════\n\n       GENERATION II: LENA\n       Jordbrukets kris\n\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1835.\n\nDu är LENA ANDERSDOTTER, 15 år. Dotter till Britta och Anders.\n\nNi bor vid järnbruket i Bergslagen. Far arbetar vid masugnen. Mor spinner.\n\nMen tiderna förändras. Det gamla Sverige håller på att dö.");
+    setTimeout(() => {
+      printMsg("system", "Du är nu LENA. Skriv HJÄLP för kommandon.\n");
+      describeRoom();
+    }, 500);
+  }, 1500);
+}
+
+function triggerAct5() {
+  state.act = 5;
+  state.room = 'akt5_stuga_svalt';
+  state.visitedRooms.push('akt5_stuga_svalt');
+  updateUI();
+  setSceneImage('akt5_nodaren.png', 'AKT 5 - NÖDÅREN (1847)');
+  printCutscene("══════════════════════════════════════\n         AKT 5 - NÖDÅREN\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1847.\n\nSvälten har kommit. Brödpriset har fyrdubblats. Bruket har minskat arbetsstyrkan.\n\nFar Anders har förlorat sitt arbete. Mor Britta har blivit sjuk - samma hosta som tog hennes far.\n\nFolk säljer allt de äger för biljetter till Amerika.");
+    setTimeout(() => { describeRoom(); }, 500);
+  }, 1500);
+}
+
+function handleFoodChoice() {
+  state.flags.found_food = true;
+  state.flags.food_found_turn = state.turnCount;
+  if (state.flags.food_from_church) {
+    printCutscene("Prästen gav dig ett bröd. Det räcker några dagar. Men inte mer.");
+  } else if (state.flags.food_from_manor) {
+    printCutscene("Du arbetar i herrgårdens kök. Hårt arbete, men ärligt. Mat för en vecka.");
+    state.stats.puzzlesSolved++;
+  } else if (state.flags.food_from_selling_brosch) {
+    state.inventory = state.inventory.filter(i => i !== 'broschen');
+    state.generationItems.broschen = false;
+    printCutscene("Du säljer broschen. Fyra generationers arv - borta. Men familjen äter i en månad.\n\nNågot dör inom dig. Men ni överlever.");
+  }
+}
+
+function triggerBrittaDeath() {
+  state.flags.britta_is_dead = true;
+  setSceneImage('akt5_nodaren.png', 'MOR BRITTAS DÖD (1847)');
+  printCutscene("[EN VECKA SENARE]\n\nMor Britta somnade in i natt. Stilla. Som hennes far före henne.\n\nHennes sista ord till dig: \"Glöm inte varifrån vi kommer.\"\n\nDu står vid hennes bädd och håller hennes kalla hand. Far Anders gråter för första gången du sett.");
+  // Remove Britta from room
+  rooms.akt5_stuga_svalt.characters = rooms.akt5_stuga_svalt.characters.filter(c => c !== 'mor_britta_sick');
+}
+
+function triggerAct6() {
+  state.act = 6;
+  state.room = 'akt6_familjen_stuga';
+  state.visitedRooms.push('akt6_familjen_stuga');
+  updateUI();
+  setSceneImage('akt6_7_hamnen.png', 'AKT 6 - AVGÖRANDET (1858)');
+  printCutscene("══════════════════════════════════════\n         AKT 6 - AVGÖRANDET\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1858.\n\nÅtta år har gått. Svälten släppte till slut. Du gifte dig med Anders Törnqvist - en snäll och ärlig man.\n\nEr dotter Maria är sex år. Ni bor i en egen stuga vid bruket.\n\nMen en olycka vid masugnen har skadat Anders hand. Han kan inte arbeta längre.\n\nOch ett brev har kommit. Från Amerika.");
+    setTimeout(() => { describeRoom(); }, 500);
+  }, 1500);
+}
+
+function showAct6Choice() {
+  state.flags.act6_choice_shown = true;
+  setSceneImage('akt6_7_hamnen.png', 'DET STORA VALET');
+  printCutscene("Ni sitter vid bordet. Amerikabrevet ligger framför er. Anders hand vilar slapp på bordet.\n\n\"Vi måste bestämma oss\", säger Anders. \"Vi kan inte stanna här.\"");
+  printMsg("system", "\nVälj genom att skriva siffran:\n");
+  printMsg("narrator", "1. Amerika - Johans gård i Minnesota\n2. Staden - Stockholm, framtidens Sverige\n3. Stanna - Be om lättare arbete vid bruket");
+  state.flags.awaiting_act6_choice = true;
+}
+
+function handleAct6Choice(choice) {
+  if (!['1','2','3'].includes(choice.trim())) {
+    printMsg("system", "Välj 1, 2 eller 3.");
+    return;
+  }
+  state.flags.awaiting_act6_choice = false;
+  if (choice.trim() === '1') {
+    state.flags.chose_america = true;
+    triggerAmericaEnding();
+  } else if (choice.trim() === '3') {
+    printCutscene("\"Vi stannar\", säger du. Men Anders skakar på huvudet.\n\n\"Det finns inget arbete kvar för mig här. Maria förtjänar mer.\"\n\nNi tvekar. Men till slut bestämmer ni er. Stockholm.");
+    setTimeout(() => transitionToAct7(), 1500);
+  } else {
+    state.flags.chose_city = true;
+    printCutscene("\"Stockholm\", säger du. \"Där finns arbete. Och framtiden.\"\n\nAnders tittar på dig. \"Det låter så stort.\"\n\n\"Det är det. Men där finns framtiden.\"");
+    setTimeout(() => transitionToAct7(), 1500);
+  }
+}
+
+function triggerAmericaEnding() {
+  setSceneImage('akt6_7_hamnen.png', 'RESAN TILL AMERIKA (1858)');
+  printCutscene("\"Amerika\", viskar du. Ordet smakar av frihet och rädsla.\n\nAnders nickar. \"Johans gård i Minnesota. Åttio tunnland egen jord.\"\n\nMaria tittar på er med stora ögon. \"Ska vi åka med båt, mamma?\"");
+  setTimeout(() => {
+    printCutscene("[EN MÅNAD SENARE]\n\nHamnen i Göteborg. Fartyget \"Svea\" väntar vid kajen. Hundratals emigranter trängs med sina koffertar och buntar.\n\nMaria håller din hand hårt. Anders bär deras enda kista.\n\nDu vänder dig om en sista gång. Sverige. Bruket. Allt du känt.\n\nBroschen glänser mot ditt bröst. Fyra generationers arv bärs nu över havet.");
+    setTimeout(() => {
+      printCutscene("[TRE MÅNADER SENARE - MINNESOTA]\n\nJohans gård. Prärien sträcker sig till horisonten. Himlen är så stor.\n\n\"Välkomna\", säger Johan och kramar er. \"Här börjar ert nya liv.\"\n\nMaria springer ut på gräset och skrattar. Anders andas djupt.\n\nDu tänker på mormor Britta som förlorade allt men aldrig gav upp.\nPå mor Britta som dog i svälten.\nPå alla som stannade kvar.\n\nSverige förändras utan er. Men ni lever. Ni är fria.\n\nEn ny historia börjar - men den är en annan berättelse.");
+      setTimeout(() => {
+        printMsg("cutscene", "\n══════════════════════════════════════\n\n      FOLKETS VÄG - ALTERNATIVT SLUT\n      Familjen Törnqvist i Amerika\n\n══════════════════════════════════════");
+        setTimeout(() => {
+          const kCount = state.knowledge.length;
+          const hCount = state.hintsUsed;
+          printMsg("system", "\n═══ SLUTSTATISTIK ═══");
+          printMsg("system", `Generationer spelade: 2 (av 4)`);
+          printMsg("system", `Kunskapsposter upplåsta: ${kCount}/${Object.keys(knowledgePosts).length}`);
+          printMsg("system", `Pussel lösta: ${state.stats.puzzlesSolved}`);
+          printMsg("system", `Ledtrådar använda: ${hCount}`);
+          printMsg("system", `\nDu valde emigration - som en miljon andra svenskar.\nMen Sveriges historia fortsätter utan er.\n`);
+          printMsg("system", "Skriv SPELA IGEN för att återvända till Bergslagen och välja en annan väg.");
+          state.flags.america_ending_shown = true;
+        }, 2000);
+      }, 2000);
+    }, 2500);
+  }, 2000);
+}
+
+function restartFromAct4() {
+  // Reset Act 4/5/6 specific flags but keep Gen II progress
+  state.flags.america_ending_shown = false;
+  state.flags.chose_america = false;
+  state.flags.heard_famine_rumor = false;
+  state.flags.heard_skra = false;
+  state.flags.act5_triggered = false;
+  state.flags.quest_find_food = false;
+  state.flags.found_food = false;
+  state.flags.food_from_church = false;
+  state.flags.food_from_manor = false;
+  state.flags.food_from_selling_brosch = false;
+  state.flags.food_found_turn = false;
+  state.flags.britta_is_dead = false;
+  state.flags.act6_triggered = false;
+  state.flags.act6_choice_shown = false;
+  state.flags.awaiting_act6_choice = false;
+  state.flags.anders_injured_talk = false;
+  // Restore Britta to Act 5 room
+  rooms.akt5_stuga_svalt.characters = ['mor_britta_sick', 'far_anders_despair'];
+  // Reset act and room
+  state.act = 4;
+  state.flags.act4_start_turn = state.turnCount;
+  state.room = 'akt4_bruket_stuga';
+  state.visitedRooms = ['akt4_bruket_stuga'];
+  // Make sure broschen is in inventory if it was sold
+  if (!state.inventory.includes('broschen')) {
+    state.inventory.push('broschen');
+    state.generationItems.broschen = true;
+  }
+  updateUI();
+  setSceneImage('akt3_4_bruket.png', 'AKT 4 - JORDBRUKETS KRIS (1835)');
+  printCutscene("══════════════════════════════════════\n\n  Ni stannade i Sverige.\n  Historien börjar om från Bergslagen.\n\n══════════════════════════════════════");
+  setTimeout(() => { describeRoom(); }, 1000);
+}
+
+function transitionToAct7() {
+  state.act = 7;
+  state.room = 'akt7_stockholm_ankomst';
+  state.visitedRooms.push('akt7_stockholm_ankomst');
+  updateUI();
+  setSceneImage('akt6_7_hamnen.png', 'AKT 7 - RESAN (1865)');
+  printCutscene("══════════════════════════════════════\n          AKT 7 - RESAN\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1865.\n\nJärnvägsstationen. Det svarta lokomotivet ångar som ett vilddjur. Maria, 13 år, håller din hand hårt.\n\n\"Är det farligt, mamma?\" frågar hon.\n\n\"Nej, älskling. Det är framtiden.\"\n\nKonduktören ropar: \"Stockholm! Alla som ska till Stockholm!\"");
+    setTimeout(() => {
+      printCutscene("Genom fönstret försvinner bruket i fjärran. Du håller broschen i handen och undrar vad mormor Britta skulle tänka.");
+      setTimeout(() => { describeRoom(); }, 500);
+    }, 1500);
+  }, 1500);
+}
+
+function triggerGen2Ending() {
+  setSceneImage('akt8_9_fabriken.png', 'SÖDERMALM (1868)');
+  printCutscene("[TRE ÅR SENARE - 1868]\n\nEtt trångt rum på Södermalm. Anders arbetar som portvakt. Du syr hemma.\n\nMaria är 16 nu. Hon arbetar på bomullsspinneriet. Hon har vuxit på sätt du inte kunde förutse.\n\nStark. Självständig. Full av frågor.\n\nDen industriella tiden har format henne annorlunda än dig.");
+
+  setTimeout(() => {
+    printMsg("cutscene", "\n══════════════════════════════════════\n\n         GENERATION II: LENA\n              AVSLUTAD\n\n══════════════════════════════════════");
+    setTimeout(() => { transitionToGen3(); }, 2000);
+  }, 2000);
+}
+
+// =============== GENERATION III: MARIA ===============
+function transitionToGen3() {
+  state.generation = 3;
+  state.act = 8;
+  state.flags.gen3_started = true;
+  state.inventory = state.inventory.filter(i => items[i] && (items[i].generationTransfer || items[i].keyItem));
+  if (!state.inventory.includes('amerikabrevet')) state.inventory.push('amerikabrevet');
+  state.room = 'akt8_fabrikskvarteret';
+  state.visitedRooms = ['akt8_fabrikskvarteret'];
+  updateUI();
+  setSceneImage('akt8_9_fabriken.png', 'AKT 8 - FABRIKEN (1875)');
+  printCutscene("══════════════════════════════════════\n\n       GENERATION III: MARIA\n       Järn och ånga\n\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1875.\n\nDu är MARIA TÖRNQVIST, 23 år. Dotter till Lena.\n\nDu arbetar vid bomullsspinneriet på Södermalm. Tolv timmar om dagen, sex dagar i veckan.\n\nLuften är full av bomullsdamm. Maskinerna dånar.\n\nMen något rör sig bland arbetarna. En ny rörelse. En ny tid.");
+    setTimeout(() => {
+      printMsg("system", "Du är nu MARIA. Skriv HJÄLP för kommandon.\n");
+      describeRoom();
+    }, 500);
+  }, 1500);
+}
+
+function triggerPalmSpeech() {
+  state.flags.palm_speech_heard = true;
+  state.flags.palm_speech_turn = state.turnCount;
+  setSceneImage('akt10_folkets_hus.png', 'AUGUST PALMS TAL (1875)');
+  printCutscene("LÖRDAGSKVÄLL - FOLKETS HUS\n\nLokalen är fullpackad. Rök hänger i luften.\n\nEn man stiger upp på podiet. August Palm. Hans röst fyller rummet:\n\n\"Arbetare! Hur länge ska vi acceptera detta? Tolv timmars arbete! Barnarbete! Löner som knappt räcker till bröd!\"\n\nTystnaden är total. Alla lyssnar.\n\n\"I Tyskland har arbetarna organiserat sig. I England. Nu är det vår tur!\"");
+  unlockKnowledge('arbetarrorelsen');
+}
+
+function triggerAct9() {
+  state.act = 9;
+  state.flags.act9_start_turn = state.turnCount;
+  updateUI();
+  setSceneImage('akt8_9_fabriken.png', 'AKT 9 - SUNDSVALL (1879)');
+  printCutscene("══════════════════════════════════════\n        AKT 9 - SUNDSVALL\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1879.\n\nNyheten sprids som eld genom fabriken: sågverksarbetarna i Sundsvall har strejkat!\n\n10 000 arbetare har lagt ner verktygen. Militär har skickats in. Folk arresteras.\n\nMen strejken fortsätter.\n\nViskningarna vid maskinerna: \"Om de kan, kan vi.\"");
+    unlockKnowledge('sundsvallsstrejken');
+    setTimeout(() => {
+      printCutscene("Du är nu gift med Erik Lindgren, typograf vid Aftonbladet. Er dotter Elsa är bara ett år.\n\nErik har tryckt flygblad om fackföreningen. Han ger dem till dig.\n\n\"Dela ut dem på fabriken. Försiktigt.\"");
+      state.inventory.push('flygblad');
+      state.flags.has_leaflets = true;
+      printMsg("system", "Du fick: Flygblad (5 st)");
+    }, 1500);
+  }, 1500);
+}
+
+function handleLeafletDistribution(targetNorm) {
+  if (!state.flags.has_leaflets) return false;
+  const safeTargets = ['anna', 'karl', 'greta', 'erik b', 'helena'];
+  const unsafeTargets = ['svensson', 'forestandaren'];
+  if (unsafeTargets.some(t => targetNorm.includes(t))) {
+    printMsg("narrator", "Det vore inte klokt att ge flygblad till föreståndaren!");
+    return true;
+  }
+  if (!state.flags.leaflets_given) state.flags.leaflets_given = 0;
+  state.flags.leaflets_given++;
+  const names = ['Anna', 'Karl i lunchrummet', 'Greta vid utgången', 'Erik B vid lagret', 'Helena vid dörren'];
+  if (state.flags.leaflets_given <= 5) {
+    printMsg("narrator", `Du ger ett flygblad till ${names[state.flags.leaflets_given-1]}. Hon nickar tyst och stoppar det i fickan.`);
+  }
+  if (state.flags.leaflets_given >= 5) {
+    state.flags.leaflets_distributed = true;
+    state.inventory = state.inventory.filter(i => i !== 'flygblad');
+    state.stats.puzzlesSolved++;
+    setTimeout(() => {
+      printCutscene("Alla flygblad utdelade. Den kvällen samlas arbetarna på Folkets Hus. Fler än någonsin.\n\n\"Rörelsen växer\", viskar Anna. \"Tillsammans är vi starka.\"");
+    }, 500);
+  }
+  return true;
+}
+
+function triggerAct9Ending() {
+  setSceneImage('akt8_9_fabriken.png', 'FAMILJELIV (1885)');
+  printCutscene("[SEX ÅR SENARE - 1885]\n\nElsa är sju år och går i folkskolan. Ni bor bättre nu - tre rum istället för ett.\n\nErik har fast jobb vid Aftonbladet. Du syr hemma istället för vid fabriken.\n\nErik skriver om arbetarnas villkor och orättvisor.\n\n\"En dag\", säger han, \"kommer alla få rösta.\"\n\nDu ser på Elsa vid läxorna. \"Kanske. Kanske en dag.\"");
+  state.flags.family_improved = true;
+}
+
+function transitionToAct10() {
+  state.act = 10;
+  state.flags.act10_start_turn = state.turnCount;
+  state.room = 'akt10_folkets_hus';
+  state.visitedRooms.push('akt10_folkets_hus');
+  updateUI();
+  setSceneImage('akt10_folkets_hus.png', 'AKT 10 - SEKELSKIFTE (1889)');
+  printCutscene("══════════════════════════════════════\n       AKT 10 - SEKELSKIFTE\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1889.\n\nSveriges socialdemokratiska arbetareparti grundas. Hjalmar Branting leder det.\n\nErik kommer hem med skinande ögon.");
+    setTimeout(() => { describeRoom(); }, 500);
+  }, 1500);
+}
+
+function triggerSekelskifte() {
+  setSceneImage('akt10_folkets_hus.png', 'NYÅRSAFTON 1899');
+  printCutscene("NYÅRSAFTON 1899\n\nFamiljen står vid fönstret. Fyrverkerier lyser upp Stockholm.\n\nElsa är 15 nu. Erik lägger armen om dig.\n\n\"Det tjugonde århundradet. Vad tror ni det kommer att bringa?\"\n\nElsa tittar ut över staden.\n\"Allt. Jag tror det kommer att förändra allt.\"\n\nDu håller broschen - snart hundra år av familjehistoria.\n\n\"Kanske har hon rätt\", tänker du. \"Kanske har hon rätt.\"");
+
+  setTimeout(() => {
+    printMsg("cutscene", "\n══════════════════════════════════════\n\n        GENERATION III: MARIA\n              AVSLUTAD\n\n══════════════════════════════════════");
+    setTimeout(() => { transitionToGen4(); }, 2000);
+  }, 2000);
+}
+
+// =============== GENERATION IV: ELSA ===============
+function transitionToGen4() {
+  state.generation = 4;
+  state.act = 11;
+  state.flags.gen4_started = true;
+  state.flags.act11_start_turn = state.turnCount;
+  state.inventory = state.inventory.filter(i => items[i] && (items[i].generationTransfer || items[i].keyItem));
+  state.room = 'akt11_stockholm';
+  state.visitedRooms = ['akt11_stockholm'];
+  updateUI();
+  setSceneImage('akt11_12_rostratt.png', 'AKT 11 - DEN NYA TIDEN (1905)');
+  printCutscene("══════════════════════════════════════\n\n       GENERATION IV: ELSA\n       Rösten\n\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1905.\n\nDu är ELSA LINDGREN, 20 år. Dotter till Maria och Erik.\n\nStockholm har förändrats. Elektriska spårvagnar. Bilar. Telefoner.\n\nNorge har just blivit självständigt. Allt förändras.\n\nOch på gatorna delar kvinnor ut flygblad: \"RÖSTRÄTT ÅT KVINNOR.\"");
+    setTimeout(() => {
+      printMsg("system", "Du är nu ELSA. Skriv HJÄLP för kommandon.\n");
+      describeRoom();
+    }, 500);
+  }, 1500);
+}
+
+function triggerStorstrejk() {
+  state.flags.storstrejk_pagar = true;
+  state.flags.storstrejk_turn = state.turnCount;
+  setSceneImage('akt11_12_rostratt.png', 'STORSTREJKEN (1909)');
+  printCutscene("AUGUSTI 1909\n\nSveriges största arbetskonflikt bryter ut. 300 000 arbetare strejkar.\n\nTre veckor utan arbete. Pengarna tar slut.\n\nFar Erik vägrar ge upp:\n\"Det handlar om mer än pengar. Det handlar om värdighet.\"\n\nDu är 24, butiksbiträde. Dina inkomster håller familjen flytande.");
+  unlockKnowledge('storstrejken_1909');
+}
+
+function triggerAct12() {
+  state.act = 12;
+  state.flags.act12_start_turn = state.turnCount;
+  updateUI();
+  setSceneImage('akt11_12_rostratt.png', 'AKT 12 - KAMPEN (1910)');
+  printCutscene("══════════════════════════════════════\n        AKT 12 - KAMPEN\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("ÅR 1910.\n\nDu arbetar i butiken om dagarna. På kvällarna går du på möten, delar ut flygblad, samlar namnunderskrifter.\n\nFar frågar: \"Varför är det så viktigt för dig?\"\n\nDu tänker på mormor Lena som aldrig fick rösta. På gammelmormor Britta som inte fick äga något.\n\n\"För att det är dags. Det har varit dags länge.\"");
+    state.flags.signatures_count = 0;
+    state.flags.awaiting_signatures = true;
+    setTimeout(() => {
+      printMsg("system", "Du ska samla namnunderskrifter. Knacka dörr genom att skriva KNACKA DÖRR.");
+    }, 500);
+  }, 1500);
+}
+
+let signatureState = { doorsKnocked: 0, signatures: 0 };
+
+function handleSignatureCollection() {
+  signatureState.doorsKnocked++;
+  const roll = Math.random();
+  if (roll < 0.4) {
+    printMsg("speaker", "\"Självklart! Var skriver jag?\"");
+    signatureState.signatures++;
+    printMsg("system", `Underskrift ${signatureState.signatures}/10`);
+  } else if (roll < 0.7) {
+    printMsg("speaker", "\"Rösträtt för kvinnor? Varför då?\"");
+    printMsg("narrator", "Du svarar: \"Kvinnor arbetar, betalar skatt och påverkas av lagarna - precis som män.\"");
+    if (Math.random() < 0.7) {
+      printMsg("speaker", "\"Hmm. Du har en poäng. Ge hit pennan.\"");
+      signatureState.signatures++;
+      printMsg("system", `Underskrift ${signatureState.signatures}/10`);
+    } else {
+      printMsg("speaker", "\"Jag vet inte. Jag måste tänka.\"");
+    }
+  } else if (roll < 0.9) {
+    printMsg("speaker", "\"Politik är inget för kvinnor. Gå härifrån.\"");
+    printMsg("narrator", "Dörren stängs i ditt ansikte. Du går vidare.");
+  } else {
+    printMsg("speaker", "\"Min man skulle bli arg om han visste...\"");
+    printMsg("narrator", "Kvinnan viskar. Men till slut tar hon pennan med darrande hand.");
+    signatureState.signatures++;
+    printMsg("system", `Underskrift ${signatureState.signatures}/10`);
+  }
+
+  state.flags.signatures_count = signatureState.signatures;
+  if (signatureState.signatures >= 10) {
+    state.flags.signatures_collected = true;
+    state.flags.awaiting_signatures = false;
+    state.stats.puzzlesSolved++;
+    setTimeout(() => {
+      printCutscene("Tio underskrifter! Du lämnar in dem tillsammans med tusentals andra.\n\nOrganisatören nickar: \"Riksdagen kan inte ignorera oss längre.\"");
+    }, 500);
+  }
+}
+
+function triggerEllenKey() {
+  setSceneImage('akt11_12_rostratt.png', 'ELLEN KEY (1912)');
+  printCutscene("FÖRELÄSNING PÅ FOLKETS HUS\n\nEllen Key talar. Hennes ord bär genom salen:\n\n\"Det tjugonde århundradet ska bli barnets århundrade. Och kvinnans.\"\n\nEfteråt stannar hon vid dig.\n\"Du ser ut som en som har frågor.\"\n\n\"Elsa. Elsa Lindgren. Jag arbetar för rösträtten.\"\n\n\"Varför kämpar du?\"\n\nDu tänker. \"Min mormor fick aldrig rösta. Hennes mor heller inte.\"\n\nEllen Keys ögon mjuknar.\n\"Generationer av tystnad. Nu är det dags att bryta den.\"\n\n\"Du bär deras röster med dig, Elsa. Glöm aldrig det.\"");
+  state.flags.ellen_key_met = true;
+}
+
+function triggerAct13() {
+  state.act = 13;
+  state.room = 'akt13_midsommarstuga';
+  state.visitedRooms.push('akt13_midsommarstuga');
+  updateUI();
+  setSceneImage('akt13_kyrkogarden.png', 'AKT 13 - SLUTET OCH BÖRJAN (1914)');
+  printCutscene("══════════════════════════════════════\n   AKT 13 - SLUTET OCH BÖRJAN\n══════════════════════════════════════");
+  setTimeout(() => {
+    printCutscene("MIDSOMMARAFTON 1914\n\nFamiljen är samlad vid stugan utanför staden. Björkarna doftar. Barn dansar.\n\nDu är gift nu, med Gustaf, typograf som din far.\n\nEr son Erik är fem år.\n\nMormor Lena sitter på verandan. 94 år gammal. Nästan blind. Men hon hör allt.\n\nMor Maria bär ut kaffe.\n\nEn perfekt dag. Den sista på länge.");
+    setTimeout(() => {
+      printMsg("system", "PRATA MED MORMOR LENA.");
+      describeRoom();
+    }, 500);
+  }, 1500);
+}
+
+function triggerWarNews() {
+  setSceneImage('akt13_kyrkogarden.png', 'NYHETEN (1914)');
+  printCutscene("[TVÅ VECKOR SENARE]\n\nGustaf kommer hem med tidningen. Hans ansikte är vitt.\n\n\"Ärkehertig Franz Ferdinand är mördad. I Sarajevo.\"\n\n\"Var ligger det?\" frågar du.\n\n\"I Österrike. Eller Bosnien. Jag vet inte.\"\n\n\"Men det känns stort, Elsa. Alla pratar om krig.\"\n\nErik leker med träsoldater. Ordet \"krig\" hänger i luften som åska.");
+  state.flags.sarajevo_news = true;
+  unlockKnowledge('forsta_varldskriget');
+  setTimeout(() => {
+    printCutscene("AUGUSTI 1914\n\nDet går fort. Obegripligt fort.\n\nÖsterrike förklarar krig mot Serbien. Ryssland mobiliserar. Tyskland förklarar krig.\n\nFrankrike. England. Hela Europa.\n\nSTORKRIG!\n\nMen Sverige... förklarar sig neutralt.\n\n\"Vi är inte med. Inte den här gången.\"\n\nDu tänker på gammelfarfar Per som dog i kriget mot Ryssland. Hundra år sedan.\n\n\"Den här gången. Kanske klarar vi oss.\"");
+    state.flags.war_started = true;
+    setTimeout(() => { triggerFinalScene(); }, 2500);
+  }, 2500);
+}
+
+function triggerFinalScene() {
+  setSceneImage('akt13_kyrkogarden.png', 'AVSKED (1914)');
+  printCutscene("[SEPTEMBER 1914]\n\nMormor Lena somnade in i natt. Stilla.\n\nFamiljen står vid graven. Prästen läser. Höstlöv faller som gyllene tårar.\n\nMor Maria tar din hand.\n\"Hon levde i 94 år. Hon såg allt förändras.\"\n\nDu håller broschen. Fyra generationers arv.\n\nGenom krig och fred. Hunger och mättnad. Tystnad och röst.\n\nErik drar i din kjol.\n\"Mamma? Vart går vi nu?\"\n\nDu ser på honom. Framtiden.\n\n\"Hem. Vi går hem.\"");
+
+  setTimeout(() => { triggerEpilogue(); }, 3000);
+}
+
+function triggerEpilogue() {
+  setSceneImage('akt13_kyrkogarden.png', 'EPILOG');
+  const delays = [0, 2000, 4000, 6000, 8500, 11000, 13000];
+  const texts = [
+    "1914 bröt första världskriget ut. Sverige förblev neutralt.",
+    "1919 fick svenska kvinnor rösträtt till kommunala val.",
+    "1921 hölls det första riksdagsvalet där alla vuxna svenska medborgare fick rösta — män och kvinnor lika.\n\nElsa Lindgren var en av dem.",
+    "Under hundra år hade Sverige gått från utblottat jordbruksland till modern industriation.\n\nFrån envälde till demokrati.\n\nFrån hunger till välstånd.\n\nFrån tystnad till röst.",
+    "Det var inte kungarnas verk.\n\nDet var Brittas. Lenas. Marias. Elsas.\n\nDet var folkets väg.",
+    "S L U T",
+    "Tack för att du spelade FOLKETS VÄG."
+  ];
+  texts.forEach((t, i) => {
+    setTimeout(() => { printCutscene(t); }, delays[i]);
+  });
+  setTimeout(() => {
+    const kCount = state.knowledge.length;
+    const hCount = state.hintsUsed;
+    const hasBrosch = state.inventory.includes('broschen') || state.generationItems.broschen;
+    printMsg("system", "\n═══ SLUTSTATISTIK ═══");
+    printMsg("system", `Generationer spelade: 4`);
+    printMsg("system", `Kunskapsposter upplåsta: ${kCount}/${Object.keys(knowledgePosts).length}`);
+    printMsg("system", `Pussel lösta: ${state.stats.puzzlesSolved}`);
+    printMsg("system", `Ledtrådar använda: ${hCount}`);
+    printMsg("system", `Broschen bevarad genom 4 generationer: ${hasBrosch ? 'JA' : 'NEJ'}`);
+  }, 15000);
+}
+
+// ---- UI FUNCTIONS ----
+const output = () => document.getElementById('text-output');
+const inputEl = () => document.getElementById('player-input');
+
+function printMsg(type, text) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + type;
+  div.textContent = text;
+  output().appendChild(div);
+  output().scrollTop = output().scrollHeight;
+}
+
+function printCutscene(text) {
+  printMsg("cutscene", text);
+}
+
+function setSceneImage(file, label) {
+  const img = document.getElementById('game-image');
+  const lbl = document.getElementById('image-label');
+  img.src = '../images/' + file;
+  if (label) lbl.textContent = label;
+}
+
+function updateUI() {
+  // Act number
+  document.getElementById('act-num').textContent = state.act;
+
+  // Generation label
+  const genLabels = { 1: 'GEN I: BRITTA', 2: 'GEN II: LENA', 3: 'GEN III: MARIA', 4: 'GEN IV: ELSA' };
+  document.querySelector('.gen-label').textContent = genLabels[state.generation] || 'GEN I: BRITTA';
+
+  // Image
+  if (state.room && rooms[state.room]) {
+    const room = rooms[state.room];
+    document.getElementById('game-image').src = '../images/' + room.image;
+    document.getElementById('image-label').textContent = room.imageLabel || '';
+  }
+
+  // Inventory
+  const invBar = document.getElementById('inventory-bar');
+  invBar.innerHTML = '<span class="inv-label">FÖREMÅL:</span>';
+  if (state.inventory.length === 0) {
+    invBar.innerHTML += '<span style="color:var(--text-dim)">Inga</span>';
+  } else {
+    state.inventory.forEach(id => {
+      const item = items[id];
+      if (item) {
+        const span = document.createElement('span');
+        span.className = 'inv-item' + (item.keyItem ? ' key-item' : '');
+        span.textContent = item.name;
+        invBar.appendChild(span);
+      }
+    });
+  }
+}
+
+function describeRoom() {
+  const room = rooms[state.room];
+  if (!room) return;
+  printMsg("narrator", "\n— " + room.name + " —\n");
+  const isFirst = !state.visitedRooms.includes(state.room);
+  if (isFirst && room.firstVisitText) {
+    printMsg("narrator", room.firstVisitText + "\n");
+    state.visitedRooms.push(state.room);
+  }
+  printMsg("narrator", room.description);
+
+  // List visible characters
+  const chars = (room.characters || []).filter(cid => {
+    const c = characters[cid];
+    if (!c) return false;
+    if (c.spawned === false) return false;
+    return true;
+  });
+  if (chars.length > 0) {
+    const names = chars.map(cid => characters[cid].name);
+    printMsg("system", "Här finns: " + names.join(", "));
+  }
+}
+
+function unlockKnowledge(id) {
+  if (!state.knowledge.includes(id) && knowledgePosts[id]) {
+    state.knowledge.push(id);
+    const k = knowledgePosts[id];
+    const div = document.createElement('div');
+    div.className = 'msg knowledge';
+    div.innerHTML = '<div class="k-title">KUNSKAP UPPLÅST: ' + escHtml(k.title) + '</div>' + escHtml(k.text).replace(/\n/g, '<br>');
+    output().appendChild(div);
+    output().scrollTop = output().scrollHeight;
+  }
+}
+
+function showKnowledge() {
+  if (state.knowledge.length === 0) {
+    printMsg("system", "Du har inga kunskapsposter upplåsta ännu.");
+    return;
+  }
+  printMsg("system", "\n═══ KUNSKAPSJOURNAL ═══\n");
+  state.knowledge.forEach(id => {
+    const k = knowledgePosts[id];
+    if (k) printMsg("knowledge", k.title + "\n" + k.text);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---- DIALOGUE SYSTEM ----
+function startDialogue(dialogueId) {
+  const d = dialogues[dialogueId];
+  if (!d) { printMsg("error", "..."); return; }
+  state.dialogueState = {
+    id: dialogueId,
+    unlockedOptions: [],
+    saidOptions: []
+  };
+  if (!state.stats.peopleMet.includes(d.speaker)) state.stats.peopleMet.push(d.speaker);
+  if (d.onStart) d.onStart();
+  printMsg("speaker", d.speaker + ": " + d.opening.replace(/\\n/g, '\n'));
+  showDialogueOptions(dialogueId);
+}
+
+function showDialogueOptions(dialogueId) {
+  const d = dialogues[dialogueId];
+  if (!d) return;
+  const ds = state.dialogueState;
+  const available = d.options.filter(opt => {
+    // id 0 (close) is always visible
+    if (opt.id === 0) return true;
+    // If option has a condition function, let it decide visibility entirely
+    if (opt.condition) return opt.condition();
+    // Options without condition: use unlock system
+    if (opt.id !== 1) {
+      const isInitial = d.options.indexOf(opt) <= 1;
+      const isUnlocked = ds.unlockedOptions.includes(opt.id);
+      if (!isInitial && !isUnlocked) return false;
+    }
+    return true;
+  });
+
+  let text = "\n";
+  available.forEach(opt => {
+    text += opt.id + ". " + opt.text + "\n";
+  });
+  printMsg("narrator", text);
+  state.flags.in_dialogue = true;
+  state.flags.current_dialogue = dialogueId;
+}
+
+function handleDialogueChoice(choiceStr) {
+  const choice = parseInt(choiceStr);
+  const dialogueId = state.flags.current_dialogue;
+  const d = dialogues[dialogueId];
+  if (!d) {
+    // Broken dialogue state — force reset
+    state.flags.in_dialogue = false;
+    state.flags.current_dialogue = null;
+    state.dialogueState = null;
+    printMsg("system", "Samtalet avslutades.");
+    return;
+  }
+
+  if (isNaN(choice)) {
+    printMsg("system", "Du är i ett samtal. Välj ett nummer (0 = avsluta).");
+    return;
+  }
+
+  const opt = d.options.find(o => o.id === choice);
+  if (!opt) {
+    printMsg("system", "Välj ett giltigt alternativ (0 = avsluta).");
+    return;
+  }
+  // Verify the option is actually visible (condition check)
+  if (opt.condition && !opt.condition()) {
+    printMsg("system", "Välj ett giltigt alternativ (0 = avsluta).");
+    return;
+  }
+
+  state.dialogueState.saidOptions.push(choice);
+  printMsg("speaker", d.speaker + ": " + opt.response);
+
+  if (opt.unlocks) {
+    opt.unlocks.forEach(id => {
+      if (!state.dialogueState.unlockedOptions.includes(id))
+        state.dialogueState.unlockedOptions.push(id);
+    });
+  }
+  if (opt.setsFlag) state.flags[opt.setsFlag] = true;
+  if (opt.onSelect) opt.onSelect();
+  if (opt.givesItem) {
+    state.inventory.push(opt.givesItem);
+    printMsg("system", "Du fick: " + (items[opt.givesItem]?.name || opt.givesItem));
+  }
+
+  if (choice === 0) {
+    state.flags.in_dialogue = false;
+    state.flags.current_dialogue = null;
+    state.dialogueState = null;
+    // Restore room image after dialogue ends
+    if (state.room && rooms[state.room]) {
+      setSceneImage(rooms[state.room].image, rooms[state.room].imageLabel);
+    }
+    // Post-dialogue narrative nudges
+    if (state.room === 'akt1_kyrkan' && state.flags.knows_about_persson && !state.flags.talked_to_mor_after) {
+      setTimeout(() => {
+        printMsg("narrator", "\nDu har fått veta vad ni kan göra. Gå tillbaka till torpet och prata med mor.");
+      }, 400);
+    }
+    updateUI();
+    setTimeout(() => checkSceneTriggers(), 300);
+  } else {
+    showDialogueOptions(dialogueId);
+  }
+}
+
+// ---- PARSER ----
+function parseCommand(raw) {
+  if (!inputEnabled) return;
+  const input = raw.trim();
+  if (!input) return;
+  state.turnCount++;
+
+  // Check special states
+  if (state.flags.america_ending_shown) {
+    const lowerInput = input.toLowerCase();
+    if (lowerInput.includes('spela') || lowerInput.includes('igen') || lowerInput.includes('nytt')) {
+      restartFromAct4();
+      return;
+    }
+    printMsg("system", "Skriv SPELA IGEN för att återvända till Bergslagen.");
+    return;
+  }
+  if (state.flags.awaiting_act1_choice) {
+    handleAct1Choice(input);
+    return;
+  }
+  if (state.flags.awaiting_act6_choice) {
+    handleAct6Choice(input);
+    return;
+  }
+  if (state.flags.in_husforhor) {
+    handleHusforhorAnswer(input);
+    return;
+  }
+  if (state.flags.awaiting_signatures) {
+    const lowerInput = input.toLowerCase();
+    if (lowerInput.includes('knacka') || lowerInput.includes('dörr') || lowerInput.includes('dorr') || lowerInput.includes('samla')) {
+      handleSignatureCollection();
+      updateUI();
+      setTimeout(() => checkSceneTriggers(), 200);
+      return;
+    }
+    // Fall through to normal parser for other commands
+  }
+  if (state.flags.in_dialogue) {
+    // Allow basic commands even during dialogue
+    const lowerInput = input.toLowerCase();
+    if (lowerInput === 'hjälp' || lowerInput === 'hjalp' || lowerInput === 'help') {
+      handleHelp(); return;
+    }
+    if (lowerInput === 'inv' || lowerInput === 'inventarier') {
+      handleInventory(); return;
+    }
+    if (lowerInput === 'kunskap' || lowerInput === 'historik') {
+      showKnowledge(); return;
+    }
+    if (lowerInput === 'spara') { showSaveModal('save'); return; }
+    if (lowerInput === 'ladda') { showSaveModal('load'); return; }
+    handleDialogueChoice(input);
+    return;
+  }
+
+  const parts = input.toLowerCase().split(/\s+/);
+  const verb = resolveVerb(parts[0]);
+  const rest = parts.slice(1).join(' ');
+  const restNorm = norm(rest);
+
+  switch (verb) {
+    case 'titta': handleLook(rest, restNorm); break;
+    case 'ta': handleTake(rest, restNorm); break;
+    case 'lägg': handleDrop(rest, restNorm); break;
+    case 'gå': handleGo(rest, restNorm); break;
+    case 'prata': handleTalk(rest, restNorm); break;
+    case 'använd': handleUse(rest, restNorm); break;
+    case 'öppna': handleOpen(rest, restNorm); break;
+    case 'läs': handleRead(rest, restNorm); break;
+    case 'ge': handleGive(rest, restNorm); break;
+    case 'stäng': printMsg("narrator", "Du stänger det."); break;
+    case 'inventarier': case 'inv': handleInventory(); break;
+    case 'hjälp': handleHelp(); break;
+    case 'spara': showSaveModal('save'); break;
+    case 'ladda': showSaveModal('load'); break;
+    case 'ledtråd': case 'ledtrad': handleHint(); break;
+    case 'historik': showKnowledge(); break;
+    case 'kunskap': showKnowledge(); break;
+    default:
+      // Try as direction
+      if (directionMap[norm(parts[0])]) {
+        handleGo(parts[0], norm(parts[0]));
+      } else {
+        printMsg("system", "Jag förstår inte \"" + input + "\". Skriv HJÄLP för kommandon.");
+      }
+  }
+
+  updateUI();
+  setTimeout(() => checkSceneTriggers(), 200);
+}
+
+function handleLook(rest, restNorm) {
+  if (!rest || rest === '') {
+    describeRoom();
+    return;
+  }
+  // Remove 'på' prefix
+  let target = rest.replace(/^på\s+/i, '').replace(/^pa\s+/i, '');
+  let targetNorm = norm(target);
+
+  const room = rooms[state.room];
+  if (!room) return;
+
+  // Check objects in room
+  for (const objId of room.objects) {
+    const obj = items[objId];
+    if (!obj) continue;
+    if (obj.hidden && !state.flags[obj.revealedBy + '_examined'] && !state.flags[items[objId]?.revealFlag]) continue;
+    if (norm(obj.name) === targetNorm || norm(objId) === targetNorm || targetNorm.includes(norm(obj.name)) || norm(obj.name).includes(targetNorm)) {
+      const text = obj.examineText || obj.description;
+      printMsg("narrator", text);
+      if (obj.revealsItem && !state.flags[obj.revealFlag]) {
+        state.flags[obj.revealFlag] = true;
+        const revealed = items[obj.revealsItem];
+        if (revealed) {
+          revealed.hidden = false;
+          // Add revealed item to the current room so it can be picked up
+          const currentRoom = rooms[state.room];
+          if (currentRoom && !currentRoom.objects.includes(obj.revealsItem)) {
+            currentRoom.objects.push(obj.revealsItem);
+          }
+          printMsg("narrator", "Du hittar: " + revealed.name + "!");
+        }
+      }
+      if (obj.readText && !obj.examineText) {
+        printMsg("narrator", obj.readText);
+      }
+      return;
+    }
+  }
+
+  // Check characters in room
+  for (const charId of (room.characters || [])) {
+    const ch = characters[charId];
+    if (!ch) continue;
+    if (ch.spawned === false) continue;
+    if (norm(ch.name) === targetNorm || norm(ch.fullName || '') === targetNorm || targetNorm.includes(norm(ch.name)) || norm(ch.name).includes(targetNorm) || norm(ch.fullName || '').includes(targetNorm)) {
+      printMsg("narrator", ch.description);
+      return;
+    }
+  }
+
+  // Check inventory
+  for (const invId of state.inventory) {
+    const obj = items[invId];
+    if (obj && (norm(obj.name) === targetNorm || targetNorm.includes(norm(obj.name)))) {
+      printMsg("narrator", obj.examineText || obj.description);
+      return;
+    }
+  }
+
+  printMsg("system", "Du ser inget speciellt med \"" + target + "\".");
+}
+
+function handleTake(rest, restNorm) {
+  if (!rest) { printMsg("system", "Vad vill du ta?"); return; }
+  const room = rooms[state.room];
+  if (!room) return;
+
+  for (const objId of room.objects) {
+    const obj = items[objId];
+    if (!obj) continue;
+    if (obj.hidden) continue;
+    if (norm(obj.name) === restNorm || norm(objId) === restNorm || restNorm.includes(norm(obj.name)) || norm(obj.name).includes(restNorm)) {
+      if (!obj.takeable) {
+        printMsg("narrator", "Du kan inte ta " + obj.name.toLowerCase() + ".");
+        return;
+      }
+      if (state.inventory.length >= 8) {
+        printMsg("system", "Du kan inte bära mer. Lägg något först.");
+        return;
+      }
+      if (state.inventory.includes(objId)) {
+        printMsg("system", "Du har redan " + obj.name.toLowerCase() + ".");
+        return;
+      }
+      state.inventory.push(objId);
+      room.objects = room.objects.filter(o => o !== objId);
+      printMsg("narrator", "Du tar " + obj.name.toLowerCase() + ".");
+      return;
+    }
+  }
+  printMsg("system", "Du ser ingen \"" + rest + "\" att ta.");
+}
+
+function handleDrop(rest, restNorm) {
+  if (!rest) { printMsg("system", "Vad vill du lägga?"); return; }
+  for (const invId of state.inventory) {
+    const obj = items[invId];
+    if (obj && (norm(obj.name) === restNorm || restNorm.includes(norm(obj.name)))) {
+      if (obj.keyItem) {
+        printMsg("narrator", "Du kan inte göra dig av med " + obj.name.toLowerCase() + ". Den är för viktig.");
+        return;
+      }
+      state.inventory = state.inventory.filter(i => i !== invId);
+      const room = rooms[state.room];
+      if (room) room.objects.push(invId);
+      printMsg("narrator", "Du lägger ned " + obj.name.toLowerCase() + ".");
+      return;
+    }
+  }
+  printMsg("system", "Du har ingen \"" + rest + "\".");
+}
+
+function handleGo(rest, restNorm) {
+  if (!rest) { printMsg("system", "Åt vilket håll? (NORR, SÖDER, ÖSTER, VÄSTER, IN, UT)"); return; }
+  const room = rooms[state.room];
+  if (!room) return;
+
+  // Resolve direction
+  let dir = directionMap[restNorm] || directionMap[norm(rest.replace(/^till\s+/i, ''))] || rest.toLowerCase();
+
+  // Check exit
+  const destId = room.exits[dir];
+  if (!destId) {
+    printMsg("narrator", "Du kan inte gå åt det hållet.");
+    return;
+  }
+  const dest = rooms[destId];
+  if (!dest) {
+    printMsg("narrator", "Du kan inte gå dit just nu.");
+    return;
+  }
+  if (dest.condition && !dest.condition()) {
+    printMsg("narrator", "Du kan inte gå dit just nu.");
+    return;
+  }
+
+  state.room = destId;
+  if (!state.visitedRooms.includes(destId)) state.visitedRooms.push(destId);
+  updateUI();
+  describeRoom();
+}
+
+function handleTalk(rest, restNorm) {
+  if (!rest) { printMsg("system", "Med vem vill du prata?"); return; }
+  let target = rest.replace(/^med\s+/i, '');
+  let targetNorm = norm(target);
+  const room = rooms[state.room];
+  if (!room) return;
+
+  for (const charId of (room.characters || [])) {
+    const ch = characters[charId];
+    if (!ch) continue;
+    if (ch.spawned === false) continue;
+    if (norm(ch.name) === targetNorm || norm(ch.fullName || '') === targetNorm || targetNorm.includes(norm(ch.name)) || norm(ch.name).includes(targetNorm) || norm(ch.fullName || '').includes(targetNorm)) {
+      if (ch.dialogue && dialogues[ch.dialogue]) {
+        startDialogue(ch.dialogue);
+      } else {
+        printMsg("narrator", ch.name + " har inget att säga just nu.");
+      }
+      return;
+    }
+  }
+  printMsg("system", "Du ser ingen \"" + target + "\" att prata med.");
+}
+
+function handleUse(rest, restNorm) {
+  if (!rest) { printMsg("system", "Vad vill du använda?"); return; }
+
+  // Check "ANVÄND X PÅ Y"
+  const onMatch = rest.match(/(.+?)\s+(?:på|pa)\s+(.+)/i);
+  if (onMatch) {
+    const itemName = norm(onMatch[1]);
+    const targetName = norm(onMatch[2]);
+    return handleUseOn(itemName, targetName);
+  }
+
+  // Simple use
+  printMsg("narrator", "Hur vill du använda det? Prova ANVÄND [föremål] PÅ [mål].");
+}
+
+function handleUseOn(itemNorm, targetNorm) {
+  // Water puzzle: use bucket on well
+  if ((itemNorm.includes('hink') && targetNorm.includes('brunn'))) {
+    if (!state.inventory.includes('hinken')) {
+      printMsg("narrator", "Du har ingen hink.");
+      return;
+    }
+    if (!state.flags.found_axe) {
+      printMsg("narrator", "Brunnen är frusen. Du kan inte få upp vatten. Du behöver något att bryta isen med.");
+      return;
+    }
+    // Player has axe but hasn't used it yet - hint to use axe instead
+    if (state.inventory.includes('yxa')) {
+      printMsg("narrator", "Brunnen är frusen. Du har en yxa - prova att ANVÄND YXA PÅ BRUNN.");
+      return;
+    }
+    // If axe was already used (har_vatten should be set), this shouldn't happen
+    printMsg("narrator", "Brunnen är frusen.");
+    return;
+  }
+
+  // Axe on well
+  if (itemNorm.includes('yx') && targetNorm.includes('brunn')) {
+    if (!state.inventory.includes('yxa')) {
+      printMsg("narrator", "Du har ingen yxa.");
+      return;
+    }
+    state.inventory = state.inventory.filter(i => i !== 'yxa');
+    state.inventory = state.inventory.filter(i => i !== 'hinken');
+    state.inventory.push('hink_med_vatten');
+    state.flags.har_vatten = true;
+    state.stats.puzzlesSolved++;
+    printMsg("narrator", "Du hugger bort isen från brunnen. Det tar tid, men till slut kan du sänka ner hinken.\n\nKallt vatten stiger upp.\n\nDu fyller hinken med vatten.");
+    return;
+  }
+
+  // Give water to far
+  if ((itemNorm.includes('vatten') || itemNorm.includes('hink')) && (targetNorm.includes('far') || targetNorm.includes('per'))) {
+    if (state.inventory.includes('hink_med_vatten')) {
+      printMsg("narrator", "Du ger far vatten att dricka. Han dricker girigt.");
+      state.flags.gave_water_to_far = true;
+      return;
+    }
+  }
+
+  // Leaflet distribution
+  if ((itemNorm.includes('flygblad') || itemNorm.includes('blad')) && state.flags.has_leaflets) {
+    if (handleLeafletDistribution(targetNorm)) return;
+  }
+
+  printMsg("narrator", "Det fungerar inte.");
+}
+
+function handleRead(rest, restNorm) {
+  if (!rest) { printMsg("system", "Vad vill du läsa?"); return; }
+  const room = rooms[state.room];
+
+  // Check room objects
+  if (room) {
+    for (const objId of room.objects) {
+      const obj = items[objId];
+      if (!obj) continue;
+      if (norm(obj.name) === restNorm || restNorm.includes(norm(obj.name)) || norm(obj.name).includes(restNorm)) {
+        if (obj.readText) {
+          printMsg("narrator", obj.readText);
+          if (obj.onRead) obj.onRead();
+          return;
+        } else {
+          printMsg("narrator", "Det finns inget att läsa på " + obj.name.toLowerCase() + ".");
+          return;
+        }
+      }
+    }
+  }
+
+  // Check inventory
+  for (const invId of state.inventory) {
+    const obj = items[invId];
+    if (obj && (norm(obj.name) === restNorm || restNorm.includes(norm(obj.name)))) {
+      if (obj.readText) {
+        printMsg("narrator", obj.readText);
+        if (obj.onRead) obj.onRead();
+      } else {
+        printMsg("narrator", "Det finns inget att läsa.");
+      }
+      return;
+    }
+  }
+  printMsg("system", "Du hittar inget att läsa.");
+}
+
+function handleGive(rest, restNorm) {
+  if (!rest) { printMsg("system", "Ge vad till vem? GE [föremål] TILL [person]"); return; }
+  const match = rest.match(/(.+?)\s+till\s+(.+)/i);
+  if (match) {
+    handleUseOn(norm(match[1]), norm(match[2]));
+  } else {
+    printMsg("system", "Ge vad till vem? GE [föremål] TILL [person]");
+  }
+}
+
+function handleOpen(rest, restNorm) {
+  printMsg("narrator", "Det går inte att öppna.");
+}
+
+function handleInventory() {
+  if (state.inventory.length === 0) {
+    printMsg("system", "Du bär inga föremål.");
+    return;
+  }
+  printMsg("system", "Du bär:");
+  state.inventory.forEach(id => {
+    const obj = items[id];
+    if (obj) printMsg("system", "  - " + obj.name + (obj.keyItem ? " [NYCKELFÖREMÅL]" : ""));
+  });
+}
+
+function handleHelp() {
+  printMsg("system", "═══ KOMMANDON ═══\n\nTITTA / TITTA PÅ [X]  - Undersök\nTA [X]                - Plocka upp\nLÄGG [X]              - Lägg ned\nLÄS [X]               - Läs text\nANVÄND [X] PÅ [Y]    - Använd föremål\nGE [X] TILL [Y]       - Ge föremål\nPRATA MED [X]         - Prata med person\nGÅ [NORR/SÖDER/ÖSTER/VÄSTER/IN/UT]\nINV                   - Visa föremål\nLEDTRÅD               - Få hjälp\nKUNSKAP               - Visa kunskapsjournal\nSPARA / LADDA         - Spara/ladda spel\nHJÄLP                 - Visa detta");
+}
+
+let lastHintContext = '';
+let hintIndexInContext = 0;
+
+function handleHint() {
+  const contextHints = getContextualHints();
+  if (!contextHints || contextHints.length === 0) {
+    printMsg("system", "Inga ledtrådar tillgängliga just nu.");
+    return;
+  }
+  // Build a key from the hints to detect context change
+  const contextKey = contextHints[0];
+  if (contextKey !== lastHintContext) {
+    lastHintContext = contextKey;
+    hintIndexInContext = 0;
+  }
+  printMsg("system", "LEDTRÅD: " + contextHints[hintIndexInContext]);
+  if (hintIndexInContext < contextHints.length - 1) hintIndexInContext++;
+  state.hintsUsed++;
+}
+
+// ---- SAVE/LOAD ----
+function showSaveModal(mode) {
+  saveMode = mode;
+  document.getElementById('save-modal').style.display = 'flex';
+  document.getElementById('modal-title').textContent = mode === 'save' ? 'SPARA SPEL' : 'LADDA SPEL';
+  const slotsDiv = document.getElementById('save-slots');
+  slotsDiv.innerHTML = '';
+  for (let i = 1; i <= 3; i++) {
+    const key = 'folkets_vag_save_' + i;
+    let info = 'Tom';
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const data = JSON.parse(saved);
+        const genNames = { 1: 'Britta', 2: 'Lena', 3: 'Maria', 4: 'Elsa' };
+        info = `Gen ${data.generation}: ${genNames[data.generation] || '?'}, Akt ${data.act}, ${data.date || ''}`;
+      }
+    } catch(e) {}
+    const slot = document.createElement('div');
+    slot.className = 'save-slot';
+    slot.innerHTML = `<div class="slot-title">Plats ${i}</div><div class="slot-info">${escHtml(info)}</div>`;
+    slot.onclick = () => { handleSlotClick(i); };
+    slotsDiv.appendChild(slot);
+  }
+}
+
+function closeSaveModal() {
+  document.getElementById('save-modal').style.display = 'none';
+  saveMode = null;
+}
+
+function showLoadModal() {
+  showSaveModal('load');
+}
+
+function handleSlotClick(slotNum) {
+  const key = 'folkets_vag_save_' + slotNum;
+  if (saveMode === 'save') {
+    const saveData = JSON.parse(JSON.stringify(state));
+    saveData.date = new Date().toLocaleString('sv-SE');
+    // Remove non-serializable stuff
+    delete saveData.dialogueState;
+    try {
+      localStorage.setItem(key, JSON.stringify(saveData));
+      printMsg("system", "Spel sparat i plats " + slotNum + ".");
+    } catch(e) {
+      printMsg("error", "Kunde inte spara.");
+    }
+  } else {
+    try {
+      const saved = localStorage.getItem(key);
+      if (!saved) {
+        printMsg("system", "Ingen sparning i plats " + slotNum + ".");
+        closeSaveModal();
+        return;
+      }
+      const data = JSON.parse(saved);
+      // Restore state
+      Object.assign(state, data);
+      state.dialogueState = null;
+      state.flags.in_dialogue = false;
+      state.flags.current_dialogue = null;
+      state.flags.in_husforhor = false;
+      state.flags.awaiting_act1_choice = false;
+      state.flags.awaiting_act6_choice = false;
+      state.flags.america_ending_shown = false;
+      // Reset signature state if loading during Act 12
+      if (state.flags.awaiting_signatures && !state.flags.signatures_collected) {
+        signatureState = { doorsKnocked: 0, signatures: state.flags.signatures_count || 0 };
+      }
+      updateUI();
+      describeRoom();
+      printMsg("system", "Spel laddat från plats " + slotNum + ".");
+      // Hide title screen
+      document.getElementById('title-screen').style.display = 'none';
+      document.getElementById('game-screen').style.display = 'flex';
+    } catch(e) {
+      printMsg("error", "Kunde inte ladda.");
+    }
+  }
+  closeSaveModal();
+}
+
+// ---- GAME START ----
+function startNewGame() {
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+
+  state = defaultState();
+  state.room = 'akt1_torpet_inne';
+  state.flags.game_started = true;
+  state.flags.far_is_sick = true;
+
+  // Reset room objects to defaults (prevents duplicates on replay)
+  rooms.akt1_torpet_inne.objects = ['spinnrock', 'halmbrits', 'spis', 'hinken', 'broschen'];
+  rooms.akt1_torpet_inne.characters = ['mor_ingrid', 'far_per'];
+  rooms.akt1_torpet_inne.description = "Du står i torpets enda rum. Väggarnas stockar har mörknat av rök från spisens ständiga eld. Halmbritsen där ni sover tar upp halva rummet. Spinnrocken står i hörnet. Det är kallt trots elden.\n\nMor sitter vid spisen. Far ligger på britsen och hostar.\n\nDörren leder UT till gården.";
+  rooms.akt1_garden.objects = ['vedtrave', 'brunn'];
+  // Reset item states
+  items.yxa.hidden = true;
+  items.soldatknappen.hidden = true;
+  // Reset character states
+  characters.lansman.spawned = false;
+  characters.mor_ingrid.dialogue = 'mor_ingrid_start';
+  characters.drang_anders.dialogue = 'anders_default';
+
+  updateUI();
+
+  // Opening cutscene
+  printCutscene("MARS 1809.\n\nDu vaknar av kylan. Britsen är hård under dig, halmen sticker. Dina syskon sover tätt intill dig - deras värme är det enda som håller frosten borta.\n\nFar hostar i sin vrå. Det låter våtare idag. Värre.\n\nMor är redan uppe vid spisen, men elden är svag. Det finns ingen ved kvar.");
+
+  setTimeout(() => {
+    printMsg("system", "Du är BRITTA PERSDOTTER, 15 år. Skriv HJÄLP för kommandon.\n");
+    describeRoom();
+    inputEl().focus();
+  }, 500);
+}
+
+// ---- INPUT HANDLING ----
+document.getElementById('player-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const val = this.value.trim();
+    if (!val) return;
+    printMsg("system", "> " + val);
+    this.value = '';
+    parseCommand(val);
+  }
+});
+
+// Ensure input focus
+document.addEventListener('click', () => {
+  if (document.getElementById('game-screen').style.display === 'flex') {
+    inputEl().focus();
+  }
+});
+</script>
+</body>
+</html>

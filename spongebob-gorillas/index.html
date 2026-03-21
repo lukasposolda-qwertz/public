@@ -283,7 +283,7 @@
 
     const CANVAS_W = 1024;
     const CANVAS_H = 600;
-    const GRAVITY = 0.15;
+    const GRAVITY = 0.5;
     const WINS_NEEDED = 3;
     const GROUND_Y = 500;
     const CHAR_W = 65;
@@ -316,6 +316,7 @@
     let scores = [0, 0];
     let wind = 0; // negative = left, positive = right
     let projectile = null;
+    let projectileInterval = null;
     let explosions = [];
     let trailParticles = [];
 
@@ -515,40 +516,8 @@
     }
 
     function drawAimLine() {
-        if (gameState !== 'playing') return;
-        const p = players[currentPlayer];
-        const angle = parseFloat(angleInput.value) * Math.PI / 180;
-        const power = parseFloat(powerInput.value);
-        const dir = currentPlayer === 0 ? 1 : -1;
-
-        const startX = p.x + p.w / 2;
-        const startY = p.y + 5;
-        const lineLen = power * 0.8;
-
-        const endX = startX + Math.cos(angle) * lineLen * dir;
-        const endY = startY - Math.sin(angle) * lineLen;
-
+        // No aim line - players must estimate angle and power without visual hints
         uiCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-        uiCtx.save();
-        uiCtx.setLineDash([4, 4]);
-        uiCtx.strokeStyle = currentPlayer === 0 ? '#ff69b4' : '#ffe135';
-        uiCtx.lineWidth = 2;
-        uiCtx.globalAlpha = 0.7;
-        uiCtx.beginPath();
-        uiCtx.moveTo(startX, startY);
-        uiCtx.lineTo(endX, endY);
-        uiCtx.stroke();
-
-        // Arrow head
-        const arrowAngle = Math.atan2(endY - startY, endX - startX);
-        uiCtx.setLineDash([]);
-        uiCtx.beginPath();
-        uiCtx.moveTo(endX, endY);
-        uiCtx.lineTo(endX - 10 * Math.cos(arrowAngle - 0.4), endY - 10 * Math.sin(arrowAngle - 0.4));
-        uiCtx.moveTo(endX, endY);
-        uiCtx.lineTo(endX - 10 * Math.cos(arrowAngle + 0.4), endY - 10 * Math.sin(arrowAngle + 0.4));
-        uiCtx.stroke();
-        uiCtx.restore();
     }
 
     function drawScene() {
@@ -692,7 +661,7 @@
     // ============================================================
 
     function randomizeWind() {
-        wind = (Math.random() - 0.5) * 8; // -4 to 4
+        wind = (Math.random() - 0.5) * 10; // -5 to 5
         targetWind = wind; // effects will gradually transition
         updateWindDisplay();
     }
@@ -722,7 +691,7 @@
 
         const p = players[currentPlayer];
         const angle = parseFloat(angleInput.value) * Math.PI / 180;
-        const power = parseFloat(powerInput.value) * 0.12;
+        const power = parseFloat(powerInput.value) * 0.27;
         const dir = currentPlayer === 0 ? 1 : -1;
 
         projectile = {
@@ -738,7 +707,8 @@
         angleInput.disabled = true;
         powerInput.disabled = true;
 
-        animateProjectile();
+        // Use 20ms fixed interval to match GORILLAS.BAS tick rate
+        projectileInterval = setInterval(animateProjectile, 20);
     }
 
     function animateProjectile() {
@@ -746,7 +716,7 @@
 
         // Physics
         projectile.vy += GRAVITY;
-        projectile.vx += wind * 0.002;
+        projectile.vx += wind * 0.08;
         projectile.x += projectile.vx;
         projectile.y += projectile.vy;
         projectile.rotation += 0.05;
@@ -764,11 +734,10 @@
 
         // Check collision with opponent (AABB - rectangle overlap, more generous)
         const opponent = players[1 - currentPlayer];
-        const hitPadding = 10; // extra pixels of forgiveness
-        if (projectile.x >= opponent.x - hitPadding &&
-            projectile.x <= opponent.x + opponent.w + hitPadding &&
-            projectile.y >= opponent.y - hitPadding &&
-            projectile.y <= opponent.y + opponent.h + hitPadding) {
+        if (projectile.x >= opponent.x &&
+            projectile.x <= opponent.x + opponent.w &&
+            projectile.y >= opponent.y &&
+            projectile.y <= opponent.y + opponent.h) {
             // HIT!
             createExplosion(opponent.x + opponent.w / 2, opponent.y + opponent.h / 2);
             projectile = null;
@@ -784,6 +753,7 @@
             } else {
                 setTimeout(() => nextTurn(), 2000);
             }
+            clearInterval(projectileInterval);
             drawScene();
             return;
         }
@@ -796,6 +766,7 @@
                     createExplosion(projectile.x, projectile.y);
                     projectile = null;
                     showMessage('MISS!');
+                    clearInterval(projectileInterval);
                     setTimeout(() => nextTurn(), 1200);
                     drawScene();
                     return;
@@ -807,13 +778,13 @@
         if (projectile.y > CANVAS_H + 50 || projectile.x < -100 || projectile.x > CANVAS_W + 100) {
             projectile = null;
             showMessage('MISS!');
+            clearInterval(projectileInterval);
             setTimeout(() => nextTurn(), 1200);
             drawScene();
             return;
         }
 
         drawScene();
-        requestAnimationFrame(animateProjectile);
     }
 
     function createExplosion(x, y) {

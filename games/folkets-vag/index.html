@@ -254,7 +254,7 @@ body {
 <body>
 
 <div id="title-screen">
-  <img src="../images/titel.png" alt="Folkets Väg">
+  <img src="images/titel.png" alt="Folkets Väg">
   <h1>FOLKETS VÄG</h1>
   <div class="subtitle">Ett textäventyr om Sveriges 1800-tal</div>
   <div id="title-menu">
@@ -266,7 +266,7 @@ body {
 <div id="game-screen">
   <div id="image-panel">
     <div id="game-image-container">
-      <img id="game-image" src="../images/akt1_torpet.png" alt="">
+      <img id="game-image" src="images/akt1_torpet.png" alt="">
     </div>
     <div id="image-label">AKT 1 - KRIGETS SKUGGA</div>
   </div>
@@ -2543,7 +2543,7 @@ function printCutscene(text) {
 function setSceneImage(file, label) {
   const img = document.getElementById('game-image');
   const lbl = document.getElementById('image-label');
-  img.src = '../images/' + file;
+  img.src = 'images/' + file;
   if (label) lbl.textContent = label;
 }
 
@@ -2558,7 +2558,7 @@ function updateUI() {
   // Image
   if (state.room && rooms[state.room]) {
     const room = rooms[state.room];
-    document.getElementById('game-image').src = '../images/' + room.image;
+    document.getElementById('game-image').src = 'images/' + room.image;
     document.getElementById('image-label').textContent = room.imageLabel || '';
   }
 

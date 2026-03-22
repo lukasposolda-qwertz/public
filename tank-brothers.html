@@ -37,18 +37,18 @@ canvas{display:block}
     <div class="pinfo p1info">
       <h2>PLAYER 1</h2>
       <div>
-        <span>WASD</span> — Move<br>
-        <span>Q</span> — Shoot<br>
-        <span>E</span> — Mine<br>
-        <span>F</span> — Boost
+        <span>WZAS</span> — Move<br>
+        <span>E</span> — Shoot<br>
+        <span>Q</span> — Mine<br>
+        <span>D</span> — Boost
       </div>
     </div>
     <div class="pinfo p2info">
       <h2>PLAYER 2</h2>
       <div>
-        <span>IJKL</span> — Move<br>
-        <span>U</span> — Shoot<br>
-        <span>O</span> — Mine<br>
+        <span>IMJK</span> — Move<br>
+        <span>O</span> — Shoot<br>
+        <span>L</span> — Mine<br>
         <span>;</span> — Boost
       </div>
     </div>
@@ -353,8 +353,8 @@ function startGame(){
     walls:generateMap(),shake:0,shakeX:0,shakeY:0,time:0,
     powerupTimer:200+Math.random()*100,roundTime:0
   };
-  let p1=new Tank(80,H/2,'#ff4444','#cc2222',{up:'w',down:'s',left:'a',right:'d',shoot:'q',mine:'e',boost:'f'},'P1');
-  let p2=new Tank(W-80,H/2,'#00aaff','#0077cc',{up:'i',down:'k',left:'j',right:'l',shoot:'u',mine:'o',boost:';'},'P2');
+  let p1=new Tank(80,H/2,'#ff4444','#cc2222',{up:'w',down:'z',left:'a',right:'s',shoot:'e',mine:'q',boost:'d'},'P1');
+  let p2=new Tank(W-80,H/2,'#00aaff','#0077cc',{up:'i',down:'m',left:'j',right:'k',shoot:'o',mine:'l',boost:';'},'P2');
   p1.angle=0;p1.turretAngle=0;
   p2.angle=Math.PI;p2.turretAngle=Math.PI;
   game.p1=p1;game.p2=p2;

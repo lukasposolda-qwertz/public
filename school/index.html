@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quizsamling – SO & NO</title>
+  <title>Lärande Quiz – SO & NO</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -18,154 +18,133 @@
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
       color: white;
       text-align: center;
-      padding: 3rem 1rem 2.5rem;
+      padding: 2.2rem 1rem;
     }
 
     header h1 {
-      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
       font-weight: 800;
       letter-spacing: -0.5px;
     }
 
-    header p {
-      margin-top: 0.6rem;
-      font-size: 1.05rem;
-      opacity: 0.75;
-    }
-
     main {
-      max-width: 1100px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 3rem 1.5rem 4rem;
+      padding: 2.5rem 1.5rem 4rem;
     }
 
     /* ── Section headers ── */
     .section-header {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.75rem;
+      gap: 0.75rem;
+      margin-bottom: 1.2rem;
     }
 
     .section-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 3rem;
-      height: 3rem;
+      width: 2.4rem;
+      height: 2.4rem;
       border-radius: 50%;
-      font-size: 1.25rem;
+      font-size: 1rem;
       font-weight: 900;
       color: white;
       flex-shrink: 0;
     }
 
-    .so .section-badge  { background: #e84393; }
-    .no .section-badge  { background: #0095a8; }
+    .so .section-badge { background: #e84393; }
+    .no .section-badge { background: #0095a8; }
 
     .section-header h2 {
-      font-size: 1.7rem;
+      font-size: 1.3rem;
       font-weight: 800;
     }
 
     .so .section-header h2 { color: #c0306f; }
     .no .section-header h2 { color: #007080; }
 
-    .section-desc {
-      font-size: 0.9rem;
-      color: #666;
-      margin-bottom: 2rem;
-    }
-
-    section + section { margin-top: 3.5rem; }
+    section + section { margin-top: 2.5rem; }
 
     /* ── Grid ── */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1.5rem;
+      gap: 1rem;
     }
 
     /* ── Cards ── */
     .card {
       background: white;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
       display: flex;
       flex-direction: column;
-      text-decoration: none;
-      color: inherit;
+      overflow: hidden;
     }
 
     .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 28px rgba(0,0,0,0.13);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 22px rgba(0,0,0,0.12);
     }
 
-    .card-thumb {
-      width: 100%;
-      aspect-ratio: 1;
-      object-fit: cover;
-      display: block;
-      background: #eee;
-    }
-
-    .card-body {
-      padding: 1.1rem 1.2rem 1.3rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .card-title {
-      font-size: 1rem;
-      font-weight: 700;
-      line-height: 1.35;
-    }
-
-    .card-meta {
+    /* ── Compact header with small icon ── */
+    .card-top {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      margin-top: auto;
-      padding-top: 0.6rem;
+      gap: 0.85rem;
+      padding: 0.95rem 1rem 0.85rem;
     }
 
-    .badge {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.2rem 0.55rem;
-      border-radius: 999px;
-      letter-spacing: 0.3px;
+    .card-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 10px;
+      object-fit: cover;
+      flex-shrink: 0;
     }
 
-    .badge-claude  { background: #f0e6ff; color: #7c3aed; }
-    .badge-chatgpt { background: #e6f7f0; color: #0a8c57; }
+    .card-text { flex: 1; min-width: 0; }
 
-    .card-date {
-      font-size: 0.72rem;
-      color: #aaa;
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* ── CTA button inside card ── */
+    .card-sub {
+      font-size: 0.78rem;
+      color: #777;
+      margin-top: 0.2rem;
+    }
+
+    /* ── Divider ── */
+    .card-divider {
+      height: 1px;
+      background: #f0f0f0;
+      margin: 0 1rem;
+    }
+
+    /* ── Button ── */
     .card-btn {
       display: block;
-      margin: 0.8rem 1.2rem 1.2rem;
+      margin: 0.75rem 1rem 0.9rem;
       text-align: center;
-      padding: 0.6rem 1rem;
-      border-radius: 8px;
-      font-size: 0.88rem;
+      padding: 0.5rem 1rem;
+      border-radius: 7px;
+      font-size: 0.83rem;
       font-weight: 700;
       color: white;
       text-decoration: none;
       transition: opacity 0.15s;
     }
 
-    .card-btn:hover { opacity: 0.88; }
+    .card-btn:hover { opacity: 0.87; }
 
     .so .card-btn { background: #e84393; }
     .no .card-btn { background: #0095a8; }
@@ -182,102 +161,101 @@
 <body>
 
 <header>
-  <h1>📚 Quizsamling</h1>
-  <p>Klicka på ett quiz för att öva inför provet</p>
+  <h1>Lärande Quiz</h1>
 </header>
 
 <main>
 
-  <!-- ══ SO – Samhällsorienterande ══ -->
+  <!-- ══ SO ══ -->
   <section class="so">
     <div class="section-header">
       <span class="section-badge">SO</span>
       <h2>Samhällsorienterande ämnen</h2>
     </div>
-    <p class="section-desc">Historia, samhällskunskap och demokrati</p>
 
     <div class="grid">
 
       <div class="card">
-        <img class="card-thumb" src="images/quiz_so_provet.png" alt="1800-talets Sverige quiz" />
-        <div class="card-body">
-          <div class="card-title">1800-talets Sverige – Historia</div>
-          <div class="card-meta">
-            <span class="badge badge-claude">Claude</span>
-            <span class="card-date">2026-03-15</span>
+        <div class="card-top">
+          <img class="card-icon" src="images/icon_so_historia.png" alt="" />
+          <div class="card-text">
+            <div class="card-title">1800-talets Sverige</div>
+            <div class="card-sub">Quiz &ndash; 70 frågor</div>
           </div>
         </div>
+        <div class="card-divider"></div>
         <a class="card-btn" href="https://claude.ai/public/artifacts/cca9a8d1-10e5-4c10-8af9-f3692c90f8c7" target="_blank" rel="noopener">Starta quiz →</a>
       </div>
 
       <div class="card">
-        <img class="card-thumb" src="images/quiz_demokratin.png" alt="Demokrati quiz" />
-        <div class="card-body">
-          <div class="card-title">Demokrati Quiz – Fullständig Test</div>
-          <div class="card-meta">
-            <span class="badge badge-claude">Claude</span>
+        <div class="card-top">
+          <img class="card-icon" src="images/icon_so_demokrati.png" alt="" />
+          <div class="card-text">
+            <div class="card-title">Demokrati</div>
+            <div class="card-sub">Quiz &ndash; 50 frågor</div>
           </div>
         </div>
+        <div class="card-divider"></div>
         <a class="card-btn" href="https://claude.ai/public/artifacts/e4fef9aa-521c-454a-9e63-1ea1d864be5c" target="_blank" rel="noopener">Starta quiz →</a>
       </div>
 
     </div>
   </section>
 
-  <!-- ══ NO – Naturorienterande ══ -->
+  <!-- ══ NO ══ -->
   <section class="no">
     <div class="section-header">
       <span class="section-badge">NO</span>
       <h2>Naturorienterande ämnen</h2>
     </div>
-    <p class="section-desc">Biologi, kemi, fysik och naturkunskap</p>
 
     <div class="grid">
 
       <div class="card">
-        <img class="card-thumb" src="images/quiz_livets_utveckling.png" alt="Livets utveckling quiz" />
-        <div class="card-body">
-          <div class="card-title">Livets Utveckling – Interaktiv Quiz</div>
-          <div class="card-meta">
-            <span class="badge badge-claude">Claude</span>
-            <span class="card-date">2025-12-01</span>
+        <div class="card-top">
+          <img class="card-icon" src="images/icon_no_evolution.png" alt="" />
+          <div class="card-text">
+            <div class="card-title">Livets Utveckling</div>
+            <div class="card-sub">Quiz &ndash; 50 frågor</div>
           </div>
         </div>
+        <div class="card-divider"></div>
         <a class="card-btn" href="https://claude.ai/public/artifacts/af6ccc8d-de4f-4239-911c-dae0c9a060d8" target="_blank" rel="noopener">Starta quiz →</a>
       </div>
 
       <div class="card">
-        <img class="card-thumb" src="images/quiz_livets_utveckling.png" alt="Livets utveckling quiz ChatGPT" />
-        <div class="card-body">
-          <div class="card-title">Livets Utveckling – Interaktiv Quiz</div>
-          <div class="card-meta">
-            <span class="badge badge-chatgpt">ChatGPT</span>
-            <span class="card-date">2025-12-01</span>
+        <div class="card-top">
+          <img class="card-icon" src="images/icon_no_evolution.png" alt="" />
+          <div class="card-text">
+            <div class="card-title">Livets Utveckling</div>
+            <div class="card-sub">Quiz</div>
           </div>
         </div>
+        <div class="card-divider"></div>
         <a class="card-btn" href="https://chatgpt.com/canvas/shared/692b05bab05481918f5af784ac462ab1" target="_blank" rel="noopener">Starta quiz →</a>
       </div>
 
       <div class="card">
-        <img class="card-thumb" src="images/quiz_no_general.png" alt="Kemi och metaller quiz" />
-        <div class="card-body">
-          <div class="card-title">Kemi &amp; Metaller – 50 Frågor</div>
-          <div class="card-meta">
-            <span class="badge badge-claude">Claude</span>
-            <span class="card-date">2026-02-07</span>
+        <div class="card-top">
+          <img class="card-icon" src="images/icon_no_kemi.png" alt="" />
+          <div class="card-text">
+            <div class="card-title">Kemi &amp; Metaller</div>
+            <div class="card-sub">Quiz &ndash; 50 frågor</div>
           </div>
         </div>
+        <div class="card-divider"></div>
         <a class="card-btn" href="https://claude.ai/public/artifacts/9f299dcc-5428-47f6-927b-d1a99efabe44" target="_blank" rel="noopener">Starta quiz →</a>
       </div>
 
       <div class="card">
-        <img class="card-thumb" src="images/quiz_vatten_luft.png" alt="Vatten och luft quiz" />
-        <div class="card-body">
-          <div class="card-title">Vatten &amp; Luft – 56 Frågor</div>
-          <div class="card-meta">
-            <span class="badge badge-claude">Claude</span>
+        <div class="card-top">
+          <img class="card-icon" src="images/icon_no_vatten.png" alt="" />
+          <div class="card-text">
+            <div class="card-title">Vatten &amp; Luft</div>
+            <div class="card-sub">Quiz &ndash; 56 frågor</div>
           </div>
         </div>
+        <div class="card-divider"></div>
         <a class="card-btn" href="https://claude.ai/public/artifacts/33f7a0d1-2b36-4fd5-90bd-ef081ac5d095" target="_blank" rel="noopener">Starta quiz →</a>
       </div>
 
@@ -287,7 +265,7 @@
 </main>
 
 <footer>
-  Quizsamling – skapad med Claude &amp; ChatGPT
+  Lärande Quiz – skapad med Claude &amp; ChatGPT
 </footer>
 
 </body>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Odyssey: The Return</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     TITLE SCREEN
+     ═══════════════════════════════════════════════════════ -->
+<div id="title-screen">
+  <img id="title-img" src="assets/images/title-odyssey.png" alt="Odyssey: The Return">
+  <div class="title-buttons">
+    <button id="btn-new-game" class="title-btn">New Game</button>
+    <button id="btn-continue"  class="title-btn" style="display:none;">Continue</button>
+  </div>
+  <p class="title-tagline">A Sierra-style adventure &bull; Eight trials &bull; One homecoming</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     GAME SCREEN  —  left: scene image   right: controls
+     ═══════════════════════════════════════════════════════ -->
+<div id="game-screen" style="display:none;">
+
+  <!-- LEFT: scene image + hotspot overlay -->
+  <div id="image-panel">
+    <div id="image-container">
+      <img id="scene-image" src="" alt="">
+      <div id="hotspot-layer"></div>
+    </div>
+    <div id="image-label">
+      <span id="scene-name"></span>
+      <span class="label-sep">&mdash;</span>
+      <span id="scene-subtitle"></span>
+    </div>
+  </div>
+
+  <!-- RIGHT: all controls -->
+  <div id="controls-panel">
+
+    <!-- Chapter + hint/menu row -->
+    <div id="top-bar">
+      <span id="chapter-indicator"></span>
+      <div class="top-actions">
+        <button id="btn-hint" class="action-btn">&#9670; Ask Athena</button>
+        <button id="btn-menu" class="action-btn">Menu</button>
+      </div>
+    </div>
+
+    <!-- Text log -->
+    <div id="text-log-panel">
+      <div id="text-log"></div>
+    </div>
+
+    <!-- Status line -->
+    <div id="status-line">Look</div>
+
+    <!-- Verb bar -->
+    <div id="verb-bar"></div>
+
+    <!-- Inventory -->
+    <div id="inventory-section">
+      <div id="inventory-header">&#9670; Inventory</div>
+      <div id="inventory-panel"></div>
+    </div>
+
+  </div><!-- /controls-panel -->
+
+</div><!-- /game-screen -->
+
+<!-- ═══════════════════════════════════════════════════════
+     HINT MODAL (Athena)
+     ═══════════════════════════════════════════════════════ -->
+<div id="hint-modal">
+  <div class="modal-box">
+    <div class="hint-header">&#9670; Athena Speaks</div>
+    <img id="athena-portrait" src="assets/images/portrait-athena-hint.png" alt="Athena">
+    <div id="hint-text">Ask for guidance...</div>
+    <div class="hint-buttons">
+      <button id="btn-hint-1" class="hint-btn">A Sign (cryptic)</button>
+      <button id="btn-hint-2" class="hint-btn">Guidance</button>
+      <button id="btn-hint-3" class="hint-btn">Direction (direct)</button>
+      <button id="btn-hint-close" class="hint-btn close-btn">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MENU MODAL
+     ═══════════════════════════════════════════════════════ -->
+<div id="menu-modal">
+  <div class="modal-box menu-box">
+    <div class="menu-title">&#9670; Menu</div>
+    <button id="btn-menu-close" class="menu-btn">Resume</button>
+    <button id="btn-menu-title" class="menu-btn">Title Screen</button>
+    <button id="btn-menu-new"   class="menu-btn">New Game</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     VICTORY SCREEN
+     ═══════════════════════════════════════════════════════ -->
+<div id="victory-screen" style="display:none;">
+  <img id="victory-image" src="assets/images/scene-08-olive-root-bed.png" alt="Reunion">
+  <h1 class="victory-title">The Return</h1>
+  <p class="victory-text">
+    Twenty years. A war. Monsters. Gods at odds with each other
+    and a sea that wanted you dead. And in the end the proof was not a weapon
+    or a god's favour — it was a bed rooted in a living tree,
+    a secret that could only belong to <em>you</em>.
+    <br><br>
+    Penelope knew. She had always known.
+    She just needed you to say it.
+  </p>
+  <button id="btn-victory-restart" class="title-btn">Play Again</button>
+</div>
+
+<!-- Scripts -->
+<script src="js/game-data.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/render.js"></script>
+
+</body>
+</html>

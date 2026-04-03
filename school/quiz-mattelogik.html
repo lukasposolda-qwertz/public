@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mattelogik & Problemlösning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f5f7fa;
+            color: #1a1a2e;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .quiz-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .header {
+            margin-bottom: 1.5rem;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+            color: #1a1a2e;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .progress-section {
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-text {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            background-color: #e2e8f0;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .progress-fill {
+            background-color: #6366f1;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #1a1a2e;
+        }
+
+        .options-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: flex-start;
+            padding: 0.875rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: white;
+        }
+
+        .option-label:hover:not(:has(input:disabled)) {
+            border-color: #6366f1;
+            background-color: #f8f9ff;
+        }
+
+        .option-label:has(input:checked:not(:disabled)) {
+            border-color: #6366f1;
+            background-color: #eef2ff;
+        }
+
+        .option-radio {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            margin-right: 0.75rem;
+            margin-top: 0.125rem;
+            accent-color: #6366f1;
+            cursor: pointer;
+        }
+
+        .option-text {
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .option-label:has(input:disabled) {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .option-label.correct:has(input:checked) {
+            border-color: #059669;
+            background-color: #ecfdf5;
+        }
+
+        .option-label.correct:has(input:checked)::before {
+            content: "✓ ";
+            color: #059669;
+            font-weight: 600;
+            margin-right: 0.25rem;
+        }
+
+        .option-label.correct:not(:has(input:checked)) {
+            border-color: #059669;
+            background-color: #ecfdf5;
+        }
+
+        .option-label.correct:not(:has(input:checked))::before {
+            content: "✓ ";
+            color: #059669;
+            font-weight: 600;
+            margin-right: 0.25rem;
+        }
+
+        .option-label.incorrect:has(input:checked) {
+            border-color: #dc2626;
+            background-color: #fef2f2;
+        }
+
+        .option-label.incorrect:has(input:checked)::before {
+            content: "✗ ";
+            color: #dc2626;
+            font-weight: 600;
+            margin-right: 0.25rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #6366f1;
+            color: white;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #4f46e5;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .feedback-box {
+            border-left: 4px solid;
+            padding: 1rem 1.25rem;
+            border-radius: 0 10px 10px 0;
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .feedback-box.show {
+            display: block;
+        }
+
+        .feedback-box.correct {
+            border-color: #059669;
+            background-color: #ecfdf5;
+            color: #065f46;
+        }
+
+        .feedback-box.incorrect {
+            border-color: #dc2626;
+            background-color: #fef2f2;
+            color: #991b1b;
+        }
+
+        .feedback-box.partial {
+            border-color: #d97706;
+            background-color: #fffbeb;
+            color: #92400e;
+        }
+
+        .feedback-label {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .feedback-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .results-screen {
+            text-align: center;
+        }
+
+        .results-screen .title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .results-text {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            color: #1a1a2e;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .instructions {
+            background-color: #f8f9ff;
+            border-left: 4px solid #6366f1;
+            padding: 1rem 1.25rem;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            color: #1a1a2e;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="quiz-card">
+            <div class="header">
+                <h1 class="title">Mattelogik & Problemlösning</h1>
+                <p class="subtitle">30 övningar — Tänk efter, läs noggrant, räkna om det behövs!</p>
+            </div>
+
+            <div id="instructions-section" class="instructions">
+                Läs varje övning noggrant. Välj ett svar för varje fråga. Du kan behöva räkna på papper. Klicka "Kontrollera svar" när du är klar med en övning.
+            </div>
+
+            <div id="quiz-section">
+                <div class="progress-section">
+                    <div class="progress-text" id="progress-text">Övning 1 av 30</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="question-text" id="question-text"></div>
+
+                <div class="options-group" id="options-group"></div>
+
+                <div class="button-group">
+                    <button id="check-btn" onclick="checkAnswer()">Kontrollera svar</button>
+                </div>
+
+                <div class="feedback-box" id="feedback-box">
+                    <div class="feedback-label" id="feedback-label"></div>
+                    <div class="feedback-text" id="feedback-text"></div>
+                </div>
+
+                <div class="button-group" id="next-btn-group" style="display: none;">
+                    <button id="next-btn" onclick="nextQuestion()">Nästa övning →</button>
+                </div>
+            </div>
+
+            <div id="results-section" class="hidden">
+                <div class="results-screen">
+                    <h2 class="title">Resultat</h2>
+                    <p class="results-text" id="results-text"></p>
+                    <button onclick="restartQuiz()">Starta om</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "Fem kompisar är 9, 11, 12, 10 och 13 år gamla. Vad är deras medelålder?",
+                options: [
+                    { text: "11 år", correct: true },
+                    { text: "10 år", correct: false },
+                    { text: "12 år", correct: false },
+                    { text: "13 år", correct: false }
+                ],
+                feedback: "Rätt! Medelåldern är genomsnittet av alla åldrar. Du räknar ut det genom att addera alla åldrar: 9 + 11 + 12 + 10 + 13 = 55. Sedan delar du med antalet personer: 55 ÷ 5 = 11. Medelåldern är alltså 11 år."
+            },
+            {
+                question: "Emma och Olof samlar pärlor. Emma har 47 pärlor och Olof har 28 pärlor. Vilken är differensen mellan dem?",
+                options: [
+                    { text: "75", correct: false },
+                    { text: "19", correct: true },
+                    { text: "28", correct: false },
+                    { text: "47", correct: false }
+                ],
+                feedback: "Rätt! Differensen är skillnaden mellan två tal. Du räknar ut det genom att dra det mindre talet från det större: 47 − 28 = 19. Differensen är 19 pärlor."
+            },
+            {
+                question: "En cykelaffär har 6 cykelställ. I varje ställ kan det stå 8 cyklar. Hur många cyklar kan affären parkera totalt?",
+                options: [
+                    { text: "14", correct: false },
+                    { text: "48", correct: true },
+                    { text: "2", correct: false },
+                    { text: "6", correct: false }
+                ],
+                feedback: "Rätt! Produkten är resultatet när du multiplicerar två tal. 6 × 8 = 48. Produkten av 6 och 8 är 48. Affären kan parkera 48 cyklar totalt."
+            },
+            {
+                question: "En pizzeria delar 24 pizzasnitt mellan 4 barn så att alla får lika många. Hur många snitt får varje barn?",
+                options: [
+                    { text: "6 snitt", correct: true },
+                    { text: "20 snitt", correct: false },
+                    { text: "28 snitt", correct: false },
+                    { text: "4 snitt", correct: false }
+                ],
+                feedback: "Rätt! Kvoten är resultatet när du dividerar ett tal med ett annat. 24 ÷ 4 = 6. Kvoten är 6. Varje barn får 6 pizzasnitt."
+            },
+            {
+                question: "I en klass betalar eleverna för ett gemensamt projekt. Kalle betalar 35 kr, Saga 42 kr och Marcus 28 kr. Vad är summan av det de betalar tillsammans?",
+                options: [
+                    { text: "105 kr", correct: true },
+                    { text: "100 kr", correct: false },
+                    { text: "77 kr", correct: false },
+                    { text: "70 kr", correct: false }
+                ],
+                feedback: "Rätt! Summan är resultatet när du adderar flera tal tillsammans. 35 + 42 + 28 = 105. Summan är 105 kr."
+            },
+            {
+                question: "Liam har 15 fotbollskort. Sanna har dubbelt så många. Hur många kort har Sanna?",
+                options: [
+                    { text: "15", correct: false },
+                    { text: "30", correct: true },
+                    { text: "45", correct: false },
+                    { text: "7", correct: false }
+                ],
+                feedback: "Rätt! Dubbelt betyder två gånger så mycket. Dubbelt av 15 är 15 × 2 = 30. Sanna har 30 fotbollskort."
+            },
+            {
+                question: "Det finns 18 kakbitar på ett fat. Halva mängden säljs på fika. Hur många kakbitar säljs?",
+                options: [
+                    { text: "9 bitar", correct: true },
+                    { text: "18 bitar", correct: false },
+                    { text: "27 bitar", correct: false },
+                    { text: "6 bitar", correct: false }
+                ],
+                feedback: "Rätt! Hälften betyder en del av två lika stora delar. Hälften av 18 är 18 ÷ 2 = 9. 9 kakbitar säljs."
+            },
+            {
+                question: "En rektangel har längden 8 cm och bredden 5 cm. Vad är omkretsen?",
+                options: [
+                    { text: "40 cm", correct: false },
+                    { text: "26 cm", correct: true },
+                    { text: "13 cm", correct: false },
+                    { text: "3 cm", correct: false }
+                ],
+                feedback: "Rätt! Omkretsen är avståndet runt om en figur. För en rektangel räknar du: (längd + bredd) × 2 = (8 + 5) × 2 = 13 × 2 = 26 cm. Omkretsen är 26 cm."
+            },
+            {
+                question: "Ett klassrum är 12 m långt och 10 m brett. Hur stor är klassrummets area?",
+                options: [
+                    { text: "44 m²", correct: false },
+                    { text: "120 m²", correct: true },
+                    { text: "60 m²", correct: false },
+                    { text: "22 m²", correct: false }
+                ],
+                feedback: "Rätt! Area är mängden yta inuti en figur. För en rektangel räknar du: längd × bredd = 12 × 10 = 120 m². Klassrummets area är 120 m²."
+            },
+            {
+                question: "En godispåse innehåller 24 godisbitar. En tredjedel äts upp på vägen till skolan. Hur många godisbitar äts?",
+                options: [
+                    { text: "8 bitar", correct: true },
+                    { text: "12 bitar", correct: false },
+                    { text: "16 bitar", correct: false },
+                    { text: "6 bitar", correct: false }
+                ],
+                feedback: "Rätt! En tredjedel betyder en del av tre lika stora delar. En tredjedel av 24 är 24 ÷ 3 = 8. 8 godisbitar äts."
+            },
+            {
+                question: "En chokladkaka delas i fyra lika stora bitar. Lukas äter en fjärdedel. Vilken del av kakan äter han?",
+                options: [
+                    { text: "1/2 av kakan", correct: false },
+                    { text: "1/3 av kakan", correct: false },
+                    { text: "1/4 av kakan", correct: true },
+                    { text: "1/8 av kakan", correct: false }
+                ],
+                feedback: "Rätt! En fjärdedel är en av fyra lika stora delar, vilket skrivs som 1/4. Lukas äter 1/4 av chokladkakan."
+            },
+            {
+                question: "Kevin har 3 olika t-shirtar och 4 olika byxor. Hur många olika kombinationer av kläder kan han göra?",
+                options: [
+                    { text: "7", correct: false },
+                    { text: "12", correct: true },
+                    { text: "1", correct: false },
+                    { text: "4", correct: false }
+                ],
+                feedback: "Rätt! Du måste multiplicera antalet val. För varje t-shirt (3 stycken) kan han välja en av 4 byxor. Totalt: 3 × 4 = 12 olika kombinationer."
+            },
+            {
+                question: "I en tennisturnering spelar 4 spelare mot varandra. Varje spelare möter varje annan spelare exakt en gång. Hur många matcher spelas totalt?",
+                options: [
+                    { text: "4", correct: false },
+                    { text: "6", correct: true },
+                    { text: "8", correct: false },
+                    { text: "12", correct: false }
+                ],
+                feedback: "Rätt! Varje spelare möter 3 andra (4 − 1 = 3). Det ger 4 × 3 = 12, men då räknar vi varje match två gånger. Vi delar på 2: 12 ÷ 2 = 6 matcher totalt."
+            },
+            {
+                question: "Emma köper 3 böcker för 89 kr styck och betalar med en 500-kronorssedel. Hur mycket får hon tillbaka?",
+                options: [
+                    { text: "89 kr", correct: false },
+                    { text: "167 kr", correct: false },
+                    { text: "233 kr", correct: true },
+                    { text: "267 kr", correct: false }
+                ],
+                feedback: "Rätt! Först räknar du kostnaden: 3 × 89 = 267 kr. Sedan räknar du växeln: 500 − 267 = 233 kr. Emma får 233 kr tillbaka. Den här övningen kräver två steg: multiplikation och subtraktion."
+            },
+            {
+                question: "Vilken siffra kommer härnäst i mönstret: 2, 6, 18, 54, ...?",
+                options: [
+                    { text: "72", correct: false },
+                    { text: "162", correct: true },
+                    { text: "108", correct: false },
+                    { text: "156", correct: false }
+                ],
+                feedback: "Rätt! Varje tal är tre gånger större än det tidigare. 2 × 3 = 6, 6 × 3 = 18, 18 × 3 = 54, 54 × 3 = 162. Nästa tal är 162. Det här testar din förmåga att se ett mönster."
+            },
+            {
+                question: "I en matematik-tävling behöver du minst 40 poäng för att vinna en medalj, och högst 100 poäng totalt. Soren får 75 poäng. Stämmer det att Soren vinner en medalj?",
+                options: [
+                    { text: "Ja, eftersom 75 är minst 40", correct: true },
+                    { text: "Nej, eftersom 75 är högst 100", correct: false },
+                    { text: "Ja, eftersom 75 är mellan 40 och 100", correct: false },
+                    { text: "Det går inte att avgöra", correct: false }
+                ],
+                feedback: "Rätt! Minst 40 poäng betyder 40 eller mer. Soren har 75 poäng, vilket är mer än 40, så han vinner en medalj. Ordet \"minst\" är viktigt här — det betyder gränsen nedåt, inte gränsen uppåt."
+            },
+            {
+                question: "En affär säljer: 34 äpplen på måndag, 28 äpplen på tisdag och 19 äpplen på onsdag. Hur många äpplen är det sammanlagt?",
+                options: [
+                    { text: "34", correct: false },
+                    { text: "81", correct: true },
+                    { text: "62", correct: false },
+                    { text: "53", correct: false }
+                ],
+                feedback: "Rätt! Sammanlagt betyder tillsammans eller totalt. 34 + 28 + 19 = 81. Affären säljer 81 äpplen sammanlagt."
+            },
+            {
+                question: "Fem kompisar ska dela 60 godisbitar lika. Hur många får varje kompis?",
+                options: [
+                    { text: "12 bitar", correct: true },
+                    { text: "11 bitar", correct: false },
+                    { text: "13 bitar", correct: false },
+                    { text: "10 bitar", correct: false }
+                ],
+                feedback: "Rätt! Du delar 60 på 5: 60 ÷ 5 = 12. Varje kompis får 12 godisbitar. Det här är ett delnings- eller divisionsproblem."
+            },
+            {
+                question: "Lisa har två gånger så många kronor som Mattis. Mattis har 25 kronor. Hur många kronor har Lisa?",
+                options: [
+                    { text: "50 kronor", correct: true },
+                    { text: "25 kronor", correct: false },
+                    { text: "75 kronor", correct: false },
+                    { text: "12 kronor", correct: false }
+                ],
+                feedback: "Rätt! Uttrycket \"två gånger så många\" betyder att du multiplicerar. Mattis har 25 kronor, så Lisa har 25 × 2 = 50 kronor. Att förstå ordet \"två gånger\" är nyckeln till att lösa problemet."
+            },
+            {
+                question: "En butik säljer röda och blå pärlor. Det finns 85 röda pärlor och 32 färre blåa pärlor än röda. Hur många blåa pärlor finns det?",
+                options: [
+                    { text: "32", correct: false },
+                    { text: "53", correct: true },
+                    { text: "85", correct: false },
+                    { text: "117", correct: false }
+                ],
+                feedback: "Rätt! \"Färre\" betyder mindre antal. Om det finns 32 färre blåa pärlor än röda, räknar du: 85 − 32 = 53. Det finns 53 blåa pärlor."
+            },
+            {
+                question: "En park har 120 ekar. Den har 45 fler tallar än ekar. Hur många tall finns det?",
+                options: [
+                    { text: "75", correct: false },
+                    { text: "120", correct: false },
+                    { text: "165", correct: true },
+                    { text: "45", correct: false }
+                ],
+                feedback: "Rätt! \"Mer\" betyder större antal. Om det finns 45 fler tallar än ekar (och det finns 120 ekar), räknar du: 120 + 45 = 165. Det finns 165 tall."
+            },
+            {
+                question: "En bageri bakar 37 kakor och vill packa dem i lådor. En låda rymmer 6 kakor. Hur många hela lådor kan fyllas?",
+                options: [
+                    { text: "6 lådor", correct: true },
+                    { text: "7 lådor", correct: false },
+                    { text: "5 lådor", correct: false },
+                    { text: "8 lådor", correct: false }
+                ],
+                feedback: "Rätt! Du dividerar 37 på 6. 37 ÷ 6 = 6 med rest 1. Det betyder 6 hela lådor kan fyllas med 1 kaka över. Svar: 6 lådor."
+            },
+            {
+                question: "En löpare springer 400 meter på 62 sekunder. En annan springer samma sträcka på 59 sekunder. Vilken löpare är snabbast?",
+                options: [
+                    { text: "Den första löparen (62 sekunder)", correct: false },
+                    { text: "Den andra löparen (59 sekunder)", correct: true },
+                    { text: "De är lika snabba", correct: false },
+                    { text: "Det går inte att avgöra", correct: false }
+                ],
+                feedback: "Rätt! Snabbaste löparen har kortast tid. 59 sekunder är mindre än 62 sekunder, så den andra löparen är snabbast. Att läsa ordet \"snabbast\" korrekt är viktigt här."
+            },
+            {
+                question: "Vilka två tal kommer härnäst i serien: 5, 10, 20, 40, ...?",
+                options: [
+                    { text: "80, 160", correct: true },
+                    { text: "45, 50", correct: false },
+                    { text: "60, 80", correct: false },
+                    { text: "50, 60", correct: false }
+                ],
+                feedback: "Rätt! Varje tal är två gånger större än det föregående. 5 × 2 = 10, 10 × 2 = 20, 20 × 2 = 40, 40 × 2 = 80, 80 × 2 = 160. Nästa två tal är 80 och 160."
+            },
+            {
+                question: "En fyrkantig säng har omkretsen 12 meter. Vad kan längden och bredden vara?",
+                options: [
+                    { text: "4 m och 2 m", correct: true },
+                    { text: "3 m och 4 m", correct: false },
+                    { text: "5 m och 1 m", correct: false },
+                    { text: "6 m och 6 m", correct: false }
+                ],
+                feedback: "Rätt! Omkretsen är 2 × (längd + bredd). Om omkretsen är 12 m: 12 ÷ 2 = 6 m för längd + bredd tillsammans. 4 + 2 = 6, så längden kan vara 4 m och bredden 2 m."
+            },
+            {
+                question: "En videospelbutik har 200 spel. Hälften av dem är actionspel. Hur många actionspel finns det?",
+                options: [
+                    { text: "50 spel", correct: false },
+                    { text: "100 spel", correct: true },
+                    { text: "200 spel", correct: false },
+                    { text: "150 spel", correct: false }
+                ],
+                feedback: "Rätt! Hälften betyder 50% eller 1/2. Hälften av 200 är 200 ÷ 2 = 100 actionspel."
+            },
+            {
+                question: "En kassörska räknar pengar: 5 tjugokronorssedlar och 8 femkronormynt. Hur mycket pengar är det sammanlagt?",
+                options: [
+                    { text: "100 kronor", correct: false },
+                    { text: "140 kronor", correct: true },
+                    { text: "40 kronor", correct: false },
+                    { text: "105 kronor", correct: false }
+                ],
+                feedback: "Rätt! Du måste räkna båda. Tjugokronorssedelar: 5 × 20 = 100 kronor. Femkronormynt: 8 × 5 = 40 kronor. Sammanlagt: 100 + 40 = 140 kronor."
+            },
+            {
+                question: "En biljettkassa säljer: 45 biljetter på fredag, 67 på lördag och 23 på söndag. Hur många biljetter är det totalt?",
+                options: [
+                    { text: "112", correct: false },
+                    { text: "90", correct: false },
+                    { text: "135", correct: true },
+                    { text: "67", correct: false }
+                ],
+                feedback: "Rätt! \"Totalt\" betyder summan av allt tillsammans. 45 + 67 + 23 = 135 biljetter totalt."
+            },
+            {
+                question: "Erik cyklar 8 kilometer på vägen till skolan. Samma väg hem. Hur långt cyklar Erik totalt under två dagar?",
+                options: [
+                    { text: "8 km", correct: false },
+                    { text: "16 km", correct: false },
+                    { text: "32 km", correct: true },
+                    { text: "24 km", correct: false }
+                ],
+                feedback: "Rätt! Först: En dag fram och tillbaka = 8 + 8 = 16 km. Två dagar: 16 × 2 = 32 km. Den här övningen kräver två steg och förståelse av \"totalt\"."
+            },
+            {
+                question: "En gård har hästar och får. Det finns 12 hästar. Det finns 3 gånger så många får som hästar. Hur många djur är det sammanlagt på gården?",
+                options: [
+                    { text: "12", correct: false },
+                    { text: "36", correct: false },
+                    { text: "48", correct: true },
+                    { text: "15", correct: false }
+                ],
+                feedback: "Rätt! Först räknar du får: 3 × 12 = 36 får. Sedan räknar du sammanlagt: 12 hästar + 36 får = 48 djur. Den här övningen innehåller flera koncept: \"3 gånger så många\" och \"sammanlagt\"."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let correctAnswers = 0;
+        let answered = false;
+
+        function initQuiz() {
+            currentQuestion = 0;
+            correctAnswers = 0;
+            answered = false;
+            document.getElementById('results-section').classList.add('hidden');
+            document.getElementById('quiz-section').style.display = 'block';
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const question = quizData[currentQuestion];
+            document.getElementById('question-text').textContent = question.question;
+
+            const optionsGroup = document.getElementById('options-group');
+            optionsGroup.innerHTML = '';
+
+            question.options.forEach((option, index) => {
+                const label = document.createElement('label');
+                label.className = 'option-label';
+
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'answer';
+                radio.className = 'option-radio';
+                radio.value = index;
+
+                const text = document.createElement('span');
+                text.className = 'option-text';
+                text.textContent = String.fromCharCode(65 + index) + ') ' + option.text;
+
+                label.appendChild(radio);
+                label.appendChild(text);
+                optionsGroup.appendChild(label);
+            });
+
+            updateProgress();
+            answered = false;
+            resetFeedback();
+            document.getElementById('check-btn').style.display = 'block';
+            document.getElementById('next-btn-group').style.display = 'none';
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / quizData.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = `Övning ${currentQuestion + 1} av ${quizData.length}`;
+        }
+
+        function checkAnswer() {
+            if (answered) return;
+
+            const selectedRadio = document.querySelector('input[name="answer"]:checked');
+            if (!selectedRadio) return;
+
+            const selectedIndex = parseInt(selectedRadio.value);
+            const question = quizData[currentQuestion];
+            const isCorrect = selectedIndex < question.options.length && question.options[selectedIndex].correct;
+
+            answered = true;
+
+            // Show correct/incorrect indicators
+            const labels = document.querySelectorAll('.option-label');
+            labels.forEach((label, index) => {
+                const radio = label.querySelector('input[type="radio"]');
+                radio.disabled = true;
+
+                if (question.options[index].correct) {
+                    label.classList.add('correct');
+                } else if (index === selectedIndex) {
+                    label.classList.add('incorrect');
+                }
+            });
+
+            // Update feedback
+            const feedbackBox = document.getElementById('feedback-box');
+            const feedbackLabel = document.getElementById('feedback-label');
+            const feedbackText = document.getElementById('feedback-text');
+
+            if (isCorrect) {
+                feedbackBox.className = 'feedback-box show correct';
+                feedbackLabel.textContent = 'Rätt!';
+                correctAnswers++;
+            } else {
+                feedbackBox.className = 'feedback-box show incorrect';
+                feedbackLabel.textContent = 'Fel.';
+            }
+            feedbackText.textContent = question.feedback;
+
+            // Hide check button, show next button
+            document.getElementById('check-btn').style.display = 'none';
+            document.getElementById('next-btn-group').style.display = 'flex';
+        }
+
+        function resetFeedback() {
+            const feedbackBox = document.getElementById('feedback-box');
+            feedbackBox.classList.remove('show', 'correct', 'incorrect');
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-section').style.display = 'none';
+            document.getElementById('results-section').classList.remove('hidden');
+            document.getElementById('results-text').textContent = `Du klarade ${correctAnswers} av ${quizData.length} övningar`;
+        }
+
+        function restartQuiz() {
+            initQuiz();
+        }
+
+        // Initialize on page load
+        initQuiz();
+    </script>
+</body>
+</html>

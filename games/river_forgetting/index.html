@@ -7,22 +7,27 @@
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Libre Baskerville', serif; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0808; font-family: 'Libre Baskerville', serif; }
 
-    /* ── FULL-SCREEN SCENE IMAGE ── */
-    #scene {
-      position: fixed;
-      inset: 0;
-      background: url('assets/scene1_bedroom.png') center / cover no-repeat;
+    /* ── GAME SHELL — side by side ── */
+    #game {
+      display: flex;
+      width: 100%;
+      height: 100vh;
     }
 
-    /* ── HOTSPOT LAYER — stops at overlay top so hotspots never enter the panels ── */
+    /* ── LEFT: IMAGE PANEL (67%) ── */
+    #image-panel {
+      flex: 0 0 67%;
+      position: relative;
+      background: #0a0808 url('assets/scene1_bedroom.png') center / contain no-repeat;
+      overflow: hidden;
+    }
+
+    /* Hotspot layer — repositioned via JS to exactly cover rendered image */
     #hs-layer {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 200px; /* same height as overlay */
+      /* bounds set by repositionHotspots() */
     }
 
     .hs {
@@ -36,8 +41,8 @@
       transition: border-color .18s, background .18s;
     }
     .hs:hover .hs-ring {
-      border-color: rgba(255, 220, 120, .4);
-      background: rgba(255, 220, 120, .04);
+      border-color: rgba(255, 220, 120, .45);
+      background: rgba(255, 220, 120, .05);
     }
     .hs-lbl {
       position: absolute;
@@ -45,8 +50,9 @@
       left: 50%;
       transform: translateX(-50%);
       white-space: nowrap;
-      background: rgba(0, 0, 0, .72);
+      background: rgba(0, 0, 0, .74);
       color: #e0cfa0;
+      font-family: 'Libre Baskerville', serif;
       font-size: .68rem;
       letter-spacing: .08em;
       padding: 3px 9px;
@@ -57,183 +63,216 @@
     }
     .hs:hover .hs-lbl { opacity: 1; }
 
-    /* ── GRADIENT BLEED — image fades into overlay ── */
-    #scene::after {
-      content: '';
-      position: absolute;
-      bottom: 200px;
-      left: 0;
-      right: 0;
-      height: 70px;
-      background: linear-gradient(to bottom, transparent, rgba(6, 5, 3, .78));
-      pointer-events: none;
-    }
-
-    /* ── OVERLAY BOTTOM — sits on top of image ── */
-    #overlay {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 200px;
-      display: flex;
-      z-index: 10;
-    }
-
-    /* ── TEXT PANEL (72%) ── */
-    #text-panel {
-      flex: 0 0 72%;
-      background: rgba(6, 5, 3, .86);
-      border-top: 1px solid rgba(200, 168, 74, .22);
-      border-right: 1px solid rgba(200, 168, 74, .1);
-      padding: 18px 24px 14px;
+    /* ── RIGHT: CONTROLS PANEL (33%) ── */
+    #controls-panel {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      cursor: pointer;
-      user-select: none;
+      background: #0d0b09;
+      border-left: 1px solid rgba(200, 168, 74, .14);
     }
-    #text-body {
+
+    /* Scene label strip */
+    #scene-label {
+      flex-shrink: 0;
+      padding: 14px 20px 10px;
+      border-bottom: 1px solid rgba(200, 168, 74, .1);
+    }
+    #scene-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      color: rgba(200, 168, 74, .65);
+    }
+    #scene-sub {
+      font-size: .68rem;
+      letter-spacing: .1em;
+      color: rgba(200, 168, 74, .28);
+      margin-top: 2px;
+    }
+
+    /* Text log */
+    #text-area {
       flex: 1;
       overflow: hidden;
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 18px 20px 12px;
+      cursor: pointer;
+      min-height: 0;
+    }
+    #text-log {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
     }
     #text-line {
       font-style: italic;
-      font-size: .97rem;
-      line-height: 1.75;
-      color: #c4b484;
+      font-size: .94rem;
+      line-height: 1.78;
+      color: #c0ae80;
     }
     #text-line .spk {
       display: block;
       font-style: normal;
       font-weight: 700;
-      font-size: .86rem;
-      letter-spacing: .05em;
+      font-size: .84rem;
+      letter-spacing: .06em;
       color: #c8a84a;
-      margin-bottom: .25rem;
+      margin-bottom: .22rem;
     }
     #click-hint {
       flex-shrink: 0;
-      font-size: .68rem;
+      font-size: .66rem;
       letter-spacing: .1em;
-      color: rgba(200, 168, 74, .28);
+      color: rgba(200, 168, 74, .25);
       text-align: right;
-      margin-top: 8px;
+      margin-top: 10px;
     }
 
-    /* ── INVENTORY PANEL (28%) ── */
-    #inv-panel {
-      flex: 0 0 28%;
-      background: rgba(6, 5, 3, .82);
-      border-top: 1px solid rgba(200, 168, 74, .22);
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
+    /* Inventory */
+    #inv-area {
+      flex-shrink: 0;
+      border-top: 1px solid rgba(200, 168, 74, .1);
+      padding: 12px 16px 14px;
     }
     #inv-hdr {
-      font-size: .66rem;
+      font-size: .64rem;
       letter-spacing: .16em;
-      color: rgba(200, 168, 74, .38);
-      margin-bottom: 12px;
-      flex-shrink: 0;
+      color: rgba(200, 168, 74, .36);
+      margin-bottom: 10px;
     }
     #inv-items {
       display: flex;
       flex-direction: column;
       gap: 7px;
-      overflow-y: auto;
-      flex: 1;
     }
     .inv-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 6px 10px;
+      padding: 7px 10px;
       border: 1px solid rgba(200, 168, 74, .14);
       border-radius: 3px;
       cursor: pointer;
       transition: background .18s, border-color .18s;
     }
     .inv-item:hover { background: rgba(200, 168, 74, .07); }
-    .inv-item.selected { background: rgba(200, 168, 74, .14); border-color: rgba(200, 168, 74, .45); }
-    .inv-item img { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
-    .inv-name { font-size: .78rem; color: #b0a070; line-height: 1.3; }
+    .inv-item.selected {
+      background: rgba(200, 168, 74, .14);
+      border-color: rgba(200, 168, 74, .48);
+    }
+    .inv-item img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .inv-name { font-size: .78rem; color: #a89870; line-height: 1.3; }
     .inv-empty { font-style: italic; font-size: .78rem; color: rgba(200, 168, 74, .22); }
   </style>
 </head>
 <body>
-<div id="scene">
+<div id="game">
 
-  <!-- Hotspot layer — bounded above the overlay -->
-  <div id="hs-layer"></div>
+  <!-- LEFT: scene image + hotspots -->
+  <div id="image-panel">
+    <div id="hs-layer"></div>
+  </div>
 
-  <!-- Bottom overlay -->
-  <div id="overlay">
+  <!-- RIGHT: controls -->
+  <div id="controls-panel">
 
-    <div id="text-panel">
-      <div id="text-body">
-        <div id="text-line">Something pulled me out of sleep before the sun. Not a sound, not a dream — just a feeling. Like I'd lost something in the night and my body knew before my mind did.</div>
+    <div id="scene-label">
+      <div id="scene-name">The Bedroom</div>
+      <div id="scene-sub">Chapter 1 of 10</div>
+    </div>
+
+    <div id="text-area">
+      <div id="text-log">
+        <div id="text-line"></div>
       </div>
       <div id="click-hint">click to continue</div>
     </div>
 
-    <div id="inv-panel">
+    <div id="inv-area">
       <div id="inv-hdr">◈ Inventory</div>
       <div id="inv-items">
         <span class="inv-empty">Empty</span>
       </div>
     </div>
 
-  </div><!-- /overlay -->
-
-</div><!-- /scene -->
+  </div>
+</div>
 
 <script>
-// ── POC: Scene 1 — layout & interaction test ─────────────────────────────────
+// ── POC: Scene 1 — side-by-side layout test ───────────────────────────────────
 
-const textEl   = document.getElementById('text-line');
-const hintEl   = document.getElementById('click-hint');
-const invItems = document.getElementById('inv-items');
-const tPanel   = document.getElementById('text-panel');
+const IMG_W = 1536;
+const IMG_H = 1024;
 
-// ── Text queue ────────────────────────────────────────────────────────────────
-const openingLines = [
-  { n: "Something pulled me out of sleep before the sun. Not a sound, not a dream — just a feeling. Like I'd lost something in the night and my body knew before my mind did." },
-  { n: "My name is Yiannis. I'm twelve. I live on a small island in the Cyclades. My mother died two years ago. I know this. I remember the funeral, the neighbours, my father sitting very still." },
-  { n: "But this morning that knowledge feels lighter. Like it's losing weight. I should look around." },
-];
-let qIdx = 0;
-let busy = false;
+// ── Hotspot layer: position to exactly cover the rendered contain image ────────
+function repositionHotspots() {
+  const panel  = document.getElementById('image-panel');
+  const layer  = document.getElementById('hs-layer');
+  const pW = panel.clientWidth;
+  const pH = panel.clientHeight;
 
-function showNarration(text) {
-  textEl.innerHTML = text;
-  textEl.style.fontStyle = 'italic';
-}
-function showDialogue(speaker, text) {
-  textEl.innerHTML = `<span class="spk">${speaker}</span>${text}`;
-  textEl.style.fontStyle = 'normal';
-}
+  const scale  = Math.min(pW / IMG_W, pH / IMG_H);
+  const rendW  = IMG_W * scale;
+  const rendH  = IMG_H * scale;
+  const offX   = (pW - rendW) / 2;
+  const offY   = (pH - rendH) / 2;
 
-function showLine(line) {
-  if (line.n !== undefined) showNarration(line.n);
-  else if (line.d !== undefined) showDialogue(line.s, line.d);
-  hintEl.textContent = 'click to continue';
-  busy = true;
+  layer.style.left   = offX + 'px';
+  layer.style.top    = offY + 'px';
+  layer.style.width  = rendW + 'px';
+  layer.style.height = rendH + 'px';
 }
 
-// Start with opening
-showLine(openingLines[0]);
+window.addEventListener('resize', repositionHotspots);
+repositionHotspots();
 
-tPanel.addEventListener('click', () => {
-  if (!busy) return;
-  qIdx++;
-  if (qIdx < openingLines.length) {
-    showLine(openingLines[qIdx]);
-  } else {
-    hintEl.textContent = '';
+// ── Text engine ───────────────────────────────────────────────────────────────
+const textEl  = document.getElementById('text-line');
+const hintEl  = document.getElementById('click-hint');
+const textArea = document.getElementById('text-area');
+
+let queue = [];
+let busy  = false;
+
+function enqueue(lines) {
+  queue = [...lines];
+  busy  = true;
+  next();
+}
+
+function next() {
+  if (!queue.length) {
     busy = false;
+    hintEl.textContent = '';
+    return;
   }
-});
+  const item = queue.shift();
+
+  if (item.acq) {
+    addItem(item.acq);
+    next();
+    return;
+  }
+
+  if (item.n !== undefined) {
+    textEl.innerHTML  = item.n;
+    textEl.style.fontStyle = 'italic';
+  } else if (item.d !== undefined) {
+    textEl.innerHTML  = `<span class="spk">${item.s}</span>${item.d}`;
+    textEl.style.fontStyle = 'normal';
+  }
+  hintEl.textContent = queue.length ? 'click to continue' : '';
+}
+
+textArea.addEventListener('click', () => { if (busy) next(); });
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
 const ITEMS = {
@@ -248,76 +287,107 @@ function addItem(id) {
   if (!inventory.includes(id)) { inventory.push(id); renderInv(); }
 }
 function renderInv() {
-  invItems.innerHTML = '';
+  const panel = document.getElementById('inv-items');
+  panel.innerHTML = '';
   if (!inventory.length) {
-    invItems.innerHTML = '<span class="inv-empty">Empty</span>';
+    panel.innerHTML = '<span class="inv-empty">Empty</span>';
     return;
   }
   inventory.forEach(id => {
     const it = ITEMS[id];
-    const d = document.createElement('div');
+    const d  = document.createElement('div');
     d.className = 'inv-item' + (selected === id ? ' selected' : '');
     d.innerHTML = `<img src="${it.icon}" alt="${it.name}"><span class="inv-name">${it.name}</span>`;
     d.onclick = () => {
       selected = selected === id ? null : id;
       renderInv();
-      if (selected) showNarration(`Use ${it.name} on…`);
+      if (selected) {
+        textEl.innerHTML = `Use <em>${it.name}</em> on…`;
+        textEl.style.fontStyle = 'normal';
+        hintEl.textContent = '';
+        busy = false;
+      }
     };
-    invItems.appendChild(d);
+    panel.appendChild(d);
   });
 }
 
 // ── Hotspots ──────────────────────────────────────────────────────────────────
-// Coordinates are % of the hs-layer (which is full width, viewport-height minus 200px).
-// Hotspot y values are recalculated: original % of full image → % of the 72% visible strip.
-// Full viewport = 720px (assumed). hs-layer height = 520px = 72.2% of viewport.
-// Conversion: new_y = (orig_y * 720) / 520  … but simpler to just eyeball per scene.
-// For this POC the positions are tuned by eye to match the bedroom image content.
+// Coordinates are % of the actual image (1536×1024), not the panel.
+// repositionHotspots() aligns the hs-layer with the rendered image, so these
+// % values map directly onto image content regardless of panel size.
 
 const hotspots = [
-  { id:'window', label:'Window',      x: 0,  y: 3,  w: 22, h: 88 },
-  { id:'book',   label:'Old book',    x: 26, y: 25, w: 16, h: 72 },
-  { id:'bed',    label:'My bed',      x: 45, y: 12, w: 30, h: 76 },
-  { id:'photo',  label:'Photo of Mum',x: 46, y: 72, w: 18, h: 26 },
-  { id:'flower', label:'Dried herb',  x: 76, y: 2,  w: 16, h: 42 },
-  { id:'door',   label:'Front door',  x: 93, y: 18, w: 7,  h: 78 },
+  { id: 'window', label: 'Window',       x:  0, y:  5, w: 22, h: 68 },
+  { id: 'book',   label: 'Old book',     x: 26, y: 22, w: 18, h: 55 },
+  { id: 'bed',    label: 'My bed',       x: 45, y: 12, w: 30, h: 56 },
+  { id: 'photo',  label: 'Photo of Mum', x: 46, y: 68, w: 20, h: 25 },
+  { id: 'flower', label: 'Dried herb',   x: 76, y:  3, w: 17, h: 33 },
+  { id: 'door',   label: 'Front door',   x: 93, y: 20, w:  7, h: 65 },
 ];
 
-const hsText = {
-  window: { n: "Blue sea, flat as glass. The sun's coming up behind the hills and turning everything gold. My father's out there — he leaves before dawn now." },
-  book:   { n: "A worn paperback. \"Myths of the Greeks\" — my mother's copy. Cracked spine, pencil marks in the margins. She used to read to me from this every night.", action: 'book' },
-  bed:    { n: "Same blue sheets. My mother used to sit right here on the edge every night. She'd sit down and the mattress would dip, and I'd roll slightly toward her. And then she'd — the next part is gone." },
-  photo:  { n: "A framed photo on the nightstand. My mother — Maria. Dark hair, wide smile. I can describe every detail. But I can't feel it. It's like looking at a stranger." },
-  flower: { n: "A dried herb in a clay vase. My mother put it here and said something. I can see her mouth moving, her face turned toward me. But the sound is off. Like a video on mute." },
-  door:   { n: "I should look around first. Something is wrong and I need to understand what before I go anywhere." },
+const visited = new Set();
+const layer   = document.getElementById('hs-layer');
+
+const hsLines = {
+  window: [
+    { n: "Blue sea, flat as glass. The sun's coming up behind the hills and turning everything gold." },
+    { n: "My father's out there. He leaves before dawn now — up earlier, home later, as if the house gets harder to be in every month." },
+  ],
+  book: [
+    { n: 'A worn paperback. "Myths of the Greeks" — my mother\'s copy since before I was born. Cracked spine, pencil marks in the margins.' },
+    { n: "She used to read to me from this every night. Theseus. Odysseus. Persephone dragged into the Underworld while her mother searched the earth for her." },
+    { n: "Wait. I remember that. Not just the fact — the actual feeling. Her voice doing the characters. She made the Cyclops sound stupid and funny." },
+    { n: "I should take this with me." },
+    { acq: 'book' },
+  ],
+  bed: [
+    { n: "Same blue sheets, same dent in the pillow. My mother used to sit right here on the edge every night." },
+    { n: "She'd sit down and the mattress would dip, and I'd roll slightly toward her. And then she'd — the next part is gone. Like a page torn from a book." },
+  ],
+  photo: [
+    { n: "A framed photo on the nightstand. My mother — Maria. Dark hair, wide smile, laughing at something my father said." },
+    { n: "But I can't feel it. I look at this photo and it's like looking at a stranger. I know the facts: that's my mother, she loved me, she died. But the warmth — it's not there." },
+    { n: "It's like someone reached in while I was sleeping and scooped it out." },
+  ],
+  flower: [
+    { n: "A small dried herb in a clay vase on the wall shelf. My mother put it here and said something about why." },
+    { n: "I can see the moment — her hand placing it, her mouth moving, her face turned toward me. But the sound is off. Like watching a video on mute." },
+  ],
+  door: [
+    { n: "I should look around first. Something is wrong and I need to understand what before I go anywhere." },
+  ],
 };
 
-const visited = new Set();
-const layer = document.getElementById('hs-layer');
+const repeatLines = {
+  window: [{ n: "The sea. My father's out there somewhere. I can't tell from here if he's okay." }],
+  book:   [{ n: "Mom's book. I can still feel her in the pencil marks, the cracked spine. I'm not letting go of this." }],
+  bed:    [{ n: "The same dent in the mattress. I keep thinking if I stare at it the memory will come back. It doesn't." }],
+  photo:  [{ n: "Mom's photo. Her face is right there. But it's just a face." }],
+  flower: [{ n: "The dried herb. Still no sound. Still that silent film of her hand and her mouth." }],
+  door:   [{ n: "I should look around first." }],
+};
 
 hotspots.forEach(hs => {
   const el = document.createElement('div');
   el.className = 'hs';
-  el.id = 'hs-' + hs.id;
   el.style.cssText = `left:${hs.x}%;top:${hs.y}%;width:${hs.w}%;height:${hs.h}%`;
   el.innerHTML = `<div class="hs-ring"></div><div class="hs-lbl">${hs.label}</div>`;
   el.addEventListener('click', () => {
-    const t = hsText[hs.id];
-    if (!t) return;
-    if (t.n) showNarration(t.n);
-    if (t.d) showDialogue(t.s, t.d);
-    hintEl.textContent = '';
-    busy = false;
-    if (t.action === 'book' && !visited.has('book')) {
-      visited.add('book');
-      setTimeout(() => {
-        showNarration("I should take this with me.");
-        addItem('book');
-      }, 200);
-    }
+    if (busy) return;
+    const lines = visited.has(hs.id) ? repeatLines[hs.id] : hsLines[hs.id];
+    visited.add(hs.id);
+    if (lines) enqueue(lines);
   });
   layer.appendChild(el);
 });
+
+// ── Opening lines ─────────────────────────────────────────────────────────────
+enqueue([
+  { n: "Something pulled me out of sleep before the sun. Not a sound, not a dream — just a feeling. Like I'd lost something in the night and my body knew before my mind did." },
+  { n: "My name is Yiannis. I'm twelve. I live on a small island in the Cyclades. My mother died two years ago." },
+  { n: "But this morning that knowledge feels lighter. Like it's losing weight. I should look around." },
+]);
 </script>
 </body>
 </html>

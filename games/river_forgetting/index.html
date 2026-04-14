@@ -3,1122 +3,320 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The River of Forgetting</title>
+  <title>The River of Forgetting — POC</title>
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Libre Baskerville', serif; }
 
-    html, body {
-      width: 100%; height: 100%;
-      background: #0a0808;
-      overflow: hidden;
-      font-family: 'Libre Baskerville', serif;
-    }
-
-    /* ── FADE OVERLAY ── */
-    #overlay {
-      position: fixed; inset: 0; z-index: 1000;
-      background: #000;
-      pointer-events: none;
-      opacity: 1;
-      transition: opacity 0.5s ease;
-    }
-    #overlay.clear { opacity: 0; }
-
-    /* ── TITLE SCREEN ── */
-    #title-screen {
-      position: fixed; inset: 0;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(ellipse at 50% 40%, #1e1508 0%, #0e0c08 50%, #050505 100%);
-    }
-    .title-frame {
-      padding: 3rem 4.5rem;
-      border: 1px solid rgba(200,170,90,0.25);
-      position: relative;
-      text-align: center;
-    }
-    .title-frame::before { content: '◈'; position: absolute; top: 0.6rem; left: 0.8rem; color: rgba(200,170,90,0.3); font-size: 1rem; }
-    .title-frame::after  { content: '◈'; position: absolute; bottom: 0.6rem; right: 0.8rem; color: rgba(200,170,90,0.3); font-size: 1rem; }
-    #title-text {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(2.2rem, 5vw, 3.8rem);
-      font-weight: 600;
-      color: #d4b870;
-      letter-spacing: 0.04em;
-      line-height: 1.15;
-      text-shadow: 0 0 60px rgba(212,184,112,0.25);
-    }
-    #title-sub {
-      margin-top: 0.8rem;
-      font-family: 'Libre Baskerville', serif;
-      font-style: italic;
-      font-size: clamp(0.75rem, 1.6vw, 0.95rem);
-      color: rgba(212,184,112,0.5);
-      letter-spacing: 0.08em;
-    }
-    #btn-begin {
-      display: block;
-      margin: 2.5rem auto 0;
-      background: none;
-      border: none;
-      border-bottom: 1px solid rgba(212,184,112,0.35);
-      color: rgba(212,184,112,0.6);
-      font-family: 'Libre Baskerville', serif;
-      font-size: 0.82rem;
-      letter-spacing: 0.22em;
-      cursor: pointer;
-      padding: 0.3rem 0.6rem;
-      transition: color 0.25s, border-color 0.25s;
-    }
-    #btn-begin:hover { color: #d4b870; border-color: #d4b870; }
-
-    /* ── GAME SCREEN ── */
-    #game-screen {
-      position: fixed; inset: 0;
-      display: none;
-      flex-direction: column;
+    /* ── FULL-SCREEN SCENE IMAGE ── */
+    #scene {
+      position: fixed;
+      inset: 0;
+      background: url('assets/scene1_bedroom.png') center / cover no-repeat;
     }
 
-    /* ── INVENTORY BAR ── */
-    #inv-bar {
-      flex-shrink: 0;
-      height: 46px;
-      background: rgba(5,4,3,0.92);
-      border-bottom: 1px solid rgba(212,184,112,0.12);
-      display: flex;
-      align-items: center;
-      padding: 0 1rem;
-      gap: 0.5rem;
-      z-index: 10;
-    }
-    #inv-label {
-      font-size: 0.6rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.25);
-      margin-right: 0.4rem;
-    }
-    .inv-chip {
-      display: flex; align-items: center; gap: 0.35rem;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(212,184,112,0.18);
-      border-radius: 3px;
-      padding: 0.15rem 0.6rem;
-      cursor: pointer;
-      transition: background 0.18s, border-color 0.18s;
-    }
-    .inv-chip:hover { background: rgba(212,184,112,0.1); border-color: rgba(212,184,112,0.45); }
-    .inv-chip .ic-icon { font-size: 0.95rem; }
-    .inv-chip .ic-name { color: rgba(235,220,190,0.75); font-size: 0.68rem; }
-
-    /* ── SCENE AREA ── */
-    #scene-area {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-      background: #0e0c08;
-      min-height: 0;
-    }
-    #scene-bg {
-      position: absolute; inset: 0;
-      background-size: cover;
-      background-position: center center;
-      background-repeat: no-repeat;
-    }
-    #hotspot-layer {
-      position: absolute; inset: 0;
+    /* ── HOTSPOT LAYER — stops at overlay top so hotspots never enter the panels ── */
+    #hs-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 200px; /* same height as overlay */
     }
 
-    /* ── HOTSPOTS ── */
     .hs {
       position: absolute;
       cursor: pointer;
-      border-radius: 4px;
     }
-    .hs::after {
-      content: '';
-      position: absolute; inset: 0;
-      border-radius: 4px;
-      transition: box-shadow 0.2s, background 0.2s;
+    .hs-ring {
+      position: absolute;
+      inset: 0;
+      border: 1px solid transparent;
+      transition: border-color .18s, background .18s;
     }
-    .hs:hover::after {
-      box-shadow: inset 0 0 0 2px rgba(212,184,112,0.55);
-      background: rgba(212,184,112,0.06);
+    .hs:hover .hs-ring {
+      border-color: rgba(255, 220, 120, .4);
+      background: rgba(255, 220, 120, .04);
     }
-    .hs-label {
+    .hs-lbl {
       position: absolute;
       bottom: calc(100% + 5px);
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.78);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: rgba(240,230,210,0.9);
-      font-family: 'Libre Baskerville', serif;
-      font-size: 0.68rem;
+      white-space: nowrap;
+      background: rgba(0, 0, 0, .72);
+      color: #e0cfa0;
+      font-size: .68rem;
+      letter-spacing: .08em;
       padding: 3px 9px;
-      border-radius: 3px;
-      white-space: nowrap;
+      border-radius: 2px;
       opacity: 0;
+      transition: opacity .15s;
       pointer-events: none;
-      transition: opacity 0.15s;
-      z-index: 5;
     }
-    .hs:hover .hs-label { opacity: 1; }
-    .hs.locked { cursor: not-allowed; }
-    .hs.locked::after { display: none; }
-    .hs.locked .hs-label::after { content: ' 🔒'; }
-    .hs.hidden { display: none; }
+    .hs:hover .hs-lbl { opacity: 1; }
 
-    /* ── SCENE NOTIFICATION ── */
-    #notif {
+    /* ── GRADIENT BLEED — image fades into overlay ── */
+    #scene::after {
+      content: '';
       position: absolute;
-      top: 1rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(5,15,10,0.88);
-      border: 1px solid rgba(130,200,150,0.35);
-      color: rgba(160,220,170,0.9);
-      font-family: 'Libre Baskerville', serif;
-      font-style: italic;
-      font-size: 0.78rem;
-      padding: 0.45rem 1.1rem;
-      border-radius: 4px;
-      white-space: nowrap;
-      opacity: 0;
+      bottom: 200px;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: linear-gradient(to bottom, transparent, rgba(6, 5, 3, .78));
       pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 20;
     }
-    #notif.show { opacity: 1; }
 
-    /* ── TEXT PANEL ── */
+    /* ── OVERLAY BOTTOM — sits on top of image ── */
+    #overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      display: flex;
+      z-index: 10;
+    }
+
+    /* ── TEXT PANEL (72%) ── */
     #text-panel {
-      flex-shrink: 0;
-      height: 30%;
-      min-height: 170px;
-      max-height: 260px;
-      background: rgba(6,5,3,0.90);
-      border-top: 1px solid rgba(212,184,112,0.18);
-      cursor: pointer;
-      position: relative;
+      flex: 0 0 72%;
+      background: rgba(6, 5, 3, .86);
+      border-top: 1px solid rgba(200, 168, 74, .22);
+      border-right: 1px solid rgba(200, 168, 74, .1);
+      padding: 18px 24px 14px;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
-      padding: 1.1rem 2rem 1rem 1.5rem;
+      cursor: pointer;
       user-select: none;
     }
-
-    #text-content {
+    #text-body {
       flex: 1;
       overflow: hidden;
+      position: relative;
+    }
+    #text-line {
+      font-style: italic;
+      font-size: .97rem;
+      line-height: 1.75;
+      color: #c4b484;
+    }
+    #text-line .spk {
+      display: block;
+      font-style: normal;
+      font-weight: 700;
+      font-size: .86rem;
+      letter-spacing: .05em;
+      color: #c8a84a;
+      margin-bottom: .25rem;
+    }
+    #click-hint {
+      flex-shrink: 0;
+      font-size: .68rem;
+      letter-spacing: .1em;
+      color: rgba(200, 168, 74, .28);
+      text-align: right;
+      margin-top: 8px;
+    }
+
+    /* ── INVENTORY PANEL (28%) ── */
+    #inv-panel {
+      flex: 0 0 28%;
+      background: rgba(6, 5, 3, .82);
+      border-top: 1px solid rgba(200, 168, 74, .22);
+      padding: 12px 16px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
     }
-
-    .tline {
-      animation: fadeSlide 0.22s ease forwards;
-      line-height: 1.72;
-      font-size: clamp(0.78rem, 1.55vw, 0.93rem);
+    #inv-hdr {
+      font-size: .66rem;
+      letter-spacing: .16em;
+      color: rgba(200, 168, 74, .38);
+      margin-bottom: 12px;
+      flex-shrink: 0;
     }
-    @keyframes fadeSlide {
-      from { opacity: 0; transform: translateY(5px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .tline.narration { color: rgba(235,222,200,0.92); }
-    .tline.item-acq  { color: rgba(155,215,170,0.88); font-style: italic; }
-    .tline.idle      { color: rgba(212,184,112,0.3); font-style: italic; font-size: 0.8rem; }
-
-    .tline.dialogue-wrap { padding-left: 0.9rem; border-left: 2px solid rgba(180,150,75,0.28); }
-    .t-speaker {
-      display: block;
-      font-size: 0.62rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 0.15rem;
-    }
-    .t-speaker.daphne { color: #7db8a0; }
-    .t-speaker.nikos  { color: #c8a060; }
-    .t-speech { color: rgba(235,222,200,0.92); }
-
-    /* ── CHOICES ── */
-    #choices {
-      display: none;
+    #inv-items {
+      display: flex;
       flex-direction: column;
-      gap: 0.45rem;
-      margin-top: 0.7rem;
+      gap: 7px;
+      overflow-y: auto;
+      flex: 1;
     }
-    .choice-btn {
-      background: none;
-      border: none;
-      border-left: 2px solid rgba(212,184,112,0.25);
-      padding: 0.25rem 0.7rem;
-      font-family: 'Libre Baskerville', serif;
-      font-style: italic;
-      font-size: clamp(0.72rem, 1.35vw, 0.85rem);
-      color: rgba(212,184,112,0.65);
-      cursor: pointer;
-      text-align: left;
-      transition: color 0.18s, border-color 0.18s, padding-left 0.15s;
-    }
-    .choice-btn:hover { color: #d4b870; border-color: #d4b870; padding-left: 1.1rem; }
-
-    /* ── INDICATOR ── */
-    #indicator {
-      position: absolute;
-      bottom: 0.55rem;
-      right: 1.1rem;
-      font-size: 0.7rem;
-      letter-spacing: 0.08em;
-      color: rgba(212,184,112,0.38);
-      animation: blink 2.2s infinite;
-      pointer-events: none;
-    }
-    @keyframes blink {
-      0%, 100% { opacity: 0.3; }
-      50%       { opacity: 0.85; }
-    }
-
-    /* ── END SCREEN ── */
-    #end-screen {
-      position: fixed; inset: 0;
-      display: none;
-      flex-direction: column;
+    .inv-item {
+      display: flex;
       align-items: center;
-      justify-content: center;
-    }
-    #end-bg {
-      position: absolute; inset: 0;
-      background-size: cover;
-      background-position: center;
-      filter: brightness(0.38);
-    }
-    #end-content {
-      position: relative; z-index: 2;
-      text-align: center;
-      padding: 2rem;
-      max-width: 580px;
-    }
-    .end-p {
-      font-family: 'Libre Baskerville', serif;
-      font-style: italic;
-      font-size: clamp(0.82rem, 1.7vw, 0.97rem);
-      color: rgba(235,222,200,0.82);
-      line-height: 1.85;
-      margin-bottom: 0.9rem;
-    }
-    .end-rule {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(0.9rem, 2.2vw, 1.25rem);
-      color: rgba(212,184,112,0.65);
-      letter-spacing: 0.14em;
-      margin: 1.3rem 0;
-    }
-    .end-note {
-      font-size: 0.72rem;
-      color: rgba(180,150,80,0.4);
-      letter-spacing: 0.12em;
-      margin-top: 1.5rem;
-    }
-    #btn-replay {
-      display: inline-block;
-      margin-top: 2rem;
-      background: none;
-      border: none;
-      border-bottom: 1px solid rgba(212,184,112,0.35);
-      color: rgba(212,184,112,0.55);
-      font-family: 'Libre Baskerville', serif;
-      font-size: 0.78rem;
-      letter-spacing: 0.18em;
+      gap: 10px;
+      padding: 6px 10px;
+      border: 1px solid rgba(200, 168, 74, .14);
+      border-radius: 3px;
       cursor: pointer;
-      padding: 0.3rem 0.5rem;
-      transition: color 0.25s;
+      transition: background .18s, border-color .18s;
     }
-    #btn-replay:hover { color: #d4b870; }
+    .inv-item:hover { background: rgba(200, 168, 74, .07); }
+    .inv-item.selected { background: rgba(200, 168, 74, .14); border-color: rgba(200, 168, 74, .45); }
+    .inv-item img { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
+    .inv-name { font-size: .78rem; color: #b0a070; line-height: 1.3; }
+    .inv-empty { font-style: italic; font-size: .78rem; color: rgba(200, 168, 74, .22); }
   </style>
 </head>
 <body>
+<div id="scene">
 
-<div id="overlay"></div>
+  <!-- Hotspot layer — bounded above the overlay -->
+  <div id="hs-layer"></div>
 
-<!-- ═══════ TITLE SCREEN ═══════ -->
-<div id="title-screen">
-  <div class="title-frame">
-    <div id="title-text">The River<br>of Forgetting</div>
-    <div id="title-sub">A story set in the world beneath the world</div>
-    <button id="btn-begin">◈ &nbsp; B E G I N &nbsp; ◈</button>
-  </div>
-</div>
+  <!-- Bottom overlay -->
+  <div id="overlay">
 
-<!-- ═══════ GAME SCREEN ═══════ -->
-<div id="game-screen">
-  <div id="inv-bar">
-    <span id="inv-label">Inventory</span>
-    <div id="inv-items"></div>
-  </div>
-  <div id="scene-area">
-    <div id="scene-bg"></div>
-    <div id="hotspot-layer"></div>
-    <div id="notif"></div>
-  </div>
-  <div id="text-panel">
-    <div id="text-content"></div>
-    <div id="choices"></div>
-    <div id="indicator">click to continue ▶</div>
-  </div>
-</div>
+    <div id="text-panel">
+      <div id="text-body">
+        <div id="text-line">Something pulled me out of sleep before the sun. Not a sound, not a dream — just a feeling. Like I'd lost something in the night and my body knew before my mind did.</div>
+      </div>
+      <div id="click-hint">click to continue</div>
+    </div>
 
-<!-- ═══════ END SCREEN ═══════ -->
-<div id="end-screen">
-  <div id="end-bg"></div>
-  <div id="end-content"></div>
-</div>
+    <div id="inv-panel">
+      <div id="inv-hdr">◈ Inventory</div>
+      <div id="inv-items">
+        <span class="inv-empty">Empty</span>
+      </div>
+    </div>
+
+  </div><!-- /overlay -->
+
+</div><!-- /scene -->
 
 <script>
-'use strict';
+// ── POC: Scene 1 — layout & interaction test ─────────────────────────────────
 
-/* ────────────────────────────────────────────
-   HELPERS
-──────────────────────────────────────────── */
-const $ = id => document.getElementById(id);
+const textEl   = document.getElementById('text-line');
+const hintEl   = document.getElementById('click-hint');
+const invItems = document.getElementById('inv-items');
+const tPanel   = document.getElementById('text-panel');
 
-// Text item constructors
-const n   = t         => ({ type:'n', t });
-const d   = (spk, t)  => ({ type:'d', spk, t });
-const acq = (icon, name, desc) => ({ type:'acq', icon, name, desc });
-const act = fn        => ({ type:'act', fn });
-const ch  = opts      => ({ type:'ch', opts }); // opts: [{id, label}]
+// ── Text queue ────────────────────────────────────────────────────────────────
+const openingLines = [
+  { n: "Something pulled me out of sleep before the sun. Not a sound, not a dream — just a feeling. Like I'd lost something in the night and my body knew before my mind did." },
+  { n: "My name is Yiannis. I'm twelve. I live on a small island in the Cyclades. My mother died two years ago. I know this. I remember the funeral, the neighbours, my father sitting very still." },
+  { n: "But this morning that knowledge feels lighter. Like it's losing weight. I should look around." },
+];
+let qIdx = 0;
+let busy = false;
 
-/* ────────────────────────────────────────────
-   ASSETS
-──────────────────────────────────────────── */
-const IMG = {
-  bedroom: 'assets/ChatGPT Image Apr 14, 2026, 07_29_27 PM.png',
-  garden:  'assets/ChatGPT Image Apr 14, 2026, 07_29_18 PM.png',
-  cave:    'assets/ChatGPT Image Apr 14, 2026, 07_29_34 PM.png',
-};
+function showNarration(text) {
+  textEl.innerHTML = text;
+  textEl.style.fontStyle = 'italic';
+}
+function showDialogue(speaker, text) {
+  textEl.innerHTML = `<span class="spk">${speaker}</span>${text}`;
+  textEl.style.fontStyle = 'normal';
+}
 
-/* ────────────────────────────────────────────
-   GAME STATE
-──────────────────────────────────────────── */
-const S = {
-  inventory:       [],
-  visited1:        new Set(),
-  visited2:        new Set(),
-  daphneStage:     0,    // 0=not started, 1=complete
-  daphneRevealed:  false,
-  daphneChoice1:   null,
-  daphneChoice2:   null,
-  textBusy:        false,
-  scene1CanLeave:  false,
-  scene2CanLeave:  false,
-};
+function showLine(line) {
+  if (line.n !== undefined) showNarration(line.n);
+  else if (line.d !== undefined) showDialogue(line.s, line.d);
+  hintEl.textContent = 'click to continue';
+  busy = true;
+}
 
-/* ────────────────────────────────────────────
-   ITEMS
-──────────────────────────────────────────── */
+// Start with opening
+showLine(openingLines[0]);
+
+tPanel.addEventListener('click', () => {
+  if (!busy) return;
+  qIdx++;
+  if (qIdx < openingLines.length) {
+    showLine(openingLines[qIdx]);
+  } else {
+    hintEl.textContent = '';
+    busy = false;
+  }
+});
+
+// ── Inventory ─────────────────────────────────────────────────────────────────
 const ITEMS = {
-  book:   { icon:'📖', name:'Book of Myths',  desc:"Your mother's worn copy of Greek myths. She read to you from it every night. The pencil marks in the margins are hers." },
-  laurel: { icon:'🌿', name:'Laurel Branch',  desc:"A fresh sprig from Daphne's own tree. It smells of sunlight and old stone. Protects against losing yourself in the Underworld." },
+  book:     { name: 'Book of Myths',   icon: 'assets/icon_book.png' },
+  laurel:   { name: 'Laurel Branch',   icon: 'assets/icon_laurel.png' },
+  asphodel: { name: 'Asphodel Flower', icon: 'assets/icon_asphodel.png' },
+};
+const inventory = [];
+let selected = null;
+
+function addItem(id) {
+  if (!inventory.includes(id)) { inventory.push(id); renderInv(); }
+}
+function renderInv() {
+  invItems.innerHTML = '';
+  if (!inventory.length) {
+    invItems.innerHTML = '<span class="inv-empty">Empty</span>';
+    return;
+  }
+  inventory.forEach(id => {
+    const it = ITEMS[id];
+    const d = document.createElement('div');
+    d.className = 'inv-item' + (selected === id ? ' selected' : '');
+    d.innerHTML = `<img src="${it.icon}" alt="${it.name}"><span class="inv-name">${it.name}</span>`;
+    d.onclick = () => {
+      selected = selected === id ? null : id;
+      renderInv();
+      if (selected) showNarration(`Use ${it.name} on…`);
+    };
+    invItems.appendChild(d);
+  });
+}
+
+// ── Hotspots ──────────────────────────────────────────────────────────────────
+// Coordinates are % of the hs-layer (which is full width, viewport-height minus 200px).
+// Hotspot y values are recalculated: original % of full image → % of the 72% visible strip.
+// Full viewport = 720px (assumed). hs-layer height = 520px = 72.2% of viewport.
+// Conversion: new_y = (orig_y * 720) / 520  … but simpler to just eyeball per scene.
+// For this POC the positions are tuned by eye to match the bedroom image content.
+
+const hotspots = [
+  { id:'window', label:'Window',      x: 0,  y: 3,  w: 22, h: 88 },
+  { id:'book',   label:'Old book',    x: 26, y: 25, w: 16, h: 72 },
+  { id:'bed',    label:'My bed',      x: 45, y: 12, w: 30, h: 76 },
+  { id:'photo',  label:'Photo of Mum',x: 46, y: 72, w: 18, h: 26 },
+  { id:'flower', label:'Dried herb',  x: 76, y: 2,  w: 16, h: 42 },
+  { id:'door',   label:'Front door',  x: 93, y: 18, w: 7,  h: 78 },
+];
+
+const hsText = {
+  window: { n: "Blue sea, flat as glass. The sun's coming up behind the hills and turning everything gold. My father's out there — he leaves before dawn now." },
+  book:   { n: "A worn paperback. \"Myths of the Greeks\" — my mother's copy. Cracked spine, pencil marks in the margins. She used to read to me from this every night.", action: 'book' },
+  bed:    { n: "Same blue sheets. My mother used to sit right here on the edge every night. She'd sit down and the mattress would dip, and I'd roll slightly toward her. And then she'd — the next part is gone." },
+  photo:  { n: "A framed photo on the nightstand. My mother — Maria. Dark hair, wide smile. I can describe every detail. But I can't feel it. It's like looking at a stranger." },
+  flower: { n: "A dried herb in a clay vase. My mother put it here and said something. I can see her mouth moving, her face turned toward me. But the sound is off. Like a video on mute." },
+  door:   { n: "I should look around first. Something is wrong and I need to understand what before I go anywhere." },
 };
 
-/* ────────────────────────────────────────────
-   TEXT ENGINE
-──────────────────────────────────────────── */
-const TE = (() => {
-  let queue = [], idx = 0, onDone = null, choiceSelect = null;
+const visited = new Set();
+const layer = document.getElementById('hs-layer');
 
-  function render(item) {
-    const tc = $('text-content');
-    tc.innerHTML = '';
-    $('choices').style.display = 'none';
-    $('choices').innerHTML = '';
-    $('indicator').style.display = 'block';
-
-    if (!item) { showIdle(); return; }
-
-    if (item.type === 'act') {
-      item.fn();
-      advance();
-      return;
+hotspots.forEach(hs => {
+  const el = document.createElement('div');
+  el.className = 'hs';
+  el.id = 'hs-' + hs.id;
+  el.style.cssText = `left:${hs.x}%;top:${hs.y}%;width:${hs.w}%;height:${hs.h}%`;
+  el.innerHTML = `<div class="hs-ring"></div><div class="hs-lbl">${hs.label}</div>`;
+  el.addEventListener('click', () => {
+    const t = hsText[hs.id];
+    if (!t) return;
+    if (t.n) showNarration(t.n);
+    if (t.d) showDialogue(t.s, t.d);
+    hintEl.textContent = '';
+    busy = false;
+    if (t.action === 'book' && !visited.has('book')) {
+      visited.add('book');
+      setTimeout(() => {
+        showNarration("I should take this with me.");
+        addItem('book');
+      }, 200);
     }
-
-    if (item.type === 'ch') {
-      // Show choices — don't show indicator
-      $('indicator').style.display = 'none';
-      const c = $('choices');
-      c.style.display = 'flex';
-      item.opts.forEach(o => {
-        const btn = document.createElement('button');
-        btn.className = 'choice-btn';
-        btn.textContent = o.label;
-        btn.addEventListener('click', () => {
-          if (choiceSelect) choiceSelect(o.id);
-        });
-        c.appendChild(btn);
-      });
-      return;
-    }
-
-    if (item.type === 'n') {
-      const p = document.createElement('p');
-      p.className = 'tline narration';
-      p.textContent = item.t;
-      tc.appendChild(p);
-      return;
-    }
-
-    if (item.type === 'd') {
-      const wrap = document.createElement('div');
-      wrap.className = 'tline dialogue-wrap';
-      const spk = document.createElement('span');
-      spk.className = `t-speaker ${item.spk.toLowerCase()}`;
-      spk.textContent = item.spk;
-      const sp = document.createElement('p');
-      sp.className = 't-speech';
-      sp.textContent = item.t;
-      wrap.appendChild(spk);
-      wrap.appendChild(sp);
-      tc.appendChild(wrap);
-      return;
-    }
-
-    if (item.type === 'acq') {
-      // Add to inventory, show notification
-      addItem(item.icon.replace('📖','book').replace('🌿','laurel'));
-      showNotif(`${item.icon}  ${item.name} added to inventory`);
-      const p = document.createElement('p');
-      p.className = 'tline item-acq';
-      p.textContent = `[ ${item.icon} ${item.name} — ${item.desc} ]`;
-      tc.appendChild(p);
-      return;
-    }
-  }
-
-  function showIdle() {
-    const tc = $('text-content');
-    tc.innerHTML = '';
-    $('indicator').style.display = 'none';
-    $('choices').style.display = 'none';
-  }
-
-  function feed(items, done) {
-    queue = items;
-    idx = 0;
-    onDone = done || null;
-    choiceSelect = null;
-    S.textBusy = true;
-    $('indicator').style.display = 'block';
-    render(queue[0]);
-  }
-
-  function advance() {
-    // If choices are showing, ignore advance
-    if ($('choices').style.display === 'flex') return;
-
-    idx++;
-    if (idx >= queue.length) {
-      S.textBusy = false;
-      showIdle();
-      if (onDone) { const fn = onDone; onDone = null; fn(); }
-      return;
-    }
-    render(queue[idx]);
-  }
-
-  function setChoiceHandler(fn) { choiceSelect = fn; }
-  function isWaitingChoice() { return $('choices').style.display === 'flex'; }
-
-  return { feed, advance, setChoiceHandler, isWaitingChoice };
-})();
-
-/* ────────────────────────────────────────────
-   INVENTORY
-──────────────────────────────────────────── */
-function addItem(id) {
-  if (!S.inventory.includes(id)) {
-    S.inventory.push(id);
-    renderInventory();
-  }
-}
-
-function renderInventory() {
-  const el = $('inv-items');
-  el.innerHTML = '';
-  S.inventory.forEach(id => {
-    const it = ITEMS[id];
-    if (!it) return;
-    const chip = document.createElement('div');
-    chip.className = 'inv-chip';
-    chip.innerHTML = `<span class="ic-icon">${it.icon}</span><span class="ic-name">${it.name}</span>`;
-    chip.addEventListener('click', () => {
-      if (S.textBusy) return;
-      TE.feed([n(`${it.icon} ${it.name} — ${it.desc}`)]);
-    });
-    el.appendChild(chip);
   });
-}
-
-/* ────────────────────────────────────────────
-   NOTIFICATION
-──────────────────────────────────────────── */
-let notifTimer = null;
-function showNotif(msg) {
-  const el = $('notif');
-  el.textContent = msg;
-  el.classList.add('show');
-  if (notifTimer) clearTimeout(notifTimer);
-  notifTimer = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-/* ────────────────────────────────────────────
-   SCENE TRANSITIONS
-──────────────────────────────────────────── */
-function fadeToBlack(ms, then) {
-  const ov = $('overlay');
-  ov.style.transition = `opacity ${ms}ms ease`;
-  ov.style.opacity = '1';
-  setTimeout(then, ms + 50);
-}
-
-function fadeIn(ms) {
-  const ov = $('overlay');
-  ov.style.transition = `opacity ${ms}ms ease`;
-  ov.style.opacity = '0';
-}
-
-function goToScene(name) {
-  fadeToBlack(500, () => {
-    if (name === 'scene1') loadScene1();
-    else if (name === 'scene2') loadScene2();
-    else if (name === 'end') loadEnd();
-    setTimeout(() => fadeIn(600), 300);
-  });
-}
-
-/* ────────────────────────────────────────────
-   HOTSPOT HELPERS
-──────────────────────────────────────────── */
-function makeHotspot(id, label, x, y, w, h) {
-  const div = document.createElement('div');
-  div.className = 'hs';
-  div.id = `hs-${id}`;
-  div.dataset.id = id;
-  div.style.left   = x + '%';
-  div.style.top    = y + '%';
-  div.style.width  = w + '%';
-  div.style.height = h + '%';
-  const lbl = document.createElement('span');
-  lbl.className = 'hs-label';
-  lbl.textContent = label;
-  div.appendChild(lbl);
-  return div;
-}
-
-function lockHotspot(id) {
-  const el = $(`hs-${id}`);
-  if (el) el.classList.add('locked');
-}
-
-function unlockHotspot(id) {
-  const el = $(`hs-${id}`);
-  if (el) el.classList.remove('locked');
-}
-
-function hideHotspot(id) {
-  const el = $(`hs-${id}`);
-  if (el) el.classList.add('hidden');
-}
-
-function showHotspot(id) {
-  const el = $(`hs-${id}`);
-  if (el) el.classList.remove('hidden');
-}
-
-/* ────────────────────────────────────────────
-   ══════════════════════════════════════
-   SCENE 1 — THE BEDROOM
-   ══════════════════════════════════════
-──────────────────────────────────────────── */
-function loadScene1() {
-  $('title-screen').style.display = 'none';
-  $('end-screen').style.display   = 'none';
-  $('game-screen').style.display  = 'flex';
-
-  $('scene-bg').style.backgroundImage = `url("${IMG.bedroom}")`;
-
-  const layer = $('hotspot-layer');
-  layer.innerHTML = '';
-
-  // ── Hotspot definitions [id, label, x%, y%, w%, h%]
-  const spots = [
-    ['window',  'Window',        3,  5,  35, 52],
-    ['bed',     'My bed',       38, 20,  55, 62],
-    ['photo',   'Photo of Mom', 33, 52,  22, 32],
-    ['flower',  'Dried flower', 63,  3,  28, 26],
-    ['book',    'Old book',      3, 48,  24, 40],
-    ['door',    'Front door',   86, 18,  13, 72],
-  ];
-
-  spots.forEach(([id, label, x, y, w, h]) => {
-    const hs = makeHotspot(id, label, x, y, w, h);
-    hs.addEventListener('click', () => onClickScene1(id));
-    layer.appendChild(hs);
-  });
-
-  // Door is locked until required items visited
-  lockHotspot('door');
-
-  // Show opening text
-  S.textBusy = true;
-  TE.feed([
-    n("I woke up early today. Before the sun, even. Something pulled me out of sleep — not a sound, not a dream. Just a feeling. Like I'd lost something in the night and my body knew it before my mind did."),
-    n("My name is Nikos. I'm twelve. I live on Sikinos — a tiny island in the Cyclades where everyone knows everyone and nothing ever really happens. My mother died two years ago. I know this. I remember the fact of it — the funeral, the neighbors bringing food, my father sitting very still for a long time."),
-    n("But this morning, something about that knowledge feels different. Lighter. Like it's losing weight."),
-    n("I should look around. Figure out what's wrong."),
-  ]);
-}
-
-function checkScene1Progress() {
-  const required = ['photo', 'flower', 'book'];
-  if (required.every(id => S.visited1.has(id))) {
-    S.scene1CanLeave = true;
-    unlockHotspot('door');
-  }
-}
-
-function onClickScene1(id) {
-  if (S.textBusy) return;
-
-  const visited = S.visited1.has(id);
-
-  if (id === 'door') {
-    if (!S.scene1CanLeave) {
-      TE.feed([n("I should look around the room first. Something is wrong and I need to understand what before I go anywhere.")]);
-      return;
-    }
-    // Go to Daphne
-    TE.feed([
-      n("Enough. I can't just sit here and feel the memories drain out of me. I need to talk to someone."),
-      n("Daphne. Our neighbor. She's old — incredibly old — and she's strange. She talks to her plants. Her hands look weird. She knew my mother. My mother actually liked her a lot, which was unusual because my mother was practical and didn't have much patience for eccentric old ladies."),
-      n("But Daphne knows things. She just knows things sometimes, in a way that makes you feel like you accidentally asked the right person."),
-      n("I'm going next door."),
-    ], () => goToScene('scene2'));
-    return;
-  }
-
-  S.visited1.add(id);
-
-  switch (id) {
-    case 'bed':
-      TE.feed(visited ? [
-        n("The same bed. The same dent in the mattress. I keep thinking if I stare at it long enough, the memory will come back. It doesn't."),
-      ] : [
-        n("My bed. I've slept here my whole life — same mattress, same blue sheets, same dent in the pillow. My mother used to sit right here on the edge, every night. She'd sit down and the mattress would dip, and I'd roll slightly toward her. And then she'd —"),
-        n("And then she'd what?"),
-        n("She sat here. I know that. But the next part of the sentence is gone. Like a page torn from a book. She sat here and she... did something. Something important. Something every single night. And I can't reach it anymore."),
-      ]);
-      break;
-
-    case 'photo':
-      TE.feed(visited ? [
-        n("Mom's photo. I keep hoping that if I look at it again, the feeling will come back. Her face is right there. But it's just... a face."),
-      ] : [
-        n("A framed photo on my nightstand. My mother — Maria. Dark hair, wide smile, standing in a garden somewhere. I think my father took this photo. She's laughing at something he said."),
-        n("I can describe her perfectly. The dark hair, the way she smiled with her whole face, not just her mouth. I can see every detail. The photo is right here. It's sharp and clear."),
-        n("But I can't feel it."),
-        n("I look at this photo and it's like looking at a stranger in a magazine. I know the facts: that's my mother, she loved me, I loved her, she died. But the feeling that should come with those facts — the warmth, the thing in your chest, the thing that makes you miss someone instead of just knowing they're gone — it's not there."),
-        n("It's like someone reached into me while I was sleeping and scooped it out. Left the shell. Took the inside."),
-        n("This is wrong. This is very wrong."),
-      ], checkScene1Progress);
-      break;
-
-    case 'flower':
-      TE.feed(visited ? [
-        n("The dried flower. Still no sound. Still that silent movie of her hand and her mouth and nothing else."),
-      ] : [
-        n("A small dried flower in a clay vase on the shelf. Lavender, I think. Or thyme — something from the hills above the village. My mother picked this. She brought it home one afternoon and put it in this vase and said something about why she was keeping it."),
-        n("I can see the moment — her hand placing the flower in the vase, her mouth moving, her face turned toward me. But the sound is off. Like watching a video on mute. She's saying something important and I can't hear a single word."),
-        n("I could hear it yesterday. I'm almost sure I could hear it yesterday."),
-      ], checkScene1Progress);
-      break;
-
-    case 'book':
-      if (visited) {
-        TE.feed([n("Mom's book. I can still feel her in it — the pencil marks, the cracked spine, the pages she touched a thousand times. I'm not letting go of this.")]);
-      } else {
-        TE.feed([
-          n("A worn paperback on the chair by the window. \"Myths of the Greeks\" — my mother's copy. She'd had it since she was young, way before I was born. The spine is cracked, the pages are soft, and there are pencil marks in the margins where she underlined her favorite parts."),
-          n("She used to read to me from this. Every night — that's what she did on the bed. She sat on the edge and read to me. Theseus and the Minotaur. Odysseus and the Cyclops. Perseus and Medusa. Persephone dragged into the Underworld by Hades, and her mother Demeter searching the whole earth to find her."),
-          n("Wait. I remember that. Not just the fact — the actual feeling of it. Her sitting there, the weight of her on the mattress, her voice doing the characters. She made the Cyclops sound stupid and funny. She made Persephone sound brave instead of scared. She'd get dramatic during the battles and I'd laugh and she'd say \"Hey, the Trojan War is serious business\" and then crack up herself."),
-          n("That memory is still here. Why? Why is this one still here when the others are draining away?"),
-          n("I should take this with me. I don't know why, but it feels important — like holding onto this book might be holding onto her."),
-          acq('📖', 'Book of Myths', "Your mother's worn copy of Greek myths. She read to you from it every night."),
-        ], checkScene1Progress);
-      }
-      break;
-
-    case 'window':
-      TE.feed(visited ? [
-        n("The sea. The boats. My father's out there somewhere, catching fish and not thinking about anything. Sometimes I envy that."),
-      ] : [
-        n("The window. Blue sea, flat as glass this morning. The sun's coming up behind the hills and turning everything gold. I can see a couple of fishing boats already heading out — tiny white dots on the blue."),
-        n("My father's out there. Kostas Papadopoulos, fisherman. He leaves before dawn now. He's been doing that since Mom died — up earlier, home later, as if the house gets harder to be in every month. I don't think he's avoiding me. I think he's avoiding the quiet. The specific kind of quiet a house has when someone is missing from it."),
-        n("Our island, Sikinos, is one of the smallest in the Cyclades. Maybe three hundred people. Two tavernas, one school, one ferry per day. Everyone knew my mother."),
-      ]);
-      break;
-  }
-}
-
-/* ────────────────────────────────────────────
-   ══════════════════════════════════════
-   SCENE 2 — DAPHNE'S GARDEN
-   ══════════════════════════════════════
-──────────────────────────────────────────── */
-function loadScene2() {
-  $('game-screen').style.display = 'flex';
-  $('scene-bg').style.backgroundImage = `url("${IMG.garden}")`;
-
-  const layer = $('hotspot-layer');
-  layer.innerHTML = '';
-
-  // [id, label, x%, y%, w%, h%]
-  const spots = [
-    ['laurel',  'The laurel trees',  0,   0,  28, 65],
-    ['laurel2', 'The laurel trees', 72,   5,  28, 60],
-    ['bench',   'Stone bench',      22,  40,  32, 24],
-    ['shrine',  'Small shrine',     57,  22,  25, 38],
-    ['daphne',  'Daphne',           28,  55,  35, 40],
-    ['hands',   "Daphne's hands",   32,  68,  24, 22],
-    ['gate',    'Path to the harbor', 30, 3,  40, 28],
-  ];
-
-  spots.forEach(([id, label, x, y, w, h]) => {
-    const hs = makeHotspot(id, label, x, y, w, h);
-    hs.addEventListener('click', () => onClickScene2(id));
-    layer.appendChild(hs);
-  });
-
-  // Merge laurel2 clicks to same handler
-  hideHotspot('hands');
-  lockHotspot('gate');
-
-  TE.feed([
-    n("Outside, the morning air smells like thyme and salt. The path between our house and Daphne's is maybe thirty steps — a narrow stone walkway between low whitewashed walls, bougainvillea spilling over the top."),
-    n("Daphne's garden is... a lot. It always has been. But this morning I'm really seeing it for the first time. Laurel. Laurel everywhere. Trees, bushes, saplings, potted plants on every ledge. The garden is so dense with laurel that the air tastes green."),
-    n("She's there, kneeling in the dirt by a plant bed, her back to me. Even from here I can tell she already knows I'm coming. Daphne always knows."),
-  ]);
-}
-
-function onClickScene2(id) {
-  if (S.textBusy) return;
-
-  if (id === 'laurel2') id = 'laurel';
-
-  if (id === 'gate') {
-    if (!S.scene2CanLeave) {
-      TE.feed([n("I'm not ready to leave yet. I need to finish talking to Daphne.")]);
-      return;
-    }
-    TE.feed([
-      n("I look back once. Daphne is working the earth again, her back to me, her bark-brown hands moving in the dirt like they've been doing the same thing for three thousand years. The laurel trees rustle around her even though there's no wind. The morning sun turns the leaves to gold."),
-      n("She doesn't say goodbye. Maybe when you're that old, you stop bothering with goodbyes."),
-      n("I hold the laurel branch tight, put my mother's book under my arm, and walk toward the harbor."),
-    ], () => goToScene('end'));
-    return;
-  }
-
-  const visited = S.visited2.has(id);
-  S.visited2.add(id);
-
-  switch (id) {
-    case 'laurel':
-      if (!S.daphneRevealed) {
-        TE.feed(visited ? [
-          n("The laurel trees rustle softly. There's almost no wind."),
-        ] : [
-          n("So many laurel trees. I've been walking past this garden my whole life and I never really thought about how extreme it is. Most people on the island grow tomatoes, lemon trees, maybe some grape vines. Daphne grows laurel like it's her job. Like it's her mission."),
-          n("My mother once said it was odd, how attached Daphne was to these trees. \"It's like she's taking care of family,\" she said. I thought she was being funny."),
-        ]);
-      } else {
-        TE.feed(visited && S.daphneRevealed ? [
-          n("The laurel trees rustle softly. There's almost no wind."),
-        ] : [
-          n("The laurel trees. Her trees. Her children, in a way. Or her siblings. Or her echoes — dozens of versions of what she used to be, growing all around her house."),
-          n("She's surrounded herself with the thing she was turned into. I don't know if that's comforting or heartbreaking. Maybe it's both."),
-        ]);
-      }
-      break;
-
-    case 'bench':
-      TE.feed(visited ? [
-        n("The stone bench with her name carved in it. In ancient Greek. I'm starting to think my mother wasn't joking about Daphne being \"as old as the trees.\""),
-      ] : [
-        n("An old stone bench, worn smooth by years of sitting. It's placed in the middle of the garden like it's been here longer than the house."),
-        n("There's something carved into the seat — letters, very faded. I kneel and trace them with my finger. Greek letters, but old-style — the kind you see in museums, on artifacts behind glass. ΔΑΦΝΗ."),
-        n("Daphne. Her name, carved in a script that's been out of use for over two thousand years. How old is this bench?"),
-      ]);
-      break;
-
-    case 'shrine':
-      if (!S.daphneRevealed) {
-        TE.feed(visited ? [
-          n("The ancient offerings at the ancient tree. Who is Daphne making offerings to?"),
-        ] : [
-          n("A small stone shelf at the base of the biggest laurel tree in the garden. This tree is massive — its trunk is thick and gnarled, and it must be very old. The shrine has offerings on it: a clay cup of oil, a small dried wreath, a few old coins that are green with age."),
-          n("It looks like the kind of thing you'd see at a church, or at one of those ancient sites on the bigger islands where tourists leave coins for luck. But this is in someone's garden. Who is Daphne making offerings to?"),
-        ]);
-      } else {
-        TE.feed(visited ? [
-          n("The ancient offerings at the ancient tree. This garden has more history in it than the whole island museum."),
-        ] : [
-          n("The shrine at the base of the tree. Now I understand. This isn't Daphne making offerings to something. These are the remains of offerings that others made to her — a long time ago, when she was the tree and the tree was sacred to Apollo."),
-          n("She kept them. All these centuries. The coins, the oil, the dried wreaths. Kept them the way you keep old letters from someone you used to love."),
-        ]);
-      }
-      break;
-
-    case 'hands':
-      TE.feed([
-        n("Her hands. Up close, there's no mistaking it. The fingers narrow to points. The skin — if you can call it skin — has a visible grain running along it, like polished driftwood. At the knuckle joints, where a normal person would have wrinkles, she has tiny rings — growth rings, like you see when a tree is cut."),
-        d('Daphne', "Three thousand years, and I still can't grow proper fingernails."),
-        n("She almost smiles."),
-      ]);
-      break;
-
-    case 'daphne':
-      if (S.daphneStage === 0) {
-        startDaphneConversation();
-      } else {
-        TE.feed([n("Daphne kneels by the earth, her bark-textured hands pressing into the soil. She's said what she needs to say. The path to the harbor is ahead.")]);
-      }
-      break;
-  }
-}
-
-/* ────────────────────────────────────────────
-   DAPHNE CONVERSATION — STAGED
-──────────────────────────────────────────── */
-function startDaphneConversation() {
-  S.daphneStage = 1;
-
-  // Stage 1: Approach
-  TE.feed([
-    n("I walk toward her. She's working the soil around a young laurel sapling, her fingers pressing into the dark earth. She doesn't turn around."),
-    d('Daphne', "You're up early, Nikos. And you walked here with a question. I can hear it in your steps — heavy."),
-    n("She still hasn't turned around. Her fingers press into the soil. I watch them for a moment — is it my imagination, or does the soil seem to move toward her hands? Like the earth wants to be touched by her."),
-    d('Nikos',  "Something's wrong, Daphne. I can't remember my mother properly. Not the facts — I know the facts. But the feeling of her. The sound of her voice. It was there yesterday and now it's just... gone."),
-    n("Now she turns. Slowly, like it costs her effort."),
-    n("Daphne's face. I've seen it a thousand times and never really looked. She's old — deeply lined, sun-dark, strong. But there's something else today, or maybe I'm just finally seeing it. Her skin has a texture that isn't quite skin. Around her temples and along her jaw, there are faint ridges — like wood grain. Like bark. And her eyes — dark and very bright, the way eyes look when there's too much life packed into a body that's getting tired of holding it all."),
-    d('Daphne', "Ah. There it is. The hollow look. I was wondering when it would reach this island."),
-    d('Nikos',  "You know what this is?"),
-    d('Daphne', "Sit down, boy."),
-    act(() => showHotspot('hands')),
-  ], daphneStage2);
-}
-
-function daphneStage2() {
-  // Stage 2: The Explanation
-  TE.feed([
-    d('Daphne', "The rivers beneath the earth. You know about them, yes? From your mother's book."),
-    d('Nikos',  "The rivers of the Underworld. The Styx, the Acheron —"),
-    d('Daphne', "And Lethe."),
-    d('Nikos',  "The river of forgetting."),
-    d('Daphne', "The river of forgetting. The dead drink from it when they're ready to be reborn — it washes away everything, all the weight of the old life, so they can start fresh. It's meant to be a mercy."),
-    n("She pauses. Looks at her hands. And in the morning light, I see them clearly — her fingers are long and thin. Too thin. They taper at the ends not like fingers but like... twigs. The skin on the backs of her hands isn't wrinkled the way old skin should be. It's ridged. Like bark. Like the bark on the laurel trees surrounding us."),
-    d('Daphne', "But Lethe has always been dangerous. It's not like normal water. It doesn't flow and behave. It wants to dissolve things. Memories, feelings, the threads that connect the living to the dead. Normally the Underworld keeps it contained. The walls hold. The rivers stay in their beds. But something has gone wrong."),
-    d('Nikos',  "Wrong how?"),
-    d('Daphne', "Someone — or something — is redirecting the water. Pushing it upward, through the earth, into the world of the living. And it's doing what Lethe always does. Dissolving. But not everything — it takes the fragile parts first. Not the facts. The feelings. The texture of a voice. The warmth of a hand. The things that make a memory alive instead of just information."),
-    n("That's exactly what's happening to me. Exactly."),
-    d('Nikos',  "Why would someone do that?"),
-    d('Daphne', "I don't know. I'm not what I once was, and I can't see into the Underworld from up here."),
-    n("She looks at her hands again."),
-    d('Daphne', "But I can feel it. The tree in me — the part that will never fully go away — has roots that go deeper than you'd think. And I can feel the water rising."),
-  ], daphneChoice1);
-}
-
-function daphneChoice1() {
-  TE.feed([
-    ch([
-      { id:'a', label: '"Daphne... what do you mean, \'the tree in you\'?"' },
-      { id:'b', label: '"You said \'when it would reach this island\' — is this happening everywhere?"' },
-      { id:'c', label: '"How do you know so much about the Underworld?"' },
-    ]),
-  ]);
-  TE.setChoiceHandler(id => {
-    S.daphneChoice1 = id;
-    const response = getDaphneChoice1Response(id);
-    TE.feed(response, daphneStage4);
-  });
-}
-
-function getDaphneChoice1Response(id) {
-  if (id === 'a') return [
-    d('Daphne', "Look at me, Nikos. Really look. What do you see?"),
-    d('Nikos',  "Your hands. They look like... like wood."),
-    d('Daphne', "Your mother's book. The one you're carrying — yes, I can see it in your bag. There's a story in it. About a young woman who was chased by a god."),
-    d('Nikos',  "Apollo and Daphne. Apollo loved her and she didn't love him back, and she —"),
-    n("I stop. I look at her. At the bark-skin. At the garden full of laurel. At the stone bench with her name carved in letters two thousand years old."),
-    d('Nikos',  "That was you?"),
-    act(() => { S.daphneRevealed = true; }),
-  ];
-  if (id === 'b') return [
-    d('Daphne', "Not everywhere. Not yet. But on the mainland, in the villages near the old places — near the caves and the cracks in the earth where the Underworld is close to the surface — people have been losing memories. A woman in Athens forgot her husband's name at his graveside. A man in Crete couldn't remember the sound of his daughter's laugh. Small losses. Specific ones. Always about the dead."),
-    d('Nikos',  "And you know this how? You've been tracking it?"),
-    n("She looks at her hands. In the sunlight, the bark-grain is unmistakable."),
-    d('Daphne', "I know this because I am very, very old, Nikos. Older than this island's name. Older than the language we're speaking."),
-    d('Nikos',  "Daphne... the myth. Apollo and Daphne. The girl who was turned into a laurel tree. That's —"),
-    d('Daphne', "That's me."),
-    act(() => { S.daphneRevealed = true; }),
-  ];
-  // id === 'c'
-  return [
-    d('Daphne', "Because I lived through the age when the Underworld wasn't just a story. When the gods walked and the rivers flowed and a girl could be turned into a tree because a god wanted her and she said no."),
-    n("I stare at her."),
-    d('Nikos',  "What are you saying?"),
-    n("She holds up her hands. The bark texture. The twig-like fingers. The garden full of laurel trees, her name carved in ancient Greek on a stone bench."),
-    d('Nikos',  "You're Daphne. Not just... you're the Daphne. From the myth."),
-    act(() => { S.daphneRevealed = true; }),
-  ];
-}
-
-function daphneStage4() {
-  // All three paths converge here: Daphne's story
-  TE.feed([
-    d('Daphne', "Apollo. The sun god. The beautiful one. The one who always got what he wanted. He wanted me. I didn't want him. I prayed — I begged the earth itself to save me. And it did. It turned me into a laurel tree."),
-    n("She says it simply. Like she's describing something that happened last week."),
-    d('Daphne', "I spent centuries as a tree, Nikos. Rooted, silent, aware but unable to move or speak. People hung wreaths on me. They left offerings. They said I was sacred to Apollo, which was the cruellest joke — he got to claim me anyway, just in a different form."),
-    d('Daphne', "But slowly — very slowly — I grew back. More human each century. A finger that could move. An eye that could blink. A voice, eventually. It took a very long time. And it's never been complete. The tree is still in me. It will always be in me."),
-    n("I stare at her. The old woman who lives next door. Who brought casseroles when my mother died. Who trims her laurel trees every morning with hands that are half-branch. She is a myth. She is a person from my mother's book, standing here in a garden on Sikinos, getting dirt under her bark-fingernails."),
-    d('Nikos',  "Does anyone else know?"),
-    d('Daphne', "Your mother guessed, I think. She never said so directly. But she'd look at me sometimes with this expression — amused and sad at the same time. She was a perceptive woman, your mother. She saw things other people didn't."),
-    n("A brief, sharp ache in my chest. That sounds exactly like her."),
-  ], daphneChoice2);
-}
-
-function daphneChoice2() {
-  TE.feed([
-    d('Daphne', "But we don't have time for my old stories. You have to go down there, Nikos."),
-    d('Nikos',  "Down — you mean the Underworld? The actual Underworld?"),
-    d('Daphne', "The actual Underworld. To the source of the leak. Find where Lethe is seeping through and stop it — or find whoever is causing it and convince them to stop."),
-    ch([
-      { id:'a', label: '"Why me? I\'m twelve years old."' },
-      { id:'b', label: '"What happens if I don\'t go?"' },
-    ]),
-  ]);
-  TE.setChoiceHandler(id => {
-    S.daphneChoice2 = id;
-    const response = getDaphneChoice2Response(id);
-    TE.feed(response, daphneStage6);
-  });
-}
-
-function getDaphneChoice2Response(id) {
-  if (id === 'a') return [
-    d('Daphne', "Because you noticed. That matters more than you think. Most adults who lose these memories don't even realize it. They just feel a little lighter one day, a little less sad, and they tell themselves they're finally healing. They're grateful for it. They don't question it."),
-    d('Daphne', "Children are different. You woke up and knew immediately that something had been taken from you. You didn't accept it. You didn't rationalize it. You felt the theft and you came looking for answers. That instinct — that refusal to let go — is exactly what you'll need down there."),
-  ];
-  // id === 'b'
-  return [
-    d('Daphne', "Then you go home. And tomorrow morning, a little more will be gone. Not all at once — Lethe is patient. A detail here, a feeling there. The sound of her laugh. The way she smelled. The specific weight of her hand on your head."),
-    d('Daphne', "And one day — maybe a month from now, maybe a year — you'll look at that photo on your nightstand and you won't feel loss. You won't feel anything at all. She'll be a fact. A name and two dates. And the worst part is, you won't mind. That's what Lethe does. It doesn't just take. It makes you not mind the taking."),
-    n("That's the worst thing anyone has ever said to me."),
-  ];
-}
-
-function daphneStage6() {
-  // The laurel branch
-  TE.feed([
-    n("Daphne stands slowly — her joints creak like wood settling — and walks to the largest laurel tree in the garden. The one with the shrine at its base. She reaches up to a low branch, wraps her bark-textured fingers around it, and carefully breaks off a small, fresh sprig. I notice her wince. A tiny flinch, quick and suppressed, like she felt it."),
-    d('Daphne', "Here. Take this."),
-    d('Nikos',  "Laurel?"),
-    d('Daphne', "My own wood, you could say."),
-    n("A dry, sad smile."),
-    d('Daphne', "Apollo made it sacred — though I never asked for that — and it has certain properties. It won't protect you from monsters or gods. But it will protect you from losing yourself down there. The Underworld has a way of making the living forget who they are, forget why they came. This will hold you together."),
-    acq('🌿', 'Laurel Branch', "A fresh branch from Daphne's own tree. Protects against losing yourself in the Underworld."),
-    d('Daphne', "The entrance is at Cape Tainaron — the southern tip of the Peloponnese, on the mainland. Take the morning ferry to Piraeus, then a bus south. You'll find a cave at the edge of the sea. Walk in. Keep walking. You'll know when you've crossed over."),
-    d('Nikos',  "Will I come back?"),
-    d('Daphne', "Everyone asks that. Orpheus asked it. Heracles asked it. Odysseus asked it. They all came back."),
-    n("Another pause."),
-    d('Daphne', "But they all came back different."),
-  ], daphneStage7);
-}
-
-function daphneStage7() {
-  TE.feed([
-    n("She turns away. Kneels back down by her sapling. Her hands go into the dirt. The conversation is over — I can feel it. Daphne has said what she's going to say."),
-    n("The garden gate is ahead of me. Beyond it, the path to the harbor. The ferry leaves in an hour."),
-    act(() => {
-      S.daphneStage = 1;
-      S.scene2CanLeave = true;
-      unlockHotspot('gate');
-    }),
-  ]);
-}
-
-/* ────────────────────────────────────────────
-   END SCREEN
-──────────────────────────────────────────── */
-function loadEnd() {
-  $('game-screen').style.display = 'none';
-  $('end-screen').style.display  = 'flex';
-  $('end-bg').style.backgroundImage = `url("${IMG.cave}")`;
-
-  const c = $('end-content');
-  c.innerHTML = `
-    <p class="end-p">The ferry to the mainland takes four hours. I sit on the deck with the book in my lap, reading the story of Orpheus and Eurydice — the man who went to the Underworld for love and almost brought his wife back.</p>
-    <p class="end-p">Almost.</p>
-    <p class="end-p">I wonder if "almost" is the best I can hope for.</p>
-    <div class="end-rule">◈ End of Demo ◈</div>
-    <p class="end-p" style="font-size:0.85rem; color:rgba(212,184,112,0.5);">Scenes 1 &amp; 2 — The journey continues at Cape Tainaron…</p>
-    <button id="btn-replay">◈ &nbsp; PLAY AGAIN &nbsp; ◈</button>
-  `;
-
-  $('btn-replay').addEventListener('click', () => {
-    // Reset state
-    S.inventory = [];
-    S.visited1 = new Set();
-    S.visited2 = new Set();
-    S.daphneStage = 0;
-    S.daphneRevealed = false;
-    S.daphneChoice1 = null;
-    S.daphneChoice2 = null;
-    S.textBusy = false;
-    S.scene1CanLeave = false;
-    S.scene2CanLeave = false;
-    renderInventory();
-    goToScene('scene1');
-  });
-}
-
-/* ────────────────────────────────────────────
-   INIT
-──────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-
-  // Text panel click → advance
-  $('text-panel').addEventListener('click', () => {
-    if (!S.textBusy) return;
-    if (TE.isWaitingChoice()) return;
-    TE.advance();
-  });
-
-  // Title begin button
-  $('btn-begin').addEventListener('click', () => {
-    fadeToBlack(400, () => {
-      $('title-screen').style.display = 'none';
-      loadScene1();
-      setTimeout(() => fadeIn(700), 300);
-    });
-  });
-
-  // Show title screen with fade in
-  $('title-screen').style.display = 'flex';
-  setTimeout(() => fadeIn(800), 100);
+  layer.appendChild(el);
 });
 </script>
 </body>

@@ -992,20 +992,28 @@ function loadScene10(){
     if(S.flags.has('asphodelGiven')){
       TE.feed([{k:'n',t:`She holds the flower, looking at it. Our conversation is done.`}]);return;
     }
-    if(!S.inventory.includes('asphodel')){
-      TE.feed([{k:'n',t:`I should give her something from the Meadows. I picked a flower — it's still in my inventory.`}]);return;
+    if(S.inventory.includes('asphodel')){
+      TE.feed([
+        {k:'d',s:'Daphne',t:`You went all the way down for a memory. Was it worth it?`},
+        {k:'n',t:`I give her the asphodel flower. She holds it carefully, like something precious.`},
+        {k:'remove',item:'asphodel'},
+        {k:'d',s:'Daphne',t:`From the Meadows. You picked this yourself.`},
+        {k:'d',s:'Yiannis',t:`She has a message. From Melinoe. "Remember us. But let us rest."`},
+        {k:'n',t:`Daphne closes her fingers around the flower very slowly.`},
+        {k:'d',s:'Daphne',t:`Go home, Yiannis.`},
+        {k:'flag',f:'asphodelGiven'},
+        {k:'next',scene:'scene10b',delay:2000},
+      ]);
+    }else{
+      TE.feed([
+        {k:'d',s:'Daphne',t:`You went all the way down for a memory. Was it worth it?`},
+        {k:'d',s:'Yiannis',t:`She has a message. From Melinoe. "Remember us. But let us rest."`},
+        {k:'n',t:`Daphne is quiet for a moment.`},
+        {k:'d',s:'Daphne',t:`Go home, Yiannis.`},
+        {k:'flag',f:'asphodelGiven'},
+        {k:'next',scene:'scene10b',delay:2000},
+      ]);
     }
-    TE.feed([
-      {k:'d',s:'Daphne',t:`You went all the way down for a memory. Was it worth it?`},
-      {k:'n',t:`I give her the asphodel flower. She holds it carefully, like something precious.`},
-      {k:'remove',item:'asphodel'},
-      {k:'d',s:'Daphne',t:`From the Meadows. You picked this yourself.`},
-      {k:'d',s:'Yiannis',t:`She has a message. From Melinoe. "Remember us. But let us rest."`},
-      {k:'n',t:`Daphne closes her fingers around the flower very slowly.`},
-      {k:'d',s:'Daphne',t:`Go home, Yiannis.`},
-      {k:'flag',f:'asphodelGiven'},
-      {k:'next',scene:'scene10b',delay:2000},
-    ]);
   });
 }
 

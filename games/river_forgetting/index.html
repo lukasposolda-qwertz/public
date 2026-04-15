@@ -271,7 +271,7 @@ function loadScene1(){
     {k:'n',t:`But this morning that knowledge feels lighter. Like it's losing weight. I should look around.`},
   ]);
 
-  makeHS('window','Window',0,5,22,68,()=>{
+  makeHS('window','Window',0,2,20,68,()=>{
     if(TE.busy)return;
     if(!wasV('window')){markV('window');
       TE.feed([
@@ -281,7 +281,7 @@ function loadScene1(){
     }else TE.feed([{k:'n',t:`The sea. My father's out there somewhere. I can't tell from here if he's okay.`}]);
   });
 
-  makeHS('book','Old book',26,22,18,55,()=>{
+  makeHS('book','Old book',24,5,19,80,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('book');return;}
     if(!wasV('book')){markV('book');
@@ -295,7 +295,7 @@ function loadScene1(){
     }else TE.feed([{k:'n',t:`Mom's book. I can still feel her in the pencil marks, the cracked spine. I'm not letting go of this.`}]);
   });
 
-  makeHS('bed','My bed',45,12,30,56,()=>{
+  makeHS('bed','My bed',40,36,60,64,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('bed');return;}
     if(!wasV('bed')){markV('bed');
@@ -306,7 +306,7 @@ function loadScene1(){
     }else TE.feed([{k:'n',t:`The same dent in the mattress. I keep thinking if I stare at it the memory will come back. It doesn't.`}]);
   });
 
-  makeHS('photo','Photo of Mum',46,62,20,28,()=>{
+  makeHS('photo','Photo of Mum',44,33,20,38,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('photo');return;}
     if(!wasV('photo')){markV('photo');
@@ -371,7 +371,7 @@ function loadScene2(){
     }else TE.feed([{k:'n',t:`The laurel trees rustle softly. There's almost no wind.`}]);
   });
 
-  makeHS('bench','Stone bench',23,38,32,20,()=>{
+  makeHS('bench','Stone bench',0,68,22,16,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('bench');return;}
     if(!wasV('bench')){markV('bench');
@@ -382,7 +382,7 @@ function loadScene2(){
     }else TE.feed([{k:'n',t:`The bench with her name carved in ancient Greek. I'm starting to think my mother wasn't joking about Daphne being "as old as the trees."`}]);
   });
 
-  makeHS('shrine','Small shrine',72,22,24,38,()=>{
+  makeHS('shrine','Small shrine',60,42,22,28,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('shrine');return;}
     if(S.flags.has('daphneRevealed')&&!wasV('shrine_post')){markV('shrine_post');
@@ -398,7 +398,7 @@ function loadScene2(){
     }else TE.feed([{k:'n',t:`The ancient offerings at the ancient tree.`}]);
   });
 
-  makeHS('daphne','Daphne',28,60,40,36,()=>{
+  makeHS('daphne','Daphne',18,62,36,38,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('Daphne');return;}
     if(S.flags.has('scene2Complete')){
@@ -411,7 +411,7 @@ function loadScene2(){
     }
   });
 
-  makeHS('gate','Path to the ferry',36,2,28,26,()=>{
+  makeHS('gate','Path to the ferry',30,40,28,22,()=>{
     if(TE.busy)return;
     if(!S.flags.has('scene2Complete')){TE.feed([{k:'n',t:`I'm not done here yet.`}]);return;}
     TE.feed([
@@ -519,7 +519,7 @@ function loadScene3(){
     {k:'n',t:`The ferryman stands at the stern with his pole. He's an enormously old man with sunken eyes and hands like tree roots. He looks at me with no particular interest.`},
   ]);
 
-  makeHS('entrance','Cave entrance',0,5,26,68,()=>{
+  makeHS('entrance','Cave entrance',0,0,26,72,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('entrance');return;}
     if(!wasV('entrance')){markV('entrance');
@@ -541,7 +541,7 @@ function loadScene3(){
     }else TE.feed([{k:'n',t:`The Styx. I don't want to fall in.`}]);
   });
 
-  makeHS('charon','The ferryman',56,15,34,75,()=>{
+  makeHS('charon','The ferryman',54,10,40,82,()=>{
     if(TE.busy)return;
     if(S.flags.has('charonCrossed')){
       TE.feed([{k:'d',s:'Charon',t:`I already said you could cross. Get in the boat.`}]);
@@ -607,7 +607,7 @@ function loadScene4(){
     }else TE.feed([{k:'n',t:`The asphodel. I've already picked one.`}]);
   });
 
-  makeHS('elpenor','A restless shade',48,28,28,58,()=>{
+  makeHS('elpenor','A restless shade',45,26,32,62,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('shade');return;}
     if(!wasV('elpenor')){markV('elpenor');
@@ -890,7 +890,7 @@ function loadScene8(){
     }else TE.feed([{k:'n',t:`The Lethe. Still and dangerous. I'm keeping my grip on the branch.`}]);
   });
 
-  makeHS('crack','The fissure',20,50,28,16,()=>{
+  makeHS('crack','The fissure',4,64,14,24,()=>{
     if(TE.busy)return;
     if(S.selectedItem){wrongItem('fissure');return;}
     if(!wasV('crack')){markV('crack');
@@ -984,7 +984,7 @@ function loadScene10(){
     {k:'n',t:`Daphne is in her garden when I arrive. She seems unsurprised.`},
   ]);
 
-  makeHS('daphne_return','Daphne',28,60,40,36,()=>{
+  makeHS('daphne_return','Daphne',18,62,36,38,()=>{
     if(TE.busy)return;
     if(S.flags.has('asphodelGiven')){
       TE.feed([{k:'n',t:`She holds the flower, looking at it. Our conversation is done.`}]);return;

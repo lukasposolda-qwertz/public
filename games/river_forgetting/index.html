@@ -1,378 +1,1057 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The River of Forgetting — POC</title>
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0808; font-family: 'Libre Baskerville', serif; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The River of Forgetting</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0808;font-family:'Libre Baskerville',serif}
 
-    /* ── GAME SHELL — side by side ── */
-    #game {
-      display: flex;
-      width: 100%;
-      height: 100vh;
-    }
+/* ── FADE OVERLAY ── */
+#fade-ov{position:fixed;inset:0;z-index:999;background:#000;opacity:1;pointer-events:none;transition:opacity .55s ease}
 
-    /* ── LEFT: IMAGE PANEL (67%) ── */
-    #image-panel {
-      flex: 0 0 67%;
-      position: relative;
-      background: #0a0808 url('assets/scene1_bedroom.png') center / contain no-repeat;
-      overflow: hidden;
-    }
+/* ── TITLE SCREEN ── */
+#title{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#1c1408 0%,#0c0a06 60%,#040404 100%)}
+#title-main{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,3.8rem);font-weight:600;color:#c8a84a;letter-spacing:.06em;text-align:center;line-height:1.2}
+#title-sub{font-style:italic;font-size:clamp(.8rem,1.6vw,1rem);color:rgba(200,168,74,.45);letter-spacing:.12em;text-align:center;margin-top:.6rem}
+.t-rule{width:240px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,168,74,.3),transparent);margin:2rem auto}
+#btn-start{font-family:'Libre Baskerville',serif;font-size:1rem;letter-spacing:.14em;color:#c8a84a;background:transparent;border:1px solid rgba(200,168,74,.35);padding:.75rem 2.8rem;cursor:pointer;transition:all .22s}
+#btn-start:hover{color:#e8c86a;border-color:rgba(200,168,74,.75);background:rgba(200,168,74,.05)}
 
-    /* Hotspot layer — repositioned via JS to exactly cover rendered image */
-    #hs-layer {
-      position: absolute;
-      /* bounds set by repositionHotspots() */
-    }
+/* ── GAME ── */
+#game{display:none;width:100%;height:100vh;flex-direction:row}
 
-    .hs {
-      position: absolute;
-      cursor: pointer;
-    }
-    .hs-ring {
-      position: absolute;
-      inset: 0;
-      border: 1px solid transparent;
-      transition: border-color .18s, background .18s;
-    }
-    .hs:hover .hs-ring {
-      border-color: rgba(255, 220, 120, .45);
-      background: rgba(255, 220, 120, .05);
-    }
-    .hs-lbl {
-      position: absolute;
-      bottom: calc(100% + 5px);
-      left: 50%;
-      transform: translateX(-50%);
-      white-space: nowrap;
-      background: rgba(0, 0, 0, .74);
-      color: #e0cfa0;
-      font-family: 'Libre Baskerville', serif;
-      font-size: .68rem;
-      letter-spacing: .08em;
-      padding: 3px 9px;
-      border-radius: 2px;
-      opacity: 0;
-      transition: opacity .15s;
-      pointer-events: none;
-    }
-    .hs:hover .hs-lbl { opacity: 1; }
+/* ── IMAGE PANEL ── */
+#image-panel{flex:0 0 67%;position:relative;background:#0a0808 center/contain no-repeat;overflow:hidden}
+#hs-layer{position:absolute}
+.hs{position:absolute;cursor:pointer}
+.hs-ring{position:absolute;inset:0;border:1px solid transparent;transition:border-color .18s,background .18s}
+.hs:hover .hs-ring{border-color:rgba(255,220,120,.42);background:rgba(255,220,120,.045)}
+.hs-lbl{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(0,0,0,.74);color:#e0cfa0;font-family:'Libre Baskerville',serif;font-size:.67rem;letter-spacing:.08em;padding:3px 9px;border-radius:2px;opacity:0;transition:opacity .14s;pointer-events:none}
+.hs:hover .hs-lbl{opacity:1}
 
-    /* ── RIGHT: CONTROLS PANEL (33%) ── */
-    #controls-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: #0d0b09;
-      border-left: 1px solid rgba(200, 168, 74, .14);
-    }
+/* ── CONTROLS PANEL ── */
+#controls-panel{flex:1;display:flex;flex-direction:column;background:#0d0b09;border-left:1px solid rgba(200,168,74,.13)}
 
-    /* Text log — half the controls panel */
-    #text-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 18px 20px 12px;
-      cursor: pointer;
-      border-bottom: 1px solid rgba(200, 168, 74, .1);
-    }
-    #text-log {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
-    }
-    #text-line {
-      font-style: normal;
-      font-size: .94rem;
-      line-height: 1.78;
-      color: #c0ae80;
-    }
-    /* Italics only for dialogue speech */
-    #text-line .speech { font-style: italic; }
-    #text-line .spk {
-      display: block;
-      font-style: normal;
-      font-weight: 700;
-      font-size: .84rem;
-      letter-spacing: .06em;
-      color: #c8a84a;
-      margin-bottom: .22rem;
-    }
-    #click-hint {
-      flex-shrink: 0;
-      font-size: .68rem;
-      letter-spacing: .1em;
-      color: rgba(200, 168, 74, .62);
-      text-align: right;
-      margin-top: 10px;
-    }
+/* text area */
+#text-area{flex:1;display:flex;flex-direction:column;padding:18px 20px 12px;cursor:pointer;border-bottom:1px solid rgba(200,168,74,.1);overflow:hidden;min-height:0}
+#text-log{flex:1;overflow-y:auto;min-height:0}
+#text-line{font-size:.94rem;line-height:1.78;color:#bfad7e}
+#text-line .spk{display:block;font-style:normal;font-weight:700;font-size:.84rem;letter-spacing:.06em;color:#c8a84a;margin-bottom:.22rem}
+#text-line .speech{font-style:italic}
+#choices{display:none;flex-direction:column;gap:6px;margin-top:12px;flex-shrink:0;overflow-y:auto;max-height:220px}
+.cbtn{font-family:'Libre Baskerville',serif;font-size:.82rem;color:#c4b484;background:rgba(200,168,74,.04);border:1px solid rgba(200,168,74,.22);padding:8px 13px;cursor:pointer;text-align:left;transition:all .18s;border-radius:2px}
+.cbtn:hover{background:rgba(200,168,74,.1);color:#e0c86a;border-color:rgba(200,168,74,.48)}
+#click-hint{flex-shrink:0;font-size:.67rem;letter-spacing:.1em;color:rgba(200,168,74,.58);text-align:right;margin-top:8px}
 
-    /* Inventory — equal half */
-    #inv-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 14px 16px 16px;
-      min-height: 0;
-    }
-    #inv-hdr {
-      flex-shrink: 0;
-      font-size: .64rem;
-      letter-spacing: .16em;
-      color: rgba(200, 168, 74, .36);
-      margin-bottom: 12px;
-    }
-    #inv-items {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      align-content: start;
-      overflow-y: auto;
-    }
-    .inv-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 14px 8px 12px;
-      border: 1px solid rgba(200, 168, 74, .14);
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background .18s, border-color .18s;
-      gap: 8px;
-    }
-    .inv-item:hover { background: rgba(200, 168, 74, .07); }
-    .inv-item.selected {
-      background: rgba(200, 168, 74, .14);
-      border-color: rgba(200, 168, 74, .48);
-    }
-    .inv-item img {
-      width: 76px;
-      height: 76px;
-      object-fit: contain;
-    }
-    .inv-name {
-      font-size: .75rem;
-      color: #a89870;
-      text-align: center;
-      line-height: 1.3;
-    }
-    .inv-empty { font-style: normal; font-size: .78rem; color: rgba(200, 168, 74, .22); }
-  </style>
+/* inventory */
+#inv-area{flex:1;display:flex;flex-direction:column;padding:14px 16px 16px;min-height:0}
+#inv-hdr{flex-shrink:0;font-size:.63rem;letter-spacing:.16em;color:rgba(200,168,74,.35);margin-bottom:12px}
+#inv-items{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;overflow-y:auto}
+.inv-tile{display:flex;flex-direction:column;align-items:center;padding:14px 8px 11px;border:1px solid rgba(200,168,74,.14);border-radius:4px;cursor:pointer;transition:background .18s,border-color .18s;gap:8px}
+.inv-tile:hover{background:rgba(200,168,74,.07)}
+.inv-tile.sel{background:rgba(200,168,74,.14);border-color:rgba(200,168,74,.5)}
+.inv-tile img{width:76px;height:76px;object-fit:contain}
+.inv-tile span{font-size:.74rem;color:#a89870;text-align:center;line-height:1.3}
+.inv-empty{font-size:.78rem;color:rgba(200,168,74,.22);grid-column:1/-1}
+
+/* ── CREDITS ── */
+#credits{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#1c1408 0%,#040404 100%);text-align:center;padding:3rem}
+#credits-quote{font-family:'Cormorant Garamond',serif;font-size:clamp(1.1rem,2.4vw,1.65rem);font-style:italic;color:#c8a84a;letter-spacing:.04em;line-height:1.75;max-width:680px;margin-bottom:2.5rem}
+#credits-title{font-size:.7rem;letter-spacing:.2em;color:rgba(200,168,74,.38);margin-bottom:2rem}
+#btn-again{font-family:'Libre Baskerville',serif;font-size:.95rem;color:#c8a84a;background:transparent;border:1px solid rgba(200,168,74,.32);padding:.7rem 2.4rem;cursor:pointer;letter-spacing:.1em;transition:all .22s}
+#btn-again:hover{color:#e8c86a;border-color:rgba(200,168,74,.7)}
+</style>
 </head>
 <body>
+<div id="fade-ov"></div>
+
+<div id="title">
+  <div id="title-main">The River<br>of Forgetting</div>
+  <div id="title-sub">A story set in the world beneath the world</div>
+  <div class="t-rule"></div>
+  <button id="btn-start">Begin</button>
+</div>
+
 <div id="game">
-
-  <!-- LEFT: scene image + hotspots -->
-  <div id="image-panel">
-    <div id="hs-layer"></div>
-  </div>
-
-  <!-- RIGHT: controls -->
+  <div id="image-panel"><div id="hs-layer"></div></div>
   <div id="controls-panel">
-
     <div id="text-area">
-      <div id="text-log">
-        <div id="text-line"></div>
-      </div>
-      <div id="click-hint">click to continue</div>
+      <div id="text-log"><div id="text-line"></div></div>
+      <div id="choices"></div>
+      <div id="click-hint"></div>
     </div>
-
     <div id="inv-area">
       <div id="inv-hdr">◈ Inventory</div>
-      <div id="inv-items">
-        <span class="inv-empty">Empty</span>
-      </div>
+      <div id="inv-items"><span class="inv-empty">Empty</span></div>
     </div>
-
   </div>
 </div>
 
+<div id="credits">
+  <div id="credits-quote"></div>
+  <div id="credits-title">THE RIVER OF FORGETTING</div>
+  <button id="btn-again">Play Again</button>
+</div>
+
 <script>
-// ── POC: Scene 1 — side-by-side layout test ───────────────────────────────────
+'use strict';
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const S = {
+  inventory:[], selectedItem:null,
+  flags: new Set(), visited:{},
+  judgeAttempts:0, currentScene:null,
+};
 
-const IMG_W = 1536;
-const IMG_H = 1024;
-
-// ── Hotspot layer: position to exactly cover the rendered contain image ────────
-function repositionHotspots() {
-  const panel  = document.getElementById('image-panel');
-  const layer  = document.getElementById('hs-layer');
-  const pW = panel.clientWidth;
-  const pH = panel.clientHeight;
-
-  const scale  = Math.min(pW / IMG_W, pH / IMG_H);
-  const rendW  = IMG_W * scale;
-  const rendH  = IMG_H * scale;
-  const offX   = (pW - rendW) / 2;
-  const offY   = (pH - rendH) / 2;
-
-  layer.style.left   = offX + 'px';
-  layer.style.top    = offY + 'px';
-  layer.style.width  = rendW + 'px';
-  layer.style.height = rendH + 'px';
-}
-
-window.addEventListener('resize', repositionHotspots);
-repositionHotspots();
-
-// ── Text engine ───────────────────────────────────────────────────────────────
-const textEl  = document.getElementById('text-line');
-const hintEl  = document.getElementById('click-hint');
-const textArea = document.getElementById('text-area');
-
-let queue = [];
-let busy  = false;
-
-function enqueue(lines) {
-  queue = [...lines];
-  busy  = true;
-  next();
-}
-
-function next() {
-  if (!queue.length) {
-    busy = false;
-    hintEl.textContent = '';
-    return;
-  }
-  const item = queue.shift();
-
-  if (item.acq) {
-    addItem(item.acq);
-    next();
-    return;
-  }
-
-  if (item.n !== undefined) {
-    textEl.innerHTML = item.n;
-  } else if (item.d !== undefined) {
-    textEl.innerHTML = `<span class="spk">${item.s}</span><span class="speech">${item.d}</span>`;
-  }
-  hintEl.textContent = queue.length ? 'click to continue' : '';
-}
-
-textArea.addEventListener('click', () => { if (busy) next(); });
-
-// ── Inventory ─────────────────────────────────────────────────────────────────
+// ── ITEMS ─────────────────────────────────────────────────────────────────────
 const ITEMS = {
-  book:     { name: 'Book of Myths',   icon: 'assets/icon_book.png' },
-  laurel:   { name: 'Laurel Branch',   icon: 'assets/icon_laurel.png' },
-  asphodel: { name: 'Asphodel Flower', icon: 'assets/icon_asphodel.png' },
+  book:     {name:'Book of Myths',   icon:'assets/icon_book.png'},
+  laurel:   {name:'Laurel Branch',   icon:'assets/icon_laurel.png'},
+  asphodel: {name:'Asphodel Flower', icon:'assets/icon_asphodel.png'},
 };
-const inventory = [];
-let selected = null;
 
-function addItem(id) {
-  if (!inventory.includes(id)) { inventory.push(id); renderInv(); }
-}
-function renderInv() {
-  const panel = document.getElementById('inv-items');
-  panel.innerHTML = '';
-  if (!inventory.length) {
-    panel.innerHTML = '<span class="inv-empty">Empty</span>';
-    return;
+// ── DOM REFS ──────────────────────────────────────────────────────────────────
+const textEl   = document.getElementById('text-line');
+const hintEl   = document.getElementById('click-hint');
+const choicesEl= document.getElementById('choices');
+const textArea = document.getElementById('text-area');
+const invPanel = document.getElementById('inv-items');
+const imgPanel = document.getElementById('image-panel');
+const hsLayer  = document.getElementById('hs-layer');
+
+// ── TEXT ENGINE ───────────────────────────────────────────────────────────────
+const TE = (() => {
+  let q=[], doneCb=null, _busy=false, _waiting=false, _choice=false;
+
+  function _next() {
+    if (!q.length) {
+      _busy=false; _waiting=false; hintEl.textContent='';
+      if (doneCb){const cb=doneCb;doneCb=null;cb();}
+      return;
+    }
+    const it=q.shift();
+    if (it.k==='n'){
+      textEl.innerHTML=it.t; _waiting=true;
+      hintEl.textContent=q.length?'click to continue':'';
+    } else if (it.k==='d'){
+      textEl.innerHTML=`<span class="spk">${it.s}</span><span class="speech">${it.t}</span>`;
+      _waiting=true; hintEl.textContent=q.length?'click to continue':'';
+    } else if (it.k==='acq'){addItem(it.item);_next();}
+    else if (it.k==='remove'){removeItem(it.item);_next();}
+    else if (it.k==='flag'){S.flags.add(it.f);_next();}
+    else if (it.k==='next'){
+      _busy=false;_waiting=false;hintEl.textContent='';
+      setTimeout(()=>goToScene(it.scene),it.delay||1800);
+    } else if (it.k==='choice'){
+      _choice=true; hintEl.textContent='';
+      showChoices(it.opts,chosen=>{
+        _choice=false; hideChoices();
+        if(it.fn)it.fn(chosen);
+        _next();
+      });
+    } else _next();
   }
-  inventory.forEach(id => {
-    const it = ITEMS[id];
-    const d  = document.createElement('div');
-    d.className = 'inv-item' + (selected === id ? ' selected' : '');
-    d.innerHTML = `<img src="${it.icon}" alt="${it.name}"><span class="inv-name">${it.name}</span>`;
-    d.onclick = () => {
-      selected = selected === id ? null : id;
-      renderInv();
-      if (selected) {
-        textEl.innerHTML = `Use <em>${it.name}</em> on…`;
-        textEl.style.fontStyle = 'normal';
-        hintEl.textContent = '';
-        busy = false;
-      }
-    };
-    panel.appendChild(d);
+
+  return {
+    feed(lines,onDone){q=[...lines];doneCb=onDone||null;_busy=true;_waiting=false;_choice=false;hideChoices();_next();},
+    prepend(lines){q=[...lines,...q];},
+    advance(){if(!_waiting||_choice)return;_waiting=false;_next();},
+    get busy(){return _busy;}
+  };
+})();
+
+function showChoices(opts,onChoose){
+  choicesEl.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='cbtn'; b.textContent=o.label;
+    b.onclick=()=>onChoose(o.id);
+    choicesEl.appendChild(b);
   });
+  choicesEl.style.display='flex';
 }
+function hideChoices(){choicesEl.style.display='none';choicesEl.innerHTML='';}
 
-// ── Hotspots ──────────────────────────────────────────────────────────────────
-// Coordinates are % of the actual image (1536×1024), not the panel.
-// repositionHotspots() aligns the hs-layer with the rendered image, so these
-// % values map directly onto image content regardless of panel size.
-
-const hotspots = [
-  { id: 'window', label: 'Window',       x:  0, y:  5, w: 22, h: 68 },
-  { id: 'book',   label: 'Old book',     x: 26, y: 22, w: 18, h: 55 },
-  { id: 'bed',    label: 'My bed',       x: 45, y: 12, w: 30, h: 56 },
-  { id: 'photo',  label: 'Photo of Mum', x: 46, y: 68, w: 20, h: 25 },
-  { id: 'flower', label: 'Dried herb',   x: 76, y:  3, w: 17, h: 33 },
-  { id: 'door',   label: 'Front door',   x: 93, y: 20, w:  7, h: 65 },
-];
-
-const visited = new Set();
-const layer   = document.getElementById('hs-layer');
-
-const hsLines = {
-  window: [
-    { n: "Blue sea, flat as glass. The sun's coming up behind the hills and turning everything gold." },
-    { n: "My father's out there. He leaves before dawn now — up earlier, home later, as if the house gets harder to be in every month." },
-  ],
-  book: [
-    { n: 'A worn paperback. "Myths of the Greeks" — my mother\'s copy since before I was born. Cracked spine, pencil marks in the margins.' },
-    { n: "She used to read to me from this every night. Theseus. Odysseus. Persephone dragged into the Underworld while her mother searched the earth for her." },
-    { n: "Wait. I remember that. Not just the fact — the actual feeling. Her voice doing the characters. She made the Cyclops sound stupid and funny." },
-    { n: "I should take this with me." },
-    { acq: 'book' },
-  ],
-  bed: [
-    { n: "Same blue sheets, same dent in the pillow. My mother used to sit right here on the edge every night." },
-    { n: "She'd sit down and the mattress would dip, and I'd roll slightly toward her. And then she'd — the next part is gone. Like a page torn from a book." },
-  ],
-  photo: [
-    { n: "A framed photo on the nightstand. My mother — Maria. Dark hair, wide smile, laughing at something my father said." },
-    { n: "But I can't feel it. I look at this photo and it's like looking at a stranger. I know the facts: that's my mother, she loved me, she died. But the warmth — it's not there." },
-    { n: "It's like someone reached in while I was sleeping and scooped it out." },
-  ],
-  flower: [
-    { n: "A small dried herb in a clay vase on the wall shelf. My mother put it here and said something about why." },
-    { n: "I can see the moment — her hand placing it, her mouth moving, her face turned toward me. But the sound is off. Like watching a video on mute." },
-  ],
-  door: [
-    { n: "I should look around first. Something is wrong and I need to understand what before I go anywhere." },
-  ],
-};
-
-const repeatLines = {
-  window: [{ n: "The sea. My father's out there somewhere. I can't tell from here if he's okay." }],
-  book:   [{ n: "Mom's book. I can still feel her in the pencil marks, the cracked spine. I'm not letting go of this." }],
-  bed:    [{ n: "The same dent in the mattress. I keep thinking if I stare at it the memory will come back. It doesn't." }],
-  photo:  [{ n: "Mom's photo. Her face is right there. But it's just a face." }],
-  flower: [{ n: "The dried herb. Still no sound. Still that silent film of her hand and her mouth." }],
-  door:   [{ n: "I should look around first." }],
-};
-
-hotspots.forEach(hs => {
-  const el = document.createElement('div');
-  el.className = 'hs';
-  el.style.cssText = `left:${hs.x}%;top:${hs.y}%;width:${hs.w}%;height:${hs.h}%`;
-  el.innerHTML = `<div class="hs-ring"></div><div class="hs-lbl">${hs.label}</div>`;
-  el.addEventListener('click', () => {
-    if (busy) return;
-    const lines = visited.has(hs.id) ? repeatLines[hs.id] : hsLines[hs.id];
-    visited.add(hs.id);
-    if (lines) enqueue(lines);
-  });
-  layer.appendChild(el);
+textArea.addEventListener('click',e=>{
+  if(e.target.closest('.cbtn'))return;
+  TE.advance();
 });
 
-// ── Opening lines ─────────────────────────────────────────────────────────────
-enqueue([
-  { n: "Something pulled me out of sleep before the sun. Not a sound, not a dream — just a feeling. Like I'd lost something in the night and my body knew before my mind did." },
-  { n: "My name is Yiannis. I'm twelve. I live on a small island in the Cyclades. My mother died two years ago." },
-  { n: "But this morning that knowledge feels lighter. Like it's losing weight. I should look around." },
-]);
+// ── SCENE / TRANSITION ────────────────────────────────────────────────────────
+const OV=document.getElementById('fade-ov');
+function fadeIn(cb){OV.style.opacity='1';OV.style.pointerEvents='auto';setTimeout(cb,560);}
+function fadeOut(){OV.style.opacity='0';OV.style.pointerEvents='none';}
+
+function goToScene(id){
+  fadeIn(()=>{_load(id);setTimeout(fadeOut,120);});
+}
+
+const LOADERS={
+  scene1:loadScene1,scene2:loadScene2,scene3:loadScene3,scene4:loadScene4,
+  scene5:loadScene5,scene6:loadScene6,scene7:loadScene7,scene8:loadScene8,
+  scene9:loadScene9,scene10:loadScene10,scene10b:loadScene10b,credits:loadCredits
+};
+
+function _load(id){
+  S.currentScene=id;
+  if(!S.visited[id])S.visited[id]=new Set();
+  hsLayer.innerHTML='';
+  textEl.innerHTML=''; hintEl.textContent='';
+  hideChoices();
+  S.selectedItem=null; renderInv();
+  if(LOADERS[id])LOADERS[id]();
+  reposHS();
+}
+
+function setBG(f){imgPanel.style.backgroundImage=`url('assets/${f}')`;}
+
+// ── HOTSPOT HELPERS ───────────────────────────────────────────────────────────
+const IMG_W=1536,IMG_H=1024;
+function reposHS(){
+  const pW=imgPanel.clientWidth,pH=imgPanel.clientHeight;
+  const sc=Math.min(pW/IMG_W,pH/IMG_H);
+  const rW=IMG_W*sc,rH=IMG_H*sc;
+  hsLayer.style.left=((pW-rW)/2)+'px';
+  hsLayer.style.top=((pH-rH)/2)+'px';
+  hsLayer.style.width=rW+'px';
+  hsLayer.style.height=rH+'px';
+}
+window.addEventListener('resize',reposHS);
+
+function makeHS(id,label,x,y,w,h,fn){
+  const d=document.createElement('div');
+  d.className='hs';d.id='hs-'+id;
+  d.style.cssText=`left:${x}%;top:${y}%;width:${w}%;height:${h}%`;
+  d.innerHTML=`<div class="hs-ring"></div><div class="hs-lbl">${label}</div>`;
+  d.addEventListener('click',fn);
+  hsLayer.appendChild(d);
+  return d;
+}
+function markV(hs){S.visited[S.currentScene].add(hs);}
+function wasV(hs){return S.visited[S.currentScene]?.has(hs);}
+function wrongItem(label){
+  const n=ITEMS[S.selectedItem]?.name||'that';
+  S.selectedItem=null;renderInv();
+  TE.feed([{k:'n',t:`Using the ${n} on the ${label} doesn't seem to do anything.`}]);
+}
+
+// ── INVENTORY ─────────────────────────────────────────────────────────────────
+function addItem(id){if(!S.inventory.includes(id)){S.inventory.push(id);renderInv();}}
+function removeItem(id){
+  const i=S.inventory.indexOf(id);
+  if(i>=0)S.inventory.splice(i,1);
+  if(S.selectedItem===id)S.selectedItem=null;
+  renderInv();
+}
+function renderInv(){
+  invPanel.innerHTML='';
+  if(!S.inventory.length){invPanel.innerHTML='<span class="inv-empty">Empty</span>';return;}
+  S.inventory.forEach(id=>{
+    const it=ITEMS[id];
+    const d=document.createElement('div');
+    d.className='inv-tile'+(S.selectedItem===id?' sel':'');
+    d.innerHTML=`<img src="${it.icon}" alt="${it.name}"><span>${it.name}</span>`;
+    d.onclick=()=>{
+      if(S.selectedItem===id){S.selectedItem=null;}
+      else{S.selectedItem=id;textEl.innerHTML=`Use <em>${it.name}</em> on…`;hintEl.textContent='';}
+      renderInv();
+    };
+    invPanel.appendChild(d);
+  });
+}
+
+// ── SCENE 1: BEDROOM ─────────────────────────────────────────────────────────
+function loadScene1(){
+  setBG('scene1_bedroom.png');
+  TE.feed([
+    {k:'n',t:`Something pulled me out of sleep before the sun. Not a sound, not a dream — just a feeling. Like I'd lost something in the night and my body knew before my mind did.`},
+    {k:'n',t:`My name is Yiannis. I'm twelve. I live on a small island in the Cyclades. My mother died two years ago. I know this. I remember the funeral, the neighbours, my father sitting very still.`},
+    {k:'n',t:`But this morning that knowledge feels lighter. Like it's losing weight. I should look around.`},
+  ]);
+
+  makeHS('window','Window',0,5,22,68,()=>{
+    if(TE.busy)return;
+    if(!wasV('window')){markV('window');
+      TE.feed([
+        {k:'n',t:`Blue sea, flat as glass. The sun's coming up behind the hills and turning everything gold. A couple of fishing boats already heading out.`},
+        {k:'n',t:`My father's out there. He leaves before dawn now — up earlier, home later, as if the house gets harder to be in every month.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The sea. My father's out there somewhere. I can't tell from here if he's okay.`}]);
+  });
+
+  makeHS('book','Old book',26,22,18,55,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('book');return;}
+    if(!wasV('book')){markV('book');
+      TE.feed([
+        {k:'n',t:`A worn paperback on the shelf. "Myths of the Greeks" — my mother's copy since before I was born. Cracked spine, pencil marks in the margins.`},
+        {k:'n',t:`She used to read to me from this every night. Theseus. Odysseus. Persephone dragged into the Underworld while her mother searched the earth for her.`},
+        {k:'n',t:`I remember that. Not just the fact — the actual feeling. Her voice doing the characters. She made the Cyclops sound stupid and funny. That memory is still here. Why is this one still here?`},
+        {k:'n',t:`I should take this with me.`},
+        {k:'acq',item:'book'},
+      ],scene1Check);
+    }else TE.feed([{k:'n',t:`Mom's book. I can still feel her in the pencil marks, the cracked spine. I'm not letting go of this.`}]);
+  });
+
+  makeHS('bed','My bed',45,12,30,56,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('bed');return;}
+    if(!wasV('bed')){markV('bed');
+      TE.feed([
+        {k:'n',t:`Same blue sheets, same dent in the pillow. My mother used to sit right here on the edge every night. She'd sit down and the mattress would dip, and I'd roll slightly toward her. And then she'd —`},
+        {k:'n',t:`And then she'd what? The next part is gone. Like a page torn from a book. She did something important every single night, and I can't reach it.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The same dent in the mattress. I keep thinking if I stare at it the memory will come back. It doesn't.`}]);
+  });
+
+  makeHS('photo','Photo of Mum',46,62,20,28,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('photo');return;}
+    if(!wasV('photo')){markV('photo');
+      TE.feed([
+        {k:'n',t:`A framed photo on the nightstand. My mother — Maria. Dark hair, wide smile, laughing at something my father said. I can describe every detail.`},
+        {k:'n',t:`But I can't feel it. I look at this photo and it's like looking at a stranger. I know the facts: that's my mother, she loved me, she died. But the warmth — the thing that makes you miss someone instead of just knowing they're gone — it's not there.`},
+        {k:'n',t:`It's like someone reached in while I was sleeping and scooped it out.`},
+      ],scene1Check);
+    }else TE.feed([{k:'n',t:`Mom's photo. Her face is right there. But it's just a face.`}]);
+  });
+
+  makeHS('flower','Dried herb',76,3,17,33,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('dried herb');return;}
+    if(!wasV('flower')){markV('flower');
+      TE.feed([
+        {k:'n',t:`A small dried herb in a clay vase on the wall shelf. My mother picked this from the hills above the village and put it here. She said something about why she was keeping it.`},
+        {k:'n',t:`I can see the moment — her hand placing it, her mouth moving, her face turned toward me. But the sound is off. Like watching a video on mute. She said something important and I can't hear a word.`},
+      ],scene1Check);
+    }else TE.feed([{k:'n',t:`The dried herb. Still no sound. Still that silent film of her hand and her mouth.`}]);
+  });
+
+  makeHS('door','Front door',93,20,7,65,()=>{
+    if(TE.busy)return;
+    if(!scene1Ready()){
+      TE.feed([{k:'n',t:`I should look around first. Something is wrong and I need to understand what before I go anywhere.`}]);
+      return;
+    }
+    TE.feed([
+      {k:'n',t:`Enough. I can't sit here while the memories drain. I need to talk to someone.`},
+      {k:'n',t:`Daphne. Our neighbour. She's old and strange and talks to her plants. But she knew my mother, and my mother liked her — which says something.`},
+      {k:'n',t:`I'm going next door.`},
+      {k:'next',scene:'scene2'},
+    ]);
+  });
+}
+function scene1Ready(){return wasV('photo')&&wasV('flower')&&S.inventory.includes('book');}
+function scene1Check(){/* called after required items — hint if door not ready yet */}
+
+// ── SCENE 2: DAPHNE'S GARDEN ──────────────────────────────────────────────────
+function loadScene2(){
+  setBG('scene2_garden.png');
+  TE.feed([
+    {k:'n',t:`Outside, the morning air smells like thyme and salt. Daphne's garden is a lot — it always has been. Laurel everywhere. Trees, bushes, saplings on every ledge. The air tastes green.`},
+    {k:'n',t:`She's kneeling in the dirt, her back to me. Even from here I can tell she already knows I'm coming.`},
+  ]);
+
+  makeHS('laurel','Laurel trees',0,0,22,72,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('laurel trees');return;}
+    const post=S.flags.has('daphneRevealed');
+    if(post&&!wasV('laurel_post')){markV('laurel_post');
+      TE.feed([
+        {k:'n',t:`Her trees. Her echoes — dozens of versions of what she used to be, growing all around her house.`},
+        {k:'n',t:`She's surrounded herself with the thing she was turned into. I don't know if that's comforting or heartbreaking.`},
+      ]);
+    }else if(!wasV('laurel')){markV('laurel');
+      TE.feed([
+        {k:'n',t:`I've walked past this garden my whole life and never thought about how extreme it is. Most people grow tomatoes, lemon trees. Daphne grows laurel like it's her mission.`},
+        {k:'n',t:`My mother once said it was odd. "It's like she's taking care of family." I thought she was being funny.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The laurel trees rustle softly. There's almost no wind.`}]);
+  });
+
+  makeHS('bench','Stone bench',23,38,32,20,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('bench');return;}
+    if(!wasV('bench')){markV('bench');
+      TE.feed([
+        {k:'n',t:`An old stone bench, worn smooth. Something is carved into the seat — letters, very faded. Greek letters in an ancient style. ΔΑΦΝΗ.`},
+        {k:'n',t:`Daphne. Her name, in a script that's been out of use for two thousand years. How old is this bench?`},
+      ]);
+    }else TE.feed([{k:'n',t:`The bench with her name carved in ancient Greek. I'm starting to think my mother wasn't joking about Daphne being "as old as the trees."`}]);
+  });
+
+  makeHS('shrine','Small shrine',72,22,24,38,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('shrine');return;}
+    if(S.flags.has('daphneRevealed')&&!wasV('shrine_post')){markV('shrine_post');
+      TE.feed([
+        {k:'n',t:`Now I understand. These aren't offerings she made — they're offerings others made to her. Long ago, when she was the tree and the tree was sacred to Apollo.`},
+        {k:'n',t:`She kept them. All these centuries. Like old letters from someone you used to love.`},
+      ]);
+    }else if(!wasV('shrine')){markV('shrine');
+      TE.feed([
+        {k:'n',t:`A small stone shelf at the base of the biggest laurel tree. A clay cup of oil, a dried wreath, coins green with age. Like the offerings at ancient sites.`},
+        {k:'n',t:`But this is in someone's garden. Who is Daphne making offerings to?`},
+      ]);
+    }else TE.feed([{k:'n',t:`The ancient offerings at the ancient tree.`}]);
+  });
+
+  makeHS('daphne','Daphne',28,60,40,36,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('Daphne');return;}
+    if(S.flags.has('scene2Complete')){
+      TE.feed([{k:'n',t:`She's back in the dirt. The conversation is over. The gate is open.`}]);
+      return;
+    }
+    if(!S.flags.has('daphneConvStarted')){
+      S.flags.add('daphneConvStarted');
+      runDaphneConv();
+    }
+  });
+
+  makeHS('gate','Path to the ferry',36,2,28,26,()=>{
+    if(TE.busy)return;
+    if(!S.flags.has('scene2Complete')){TE.feed([{k:'n',t:`I'm not done here yet.`}]);return;}
+    TE.feed([
+      {k:'n',t:`I look back once. Daphne is working the earth again, her bark-brown hands moving in the dirt like they've been doing the same thing for three thousand years.`},
+      {k:'n',t:`She doesn't say goodbye. Maybe when you're that old, you stop bothering.`},
+      {k:'n',t:`I hold the laurel branch tight, put the book under my arm, and walk toward the harbour.`},
+      {k:'next',scene:'scene3'},
+    ]);
+  });
+}
+
+function runDaphneConv(){
+  TE.feed([
+    // approach
+    {k:'n',t:`I walk toward her. She's pressing her fingers into the dark earth. She doesn't turn around.`},
+    {k:'d',s:'Daphne',t:`You're up early, Yiannis. And you walked here with a question. I can hear it in your steps.`},
+    {k:'d',s:'Yiannis',t:`Something's wrong. I can't remember my mother properly. Not the facts — I know the facts. But the feeling of her. The sound of her voice. It's just gone.`},
+    {k:'n',t:`Now she turns. Slowly. Her skin has a texture that isn't quite skin — around her temples, faint ridges, like wood grain. Her eyes are dark and very bright.`},
+    {k:'d',s:'Daphne',t:`Ah. There it is. The hollow look. I was wondering when it would reach this island.`},
+    {k:'d',s:'Yiannis',t:`You know what this is?`},
+    {k:'d',s:'Daphne',t:`Sit down, boy.`},
+    // explanation
+    {k:'d',s:'Daphne',t:`The rivers beneath the earth. You know about them from your mother's book. The Styx. The Acheron. And Lethe.`},
+    {k:'d',s:'Yiannis',t:`The river of forgetting.`},
+    {k:'d',s:'Daphne',t:`It's meant to be a mercy — the dead drink from it before rebirth, washing away the weight of the old life. But Lethe doesn't behave. It wants to dissolve things.`},
+    {k:'n',t:`She looks at her hands. In the morning light they're unmistakable — fingers tapering like twigs, skin ridged like bark.`},
+    {k:'d',s:'Daphne',t:`Something is redirecting the water upward, into the world of the living. It dissolves the fragile parts first. Not the facts — the feelings. The texture of a voice. The warmth of a hand.`},
+    {k:'d',s:'Yiannis',t:`That's exactly what's happening to me.`},
+    {k:'d',s:'Daphne',t:`I can feel it myself. The tree in me has roots that go deeper than you'd think. The water is rising.`},
+    {k:'d',s:'Yiannis',t:`Why would someone do that?`},
+    {k:'d',s:'Daphne',t:`I can't see into the Underworld from up here. But I know the entrance: Cape Tainaron, southern tip of the Peloponnese. Take the ferry to Piraeus, then a bus south.`},
+    // choice 1
+    {k:'choice',opts:[
+      {id:'a',label:`"Daphne… what do you mean, 'the tree in you'?"`},
+      {id:'b',label:`"Is this happening everywhere, not just here?"`},
+      {id:'c',label:`"How do you know so much about the Underworld?"`},
+    ],fn:chosen=>{
+      S.flags.add('daphneRevealed');
+      if(chosen==='a') TE.prepend([
+        {k:'d',s:'Daphne',t:`Your mother's book. There's a story in it. About a young woman chased by a god.`},
+        {k:'d',s:'Yiannis',t:`Apollo and Daphne. She didn't want him. She prayed to be saved and was turned into a —`},
+        {k:'n',t:`I stop. The bark-skin. The garden full of laurel. The stone bench with her name carved in letters two thousand years old.`},
+        {k:'d',s:'Yiannis',t:`That was you.`},
+      ]);
+      else if(chosen==='b') TE.prepend([
+        {k:'d',s:'Daphne',t:`Near the old places on the mainland people have been losing memories. Always about the dead. Always the feelings, not the facts.`},
+        {k:'n',t:`She holds up her hands. The bark-grain is unmistakable in the sunlight.`},
+        {k:'d',s:'Daphne',t:`I know because I am very, very old, Yiannis. Older than this island's name.`},
+        {k:'d',s:'Yiannis',t:`Apollo and Daphne. The girl who became a laurel tree.`},
+        {k:'d',s:'Daphne',t:`That's me.`},
+      ]);
+      else TE.prepend([
+        {k:'d',s:'Daphne',t:`Because I lived through the age when the Underworld wasn't a story. When a girl could be turned into a tree because a god wanted her and she said no.`},
+        {k:'n',t:`Her hands in the light. The bark texture. The twig-like fingers. All those laurel trees.`},
+        {k:'d',s:'Yiannis',t:`You're the Daphne. From the myth.`},
+      ]);
+    }},
+    // Daphne's story
+    {k:'d',s:'Daphne',t:`Apollo wanted me. I didn't want him. I prayed to be saved, and the earth turned me into a laurel tree.`},
+    {k:'n',t:`She says it simply. Like last week's weather.`},
+    {k:'d',s:'Daphne',t:`Centuries as a tree. Rooted, silent, aware but unable to move. People left offerings. They said I was sacred to Apollo, which was the cruellest joke — he got to claim me anyway, just in a different form.`},
+    {k:'d',s:'Daphne',t:`I grew back. Very slowly. A finger that moved, a voice eventually. It's never been complete. The tree is still in me.`},
+    {k:'n',t:`The old woman who brought casseroles when my mother died. She is a person from my mother's book.`},
+    {k:'d',s:'Yiannis',t:`Does anyone else know?`},
+    {k:'d',s:'Daphne',t:`Your mother guessed, I think. She'd look at me sometimes with this expression — amused and sad at once. She was perceptive, your mother. She saw things others didn't.`},
+    {k:'n',t:`A sharp ache in my chest. That sounds exactly like her.`},
+    // mission
+    {k:'d',s:'Daphne',t:`But enough of old stories. You have to go down there, Yiannis.`},
+    {k:'d',s:'Yiannis',t:`The actual Underworld?`},
+    {k:'d',s:'Daphne',t:`Find the source of the leak. Stop it, or find whoever is causing it and convince them to stop.`},
+    // choice 2
+    {k:'choice',opts:[
+      {id:'a',label:`"Why me? I'm twelve."`},
+      {id:'b',label:`"What happens if I don't go?"`},
+    ],fn:chosen=>{
+      if(chosen==='a') TE.prepend([
+        {k:'d',s:'Daphne',t:`Because you noticed. Most adults who lose these memories don't realise it — they feel lighter one day and call it healing. You woke up and knew immediately something had been taken. That refusal to let go is exactly what you'll need down there.`},
+      ]);
+      else TE.prepend([
+        {k:'d',s:'Daphne',t:`Tomorrow a little more will be gone. A detail here, a feeling there. The sound of her laugh. The weight of her hand on your head.`},
+        {k:'d',s:'Daphne',t:`One day you'll look at that photo and feel nothing. And the worst part is, you won't mind. That's what Lethe does. It makes you not mind the taking.`},
+        {k:'n',t:`That's the worst thing anyone has ever said to me.`},
+      ]);
+    }},
+    // laurel branch
+    {k:'n',t:`Daphne stands slowly — her joints creak like settling wood — and walks to the largest laurel tree. She breaks off a small fresh sprig. I notice her wince.`},
+    {k:'d',s:'Daphne',t:`Here. My own wood, you could say.`},
+    {k:'d',s:'Daphne',t:`It won't protect you from gods or monsters. But the Underworld makes the living forget who they are and why they came. This will hold you together.`},
+    {k:'acq',item:'laurel'},
+    {k:'d',s:'Daphne',t:`Walk into the cave at Cape Tainaron. Keep walking. You'll know when you've crossed over.`},
+    {k:'d',s:'Yiannis',t:`Will I come back?`},
+    {k:'d',s:'Daphne',t:`Orpheus came back. Heracles. Odysseus. They all came back.`},
+    {k:'n',t:`A pause.`},
+    {k:'d',s:'Daphne',t:`But they all came back different.`},
+    {k:'n',t:`She turns away and kneels back into the dirt. The garden gate is ahead. The ferry leaves in an hour.`},
+    {k:'flag',f:'scene2Complete'},
+  ]);
+}
+
+// ── SCENE 3: CAPE TAINARON ────────────────────────────────────────────────────
+function loadScene3(){
+  setBG('scene3_cave.png');
+  TE.feed([
+    {k:'n',t:`The cave at Cape Tainaron. The air inside is cooler. Sounds echo strangely. The path descends and opens into a huge cavern — and there it is. A black river, still as glass.`},
+    {k:'n',t:`The ferryman stands at the stern with his pole. He's an enormously old man with sunken eyes and hands like tree roots. He looks at me with no particular interest.`},
+  ]);
+
+  makeHS('entrance','Cave entrance',0,5,26,68,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('entrance');return;}
+    if(!wasV('entrance')){markV('entrance');
+      TE.feed([
+        {k:'n',t:`The light from the world above. It looks very small from here.`},
+        {k:'n',t:`Cape Tainaron — where the real world ends and the other one begins. I walked in. Now I just have to keep going.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The entrance. The light outside. I can still turn around.`}]);
+  });
+
+  makeHS('styx','The Styx',0,74,55,22,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('river');return;}
+    if(!wasV('styx')){markV('styx');
+      TE.feed([
+        {k:'n',t:`The River Styx. Dark and absolutely still. Looking at it feels like looking at something that's been waiting a very long time.`},
+        {k:'n',t:`I'm not supposed to be here. The living don't just walk into the Underworld. And yet.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The Styx. I don't want to fall in.`}]);
+  });
+
+  makeHS('charon','The ferryman',56,15,34,75,()=>{
+    if(TE.busy)return;
+    if(S.flags.has('charonCrossed')){
+      TE.feed([{k:'d',s:'Charon',t:`I already said you could cross. Get in the boat.`}]);
+      return;
+    }
+    if(S.selectedItem==='laurel'){
+      S.selectedItem=null;renderInv();
+      TE.feed([
+        {k:'n',t:`I hold out the laurel branch.`},
+        {k:'d',s:'Charon',t:`That's from her tree.`},
+        {k:'n',t:`He goes very still. Something changes in his face — not quite emotion, but a memory of it.`},
+        {k:'d',s:'Charon',t:`Is she still up there? Still growing?`},
+        {k:'d',s:'Yiannis',t:`Yes. Her garden is full of laurel. She trims it every morning. Her skin is more human than it used to be, I think. She brought us food when my mother died.`},
+        {k:'n',t:`Charon is quiet for a long time.`},
+        {k:'d',s:'Charon',t:`I have been ferrying the dead since before your island had a name. She was the only living thing that ever felt like a kindness. Keep your branch. Get in the boat.`},
+        {k:'n',t:`He pushes off from the dock. The far shore is very dark.`},
+        {k:'flag',f:'charonCrossed'},
+        {k:'next',scene:'scene4'},
+      ]);
+    }else if(S.selectedItem){wrongItem('ferryman');}
+    else if(!wasV('charon')){markV('charon');
+      TE.feed([
+        {k:'d',s:'Charon',t:`You're alive. That's unusual. Coin?`},
+        {k:'d',s:'Yiannis',t:`I don't have one.`},
+        {k:'d',s:'Charon',t:`Then you walk. Oh wait — there's no path. Just the river. And the river doesn't like the living.`},
+        {k:'n',t:`He says this with no expression at all. I need to find another way across.`},
+      ]);
+    }else TE.feed([{k:'d',s:'Charon',t:`No coin, no passage. Not my rule. Very old rule.`}]);
+  });
+}
+
+// ── SCENE 4: ASPHODEL MEADOWS ─────────────────────────────────────────────────
+function loadScene4(){
+  setBG('scene4_meadows.png');
+  TE.feed([
+    {k:'n',t:`The far shore. An endless grey-green plain of pale flowers stretching in every direction. Ghostly figures drift through it, barely there. Most don't notice me.`},
+    {k:'n',t:`This is where the ordinary dead go. Not heroes, not villains. Everyone else. The asphodel meadows. It's not terrifying. It's just deeply sad.`},
+  ]);
+
+  makeHS('shades','The wandering dead',0,10,30,62,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('shade');return;}
+    if(!wasV('shades')){markV('shades');
+      TE.feed([
+        {k:'n',t:`I approach one. It turns slowly.`},
+        {k:'d',s:'Shade',t:`Was I someone? I think I was someone.`},
+        {k:'n',t:`It drifts away. I try another.`},
+        {k:'d',s:'Shade',t:`My children… I had children…`},
+        {k:'n',t:`They're not unhappy exactly. They've just faded. Like old photographs.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The shades drift past. Barely there.`}]);
+  });
+
+  makeHS('flowers','Asphodel flowers',0,72,45,24,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('flowers');return;}
+    if(!wasV('flowers')){markV('flowers');
+      TE.feed([
+        {k:'n',t:`Pale white flowers, nodding slightly in a wind I can't feel. Hundreds of them. Thousands.`},
+        {k:'n',t:`I pick one. It feels real in my hand. Whatever this place is, the flowers are definitely real.`},
+        {k:'acq',item:'asphodel'},
+      ]);
+    }else TE.feed([{k:'n',t:`The asphodel. I've already picked one.`}]);
+  });
+
+  makeHS('elpenor','A restless shade',48,28,28,58,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('shade');return;}
+    if(!wasV('elpenor')){markV('elpenor');
+      TE.feed([
+        {k:'d',s:'Elpenor',t:`Finally. Someone who can hold a conversation. These people — no offence to the dead — are terrible company.`},
+        {k:'n',t:`He sees me as alive immediately. His eyes focus in a way the other shades' don't.`},
+        {k:'d',s:'Elpenor',t:`Elpenor. Sailed with Odysseus. Got drunk on Circe's island, fell off a roof, died. Not exactly a hero's death.`},
+        {k:'d',s:'Yiannis',t:`Odysseus? You actually sailed with him?`},
+        {k:'d',s:'Elpenor',t:`Don't look so impressed. He was great, yes, but the rest of us were just trying not to drown. Anyway. You're alive, you're in the Underworld, something's gone wrong. What are you looking for?`},
+        {k:'d',s:'Yiannis',t:`A memory. My mother's memory. Someone's leaking Lethe water to the surface.`},
+        {k:'d',s:'Elpenor',t:`The river's been strange lately. There's a woman down by it — half pale, half dark. The ghosts are nervous around her. And Sisyphus has been worse.`},
+        {k:'d',s:'Elpenor',t:`Pushing his boulder, same as always. But lately he keeps stopping, looking confused, like he's forgotten why. If you're going deeper, you'll pass him. Take the path far right.`},
+        {k:'d',s:'Elpenor',t:`One piece of advice: the dead want to talk. Let them. You'll need what you learn.`},
+        {k:'n',t:`He pauses.`},
+        {k:'d',s:'Elpenor',t:`Tell someone about me when you get back. Elpenor. Sailed with Odysseus. I'd like to not be completely forgotten.`},
+      ]);
+    }else TE.feed([{k:'d',s:'Elpenor',t:`Elpenor. Remember the name. Now go — path's far right. Don't fall off any roofs.`}]);
+  });
+
+  makeHS('path_deeper','Path deeper',80,2,20,45,()=>{
+    if(TE.busy)return;
+    TE.feed([
+      {k:'n',t:`The path leads down and into darker territory. Behind me, I can hear Elpenor muttering to another shade who isn't listening.`},
+      {k:'n',t:`I keep going.`},
+      {k:'next',scene:'scene5'},
+    ]);
+  });
+}
+
+// ── SCENE 5: SISYPHUS'S HILL ──────────────────────────────────────────────────
+function loadScene5(){
+  setBG('scene5_sisyphus.png');
+  TE.feed([
+    {k:'n',t:`A steep slope of bare rock. At the top, nothing. At the bottom, nothing. In the middle, a man pushes a boulder. It's endlessly, obviously futile.`},
+    {k:'n',t:`As I watch, he reaches near the top. Then the boulder rolls back down to exactly where it was.`},
+  ]);
+
+  makeHS('boulder','The boulder',22,8,40,38,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('boulder');return;}
+    if(!wasV('boulder')){markV('boulder');
+      TE.feed([
+        {k:'n',t:`A huge boulder of grey stone. Worn smooth in certain places — like it's been pushed by the same hands for a very long time.`},
+        {k:'n',t:`I try pushing it. It doesn't move even slightly.`},
+      ]);
+    }else TE.feed([{k:'n',t:`It doesn't move.`}]);
+  });
+
+  makeHS('sisyphus','The man',20,48,42,44,()=>{
+    if(TE.busy)return;
+    if(S.flags.has('sisyphusKnows')){
+      TE.feed([{k:'n',t:`He's pushing again, but there's something different in his expression now — he knows why.`}]);
+      return;
+    }
+    if(S.selectedItem==='book'){
+      S.selectedItem=null;renderInv();
+      TE.feed([
+        {k:'n',t:`I open the book and find the myth of Sisyphus. I read it to him — what he did, who he was, why he's here.`},
+        {k:'n',t:`He listens without moving. When I finish, he's quiet for a long time.`},
+        {k:'d',s:'Sisyphus',t:`I chained Death. I tricked Persephone. I murdered guests in my own home. I cheated the rules twice.`},
+        {k:'n',t:`He looks at the boulder. Then back at me.`},
+        {k:'d',s:'Sisyphus',t:`I'm not glad about what I did. But knowing I earned this — that's something. Not knowing why you suffer? That's not mercy. That's cruelty without a point.`},
+        {k:'d',s:'Sisyphus',t:`The woman at the river — she thinks forgetting is mercy. Maybe for some. But it made me nothing. A machine. At least now I'm a person again, even if I'm a guilty one.`},
+        {k:'n',t:`He bends and begins pushing the boulder again. But something in his face is different. More present.`},
+        {k:'flag',f:'sisyphusKnows'},
+      ]);
+    }else if(S.selectedItem){wrongItem('Sisyphus');}
+    else if(!wasV('sisyphus')){markV('sisyphus');
+      TE.feed([
+        {k:'n',t:`He pauses when I approach. The boulder immediately rolls back to the bottom. He watches it go with no expression.`},
+        {k:'d',s:'Sisyphus',t:`Who are you? Are you here to watch? Everyone comes to watch for a while.`},
+        {k:'d',s:'Yiannis',t:`Why are you pushing it?`},
+        {k:'d',s:'Sisyphus',t:`I don't know. I did something wrong, I think. But I can't remember what. I've been doing this for… I don't know how long.`},
+        {k:'n',t:`The Lethe water. It's reached even here. He's been stripped of the knowledge of his own crimes.`},
+        {k:'n',t:`I think I have something that could help him.`},
+      ]);
+    }else TE.feed([{k:'d',s:'Sisyphus',t:`I did something. I'm sure of it. But I can't reach it.`}]);
+  });
+
+  makeHS('slope_exit','Deeper path',65,2,30,58,()=>{
+    if(TE.busy)return;
+    if(!S.flags.has('sisyphusKnows')){
+      TE.feed([{k:'n',t:`I should see what's happening here first.`}]);
+      return;
+    }
+    TE.feed([
+      {k:'n',t:`The sound of the boulder rolling back down fades behind me as I descend deeper.`},
+      {k:'n',t:`He knows why now. That has to count for something.`},
+      {k:'next',scene:'scene6'},
+    ]);
+  });
+}
+
+// ── SCENE 6: EURYDICE'S GROVE ─────────────────────────────────────────────────
+function loadScene6(){
+  setBG('scene6_eurydice.png');
+  TE.feed([
+    {k:'n',t:`A small grove separate from the fields of punishment. Quieter. The light here is softer, blue-purple.`},
+    {k:'n',t:`A woman sits on a stone bench. She isn't drifting like the shades. She's simply sitting. She looks up when I approach as if she's been expecting someone for a while.`},
+  ]);
+
+  makeHS('grove_trees','The dark trees',0,0,24,72,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('trees');return;}
+    if(!wasV('grove_trees')){markV('grove_trees');
+      TE.feed([
+        {k:'n',t:`Old trees, roots deep in underworld stone. They don't feel threatening, just ancient. Like they've seen everything and stopped caring about it.`},
+        {k:'n',t:`It's quiet here. Not the heavy silence of the fields — a different kind. Chosen.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The trees. Very old and very quiet.`}]);
+  });
+
+  makeHS('eurydice','The woman',28,15,38,72,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('woman');return;}
+    if(S.flags.has('eurydiceHeard')){
+      TE.feed([{k:'d',s:'Eurydice',t:`Remember: it has to be a choice. Not forced on us, not forced on the living. Both sides need the choice.`}]);
+      return;
+    }
+    if(!wasV('eurydice')){markV('eurydice');
+      TE.feed([
+        {k:'d',s:'Eurydice',t:`You're looking for something you lost. The living always come here looking.`},
+        {k:'d',s:'Yiannis',t:`My mother's memory. Someone is redirecting the River Lethe. I'm going to find them.`},
+        {k:'d',s:'Eurydice',t:`Brave. Or stubborn. Sometimes the same thing.`},
+        {k:'n',t:`She tells me her story — but not the version I know.`},
+        {k:'d',s:'Eurydice',t:`Everyone tells my story as Orpheus's. His great love, his great song, his great failure. But I was there too. I died on my wedding day. A snakebite.`},
+        {k:'d',s:'Eurydice',t:`When Orpheus came for me, I followed at first. But climbing toward the light, I realised: going back meant living inside his love forever. Being the thing he descended to Hades for. His song, his story, his proof.`},
+        {k:'d',s:'Yiannis',t:`You wanted to stay?`},
+        {k:'d',s:'Eurydice',t:`When he looked back, I felt relief. I chose to stay.`},
+        {k:'n',t:`This is not the story my mother's book tells.`},
+        {k:'d',s:'Yiannis',t:`So you think forgetting is better?`},
+        {k:'d',s:'Eurydice',t:`No. I remember Orpheus. I remember his song. I chose to stay anyway. Forgetting is not the same as choosing to let go. Choice is what matters — not the memory.`},
+        {k:'d',s:'Eurydice',t:`Whatever you say to the woman at the river — say that. The dead deserve to be asked, not decided for.`},
+        {k:'flag',f:'eurydiceHeard'},
+      ]);
+    }
+  });
+
+  makeHS('grove_exit','Path to the gates',70,0,30,65,()=>{
+    if(TE.busy)return;
+    if(!S.flags.has('eurydiceHeard')){
+      TE.feed([{k:'n',t:`There's someone here. I should talk to her first.`}]);
+      return;
+    }
+    TE.feed([
+      {k:'n',t:`Eurydice doesn't say goodbye. She looks back at the trees.`},
+      {k:'n',t:`I carry what she said with me into the dark.`},
+      {k:'next',scene:'scene7'},
+    ]);
+  });
+}
+
+// ── SCENE 7: THE JUDGES' GATE ─────────────────────────────────────────────────
+function loadScene7(){
+  setBG('scene7_judges.png');
+  TE.feed([
+    {k:'n',t:`The path narrows to a gate of dark bronze. Three stone thrones stand before it. Three figures sit in them, motionless, waiting.`},
+    {k:'n',t:`One of them speaks before I can.`},
+    {k:'d',s:'Minos',t:`You're not dead. Why are you at our gate?`},
+    {k:'d',s:'Yiannis',t:`I'm looking for whoever is redirecting the River Lethe. I'm trying to stop it.`},
+    {k:'n',t:`The three confer briefly.`},
+    {k:'d',s:'Rhadamanthys',t:`The river's influence is strong here. You may already be losing yourself. We must test you.`},
+    {k:'d',s:'Aeacus',t:`We will show you three memories. One is yours. Choose correctly — and we'll let you pass.`},
+  ]);
+
+  makeHS('rhadamanthys','Rhadamanthys',5,15,28,70,()=>{
+    if(TE.busy)return;
+    if(!wasV('rhad')){markV('rhad');
+      TE.feed([{k:'d',s:'Rhadamanthys',t:`We judge the dead. We assess what each soul earned. You are not dead — which makes you unusual, but not unprecedented. Heracles was here. Odysseus was here. They passed, eventually.`}]);
+    }else TE.feed([{k:'d',s:'Rhadamanthys',t:`Choose the memory that feels truest.`}]);
+  });
+
+  makeHS('minos','Minos',36,44,28,50,()=>{
+    if(TE.busy)return;
+    if(!wasV('minos')){markV('minos');
+      TE.feed([{k:'d',s:'Minos',t:`I was king of Crete. I commissioned a labyrinth and fed children to a monster. In death I apply my standards honestly. That is all I can offer.`}]);
+    }else TE.feed([{k:'d',s:'Minos',t:`Think carefully. One memory is truly yours.`}]);
+  });
+
+  makeHS('aeacus','Aeacus',68,15,27,70,()=>{
+    if(TE.busy)return;
+    if(!wasV('aeacus')){markV('aeacus');
+      TE.feed([{k:'d',s:'Aeacus',t:`A word of advice: the correct answer isn't the clearest or most detailed memory. Real memories of the dead are not photographs. They are feelings. Trust what you feel, not what you see.`}]);
+    }else TE.feed([{k:'d',s:'Aeacus',t:`Which memory feels truest, not which looks truest.`}]);
+  });
+
+  makeHS('gate_puzzle','The bronze gate',35,0,30,42,()=>{
+    if(TE.busy)return;
+    if(S.flags.has('judgePassed')){TE.feed([{k:'n',t:`The gate stands open.`}]);return;}
+    runJudgePuzzle();
+  });
+}
+
+function runJudgePuzzle(){
+  TE.feed([
+    {k:'n',t:`Three memories appear before you. Which one is truly yours?`},
+    {k:'choice',opts:[
+      {id:'A',label:`Memory A — A woman in a kitchen, warm light, the smell of bread. Her face is clear, sharp, perfect.`},
+      {id:'B',label:`Memory B — A woman on a beach, laughing, holding a child's hand. Every detail crisp, like a painting.`},
+      {id:'C',label:`Memory C — Only a voice, humming a tune. No face. No image at all. Just a sound, and a feeling of absolute safety.`},
+    ],fn:chosen=>{
+      if(chosen==='C'){
+        TE.prepend([
+          {k:'d',s:'Aeacus',t:`Yes. That one. No image, no certainty — just a feeling. That is what the living keep of the dead. The real thing.`},
+          {k:'d',s:'Minos',t:`You may pass.`},
+          {k:'n',t:`The bronze gate opens, slowly. Beyond it, the path descends further.`},
+          {k:'flag',f:'judgePassed'},
+          {k:'next',scene:'scene8',delay:2000},
+        ]);
+      }else{
+        S.judgeAttempts++;
+        if(S.judgeAttempts>=3){
+          TE.prepend([
+            {k:'d',s:'Aeacus',t:`You struggle. The river's influence is already working. Pass anyway — but be warned: you may not have full strength for what comes next.`},
+            {k:'flag',f:'judgePassed'},{k:'flag',f:'judgeFailed'},
+            {k:'next',scene:'scene8',delay:2000},
+          ]);
+        }else{
+          const wrongText=chosen==='A'
+            ?`That is a fabrication. Too perfect. Real memories are never that sharp.`
+            :`Also false. The Lethe water creates images like this — composed, posed, too complete. Try again.`;
+          const wrongSpk=chosen==='A'?'Minos':'Rhadamanthys';
+          TE.prepend([
+            {k:'d',s:wrongSpk,t:wrongText},
+            {k:'n',t:`I need to think again.`},
+            // re-present puzzle
+            {k:'n',t:`Three memories. Which one is truly yours?`},
+            {k:'choice',opts:[
+              {id:'A',label:`Memory A — A woman in a kitchen, warm light, the smell of bread. Her face is clear, sharp, perfect.`},
+              {id:'B',label:`Memory B — A woman on a beach, laughing, holding a child's hand. Every detail crisp, like a painting.`},
+              {id:'C',label:`Memory C — Only a voice, humming a tune. No face. No image at all. Just a sound, and a feeling of absolute safety.`},
+            ],fn:chosen2=>{
+              if(chosen2==='C'){
+                TE.prepend([
+                  {k:'d',s:'Aeacus',t:`Yes. That one.`},
+                  {k:'d',s:'Minos',t:`You may pass.`},
+                  {k:'flag',f:'judgePassed'},
+                  {k:'next',scene:'scene8',delay:1800},
+                ]);
+              }else{
+                S.judgeAttempts++;
+                TE.prepend([
+                  {k:'d',s:'Aeacus',t:`You struggle. The river's influence is already working. Pass anyway.`},
+                  {k:'flag',f:'judgePassed'},{k:'flag',f:'judgeFailed'},
+                  {k:'next',scene:'scene8',delay:2000},
+                ]);
+              }
+            }},
+          ]);
+        }
+      }
+    }},
+  ]);
+}
+
+// ── SCENE 8: RIVER LETHE / MELINOE ───────────────────────────────────────────
+function loadScene8(){
+  setBG('scene8_lethe.png');
+  TE.feed([
+    {k:'n',t:`The path ends at a vast still river. The water is clear but somehow empty — looking at it, I feel my thoughts start to drift. Lethe. The river of forgetting.`},
+    {k:'n',t:`Along the bank there's a visible crack in the rocky ground where water wells up and flows upward through a fissure. And standing near it — a figure. Half pale, half dark.`},
+    {k:'n',t:`She sees me and isn't surprised.`},
+    {k:'d',s:'Melinoe',t:`Another one. They always come eventually.`},
+    {k:'d',s:'Yiannis',t:`You're the one redirecting the Lethe water.`},
+    {k:'d',s:'Melinoe',t:`Your mother. She's somewhere in the Meadows. Do you know what she does? She stands still and whispers your name. Over and over. The dead can't rest because the living won't let them.`},
+    {k:'d',s:'Melinoe',t:`I am Melinoe. Persephone's daughter. My job is the restless dead. I redirected the river to ease the weight. For both sides.`},
+    {k:'d',s:'Yiannis',t:`You can't just take our memories.`},
+    {k:'d',s:'Melinoe',t:`Can't I? Tell me why not.`},
+    {k:'flag',f:'melinoeIntroDone'},
+  ]);
+
+  makeHS('lethe_river','River Lethe',0,68,58,27,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('river');return;}
+    if(!wasV('lethe')){markV('lethe');
+      TE.feed([
+        {k:'n',t:`The river of forgetting. Looking at it, something in me wants to just sit down and let the sound of it wash over me.`},
+        {k:'n',t:`I grip the laurel branch tighter. It holds.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The Lethe. Still and dangerous. I'm keeping my grip on the branch.`}]);
+  });
+
+  makeHS('crack','The fissure',20,50,28,16,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('fissure');return;}
+    if(!wasV('crack')){markV('crack');
+      TE.feed([
+        {k:'n',t:`A crack in the rocky ground, glowing faintly. The Lethe water seeps upward through it, flowing toward the surface world.`},
+        {k:'n',t:`This is what's stealing the memories. One thin crack. It seems too small for the damage it's doing.`},
+      ]);
+    }else TE.feed([{k:'n',t:`The fissure. The water still seeping upward.`}]);
+  });
+
+  makeHS('melinoe','Melinoe',62,5,28,78,()=>{
+    if(TE.busy)return;
+    if(S.selectedItem){wrongItem('Melinoe');return;}
+    if(!S.flags.has('melinoeIntroDone')){
+      TE.feed([{k:'d',s:'Melinoe',t:`I'm listening.`}]);return;
+    }
+    if(S.flags.has('melinoePersuaded')){
+      TE.feed([{k:'n',t:`The fissure is sealed. She stands by the river, watching it.`}]);return;
+    }
+    runMelinoeArgs();
+  });
+}
+
+function runMelinoeArgs(){
+  const opts=[];
+  if(S.flags.has('sisyphusKnows')&&!S.flags.has('sisyphusArgMade'))
+    opts.push({id:'sisyphus',label:`"Sisyphus forgot why he was punished. That wasn't mercy — it was meaningless suffering."`});
+  if(S.flags.has('eurydiceHeard')&&!S.flags.has('eurydiceArgMade'))
+    opts.push({id:'eurydice',label:`"Eurydice chose to stay. But it was her choice — you're choosing for everyone."`});
+  if(S.flags.has('charonCrossed')&&!S.flags.has('charonArgMade'))
+    opts.push({id:'charon',label:`"Charon asked me how Daphne was doing. A small memory, freely given. That wasn't a chain — that was kindness."`});
+  if(S.flags.has('eurydiceArgMade')&&S.flags.has('charonArgMade')&&!S.flags.has('finalArgMade'))
+    opts.push({id:'final',label:`"My memory of my mother isn't a picture. It's a song I can barely hear. That's not a chain — that's love."`});
+
+  if(!opts.length){
+    TE.feed([{k:'d',s:'Melinoe',t:`You haven't made your case yet. I'm still listening.`}]);return;
+  }
+
+  TE.feed([{k:'choice',opts,fn:argId=>{
+    if(argId==='sisyphus'){
+      TE.prepend([
+        {k:'flag',f:'sisyphusArgMade'},
+        {k:'d',s:'Melinoe',t:`Sisyphus is different. His punishment exists to teach something. But what about the dead who suffer only because the living won't release them? No lesson. Just chains made of love.`},
+      ]);
+    }else if(argId==='eurydice'){
+      TE.prepend([
+        {k:'n',t:`Something changes in her face.`},
+        {k:'d',s:'Melinoe',t:`Eurydice…`},
+        {k:'n',t:`She goes quiet. She hadn't thought of it that way. She's been doing the same thing she accuses the living of — imposing her will on both sides without asking.`},
+        {k:'flag',f:'eurydiceArgMade'},
+      ]);
+    }else if(argId==='charon'){
+      TE.prepend([
+        {k:'d',s:'Melinoe',t:`Charon asked about her?`},
+        {k:'n',t:`She looks almost wistful.`},
+        {k:'d',s:'Melinoe',t:`Perhaps… yes. There is remembering that holds, and remembering that harms. I have seen only the second kind for so long.`},
+        {k:'flag',f:'charonArgMade'},
+      ]);
+    }else if(argId==='final'){
+      TE.prepend([
+        {k:'n',t:`Melinoe looks at me for a long time.`},
+        {k:'d',s:'Melinoe',t:`A song you can barely hear.`},
+        {k:'n',t:`She looks at the crack. Then she kneels and places both hands over the fissure. The water recedes. The glow fades. The crack seals.`},
+        {k:'d',s:'Melinoe',t:`Carry a message for me. Tell the living: remember us. But let us rest.`},
+        {k:'n',t:`She stands. Not happy exactly. But less tired.`},
+        {k:'flag',f:'melinoePersuaded'},
+        {k:'next',scene:'scene9',delay:2500},
+      ]);
+    }
+  }}]);
+}
+
+// ── SCENE 9: THE ASCENT (cutscene) ────────────────────────────────────────────
+function loadScene9(){
+  setBG('scene4_meadows.png');
+  TE.feed([
+    {k:'n',t:`The way back is lighter. Not easier — but lighter.`},
+    {k:'n',t:`I pass through the Meadows. Elpenor sees me coming.`},
+    {k:'d',s:'Elpenor',t:`You're going back up. You actually did it. Tell someone about me — Elpenor, sailed with Odysseus. Please.`},
+    {k:'n',t:`The Styx crossing. Charon nods at me once. No words. He pushes off from the bank. The living shore gets closer.`},
+    {k:'n',t:`The cave. And then — light. Real light. The sun at Cape Tainaron, low in the afternoon sky.`},
+    {k:'next',scene:'scene10',delay:2000},
+  ]);
+}
+
+// ── SCENE 10: HOME — DAPHNE'S GARDEN ─────────────────────────────────────────
+function loadScene10(){
+  setBG('scene2_garden.png');
+  TE.feed([
+    {k:'n',t:`The ferry home takes four hours. I sit on the deck with the book in my lap.`},
+    {k:'n',t:`Daphne is in her garden when I arrive. She seems unsurprised.`},
+  ]);
+
+  makeHS('daphne_return','Daphne',28,60,40,36,()=>{
+    if(TE.busy)return;
+    if(S.flags.has('asphodelGiven')){
+      TE.feed([{k:'n',t:`She holds the flower, looking at it. Our conversation is done.`}]);return;
+    }
+    if(!S.inventory.includes('asphodel')){
+      TE.feed([{k:'n',t:`I should give her something from the Meadows. I picked a flower — it's still in my inventory.`}]);return;
+    }
+    TE.feed([
+      {k:'d',s:'Daphne',t:`You went all the way down for a memory. Was it worth it?`},
+      {k:'n',t:`I give her the asphodel flower. She holds it carefully, like something precious.`},
+      {k:'remove',item:'asphodel'},
+      {k:'d',s:'Daphne',t:`From the Meadows. You picked this yourself.`},
+      {k:'d',s:'Yiannis',t:`She has a message. From Melinoe. "Remember us. But let us rest."`},
+      {k:'n',t:`Daphne closes her fingers around the flower very slowly.`},
+      {k:'d',s:'Daphne',t:`Go home, Yiannis.`},
+      {k:'flag',f:'asphodelGiven'},
+      {k:'next',scene:'scene10b',delay:2000},
+    ]);
+  });
+}
+
+// ── SCENE 10b: BEDROOM AT SUNSET (cutscene) ───────────────────────────────────
+function loadScene10b(){
+  setBG('scene10_home.png');
+  TE.feed([
+    {k:'n',t:`My room. Sunset light coming through the window.`},
+    {k:'n',t:`I look at the photo. My mother's face. For a moment — nothing.`},
+    {k:'n',t:`Then, quietly: a sound. Not with my ears. Inside. A humming. A melody. Her song.`},
+    {k:'n',t:`I can't see her face completely. It doesn't fully come back. But I can hear her. That's enough.`},
+    {k:'n',t:`I hum along. The sun sets. The sea goes dark.`},
+    {k:'next',scene:'credits',delay:2500},
+  ]);
+}
+
+// ── CREDITS ───────────────────────────────────────────────────────────────────
+function loadCredits(){
+  document.getElementById('game').style.display='none';
+  const cr=document.getElementById('credits');
+  cr.style.display='flex';
+  cr.style.opacity='0';
+  cr.style.transition='opacity 1.2s ease';
+  document.getElementById('credits-quote').textContent=
+    `The Greek word for truth is aletheia — literally, "un-forgetting." To know what is true, you must first refuse to forget.`;
+  setTimeout(()=>{cr.style.opacity='1';},100);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click',()=>{
+  OV.style.opacity='1';
+  setTimeout(()=>{
+    document.getElementById('title').style.display='none';
+    document.getElementById('game').style.display='flex';
+    _load('scene1');
+    setTimeout(fadeOut,120);
+  },560);
+});
+
+document.getElementById('btn-again').addEventListener('click',()=>{
+  // Reset state
+  S.inventory.length=0; S.selectedItem=null;
+  S.flags.clear(); S.visited={};
+  S.judgeAttempts=0; S.currentScene=null;
+  document.getElementById('credits').style.display='none';
+  document.getElementById('game').style.display='flex';
+  OV.style.opacity='1';
+  setTimeout(()=>{_load('scene1');setTimeout(fadeOut,120);},560);
+});
 </script>
 </body>
 </html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Hub</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #0d0d12;
+      --surface:   #14141c;
+      --card:      #1a1a26;
+      --border:    #2a2a3a;
+      --accent:    #7c6cf5;
+      --accent2:   #e05cff;
+      --text:      #e8e8f0;
+      --text-dim:  #888899;
+      --radius:    14px;
+      --glow:      rgba(124, 108, 245, 0.35);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 64px 24px 48px;
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      display: block;
+      width: 120px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+      margin: 32px auto 0;
+    }
+
+    .site-eyebrow {
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+
+    .site-title {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .site-subtitle {
+      margin-top: 12px;
+      color: var(--text-dim);
+      font-size: 16px;
+    }
+
+    /* ── Grid ── */
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .game-count {
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 40px var(--glow);
+    }
+
+    .card-thumb {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+      transition: transform 0.35s ease;
+    }
+
+    .card:hover .card-thumb img {
+      transform: scale(1.05);
+    }
+
+    .card-thumb .badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .card-body {
+      padding: 18px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: rgba(124, 108, 245, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(124, 108, 245, 0.3);
+    }
+
+    .play-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 8px;
+      padding: 7px 16px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      pointer-events: none; /* card itself is the link */
+    }
+
+    .card:hover .play-btn {
+      opacity: 0.85;
+    }
+
+    .play-btn svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-dim);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      header { padding: 40px 16px 32px; }
+      main   { padding: 0 16px 60px; }
+      .grid  { grid-template-columns: 1fr 1fr; gap: 14px; }
+      .card-body { padding: 12px 14px 14px; }
+      .card-title { font-size: 14px; }
+      .card-desc  { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <p class="site-eyebrow">Game Hub</p>
+  <h1 class="site-title">Play &amp; Explore</h1>
+  <p class="site-subtitle">A growing collection of browser games</p>
+</header>
+
+<main>
+  <p class="game-count" id="game-count"></p>
+  <div class="grid" id="game-grid"></div>
+</main>
+
+<footer>
+  &copy; 2025 Game Hub &mdash; New games added regularly
+</footer>
+
+<script>
+  // ─────────────────────────────────────────────────────────
+  //  GAMES CATALOG
+  //  To add a new game: append one object to this array.
+  //  Fields:
+  //    title    — display name
+  //    desc     — one-line description shown on the card
+  //    url      — relative path to the game
+  //    thumb    — relative path to the thumbnail image
+  //    tag      — genre label shown on the card (optional)
+  //    badge    — top-right overlay text e.g. "NEW", "2P" (optional)
+  // ─────────────────────────────────────────────────────────
+  const GAMES = [
+    {
+      title: "The River of Forgetting",
+      desc:  "A Greek mythology point-and-click — descend into the Underworld to recover stolen memories of your mother.",
+      url:   "river_forgetting/index.html",
+      thumb: "thumbnails/river-forgetting.png",
+      tag:   "Adventure",
+      badge: "NEW",
+    },
+    {
+      title: "Manga Battle Arena",
+      desc:  "Face off against powerful anime bosses in a fast-paced combo fighter.",
+      url:   "manga-battle.html",
+      thumb: "thumbnails/manga-battle.png",
+      tag:   "Fighting",
+    },
+    {
+      title: "Tank Brothers",
+      desc:  "Two-player local battle — grab a friend and destroy each other's tank.",
+      url:   "tank-brothers.html",
+      thumb: "thumbnails/tank-brothers.png",
+      tag:   "2-Player",
+      badge: "2P",
+    },
+    {
+      title: "Folkets Väg",
+      desc:  "A retro pixel-art RPG set in Swedish political history.",
+      url:   "folkets-vag/index.html",
+      thumb: "thumbnails/folkets-vag.png",
+      tag:   "RPG",
+    },
+    {
+      title: "Odyssey: The Return",
+      desc:  "A Sierra-style point-and-click adventure — eight trials, one homecoming.",
+      url:   "odyssey/index.html",
+      thumb: "thumbnails/odyssey.png",
+      tag:   "Adventure",
+    },
+    {
+      title: "Bikini Bottom Brawl",
+      desc:  "SpongeBob vs Patrick — an underwater cartoon brawler in Bikini Bottom.",
+      url:   "spongebob-gorillas/index.html",
+      thumb: "thumbnails/spongebob-gorillas.png",
+      tag:   "Brawler",
+    },
+    {
+      title: "Gorillas Classic",
+      desc:  "The legendary QBasic artillery game — throw exploding bananas across a city skyline. First to 5 hits wins!",
+      url:   "gorillas-classic/index.html",
+      thumb: "thumbnails/gorillas-classic.png",
+      tag:   "Classic",
+      badge: "2P",
+    },
+  ];
+
+  // ─────────────────────────────────────────────────────────
+  //  Render — no need to edit below when adding games
+  // ─────────────────────────────────────────────────────────
+  const grid  = document.getElementById('game-grid');
+  const count = document.getElementById('game-count');
+
+  count.textContent = `${GAMES.length} game${GAMES.length !== 1 ? 's' : ''}`;
+
+  GAMES.forEach(game => {
+    const card = document.createElement('a');
+    card.className = 'card';
+    card.href = game.url;
+
+    card.innerHTML = `
+      <div class="card-thumb">
+        <img src="${game.thumb}" alt="${game.title}" loading="lazy">
+        ${game.badge ? `<span class="badge">${game.badge}</span>` : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-title">${game.title}</div>
+        <div class="card-desc">${game.desc}</div>
+        <div class="card-footer">
+          ${game.tag ? `<span class="tag">${game.tag}</span>` : '<span></span>'}
+          <button class="play-btn">
+            <svg viewBox="0 0 12 12"><polygon points="2,1 11,6 2,11"/></svg>
+            Play
+          </button>
+        </div>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+</script>
+
+</body>
+</html>

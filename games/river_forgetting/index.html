@@ -36,13 +36,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0808;font-family:
 #controls-panel{flex:1;display:flex;flex-direction:column;background:#0d0b09;border-left:1px solid rgba(200,168,74,.13)}
 
 /* text area */
-#text-area{flex:1;display:flex;flex-direction:column;padding:18px 20px 12px;cursor:pointer;border-bottom:1px solid rgba(200,168,74,.1);overflow:hidden;min-height:0}
-#text-log{flex:1;overflow-y:auto;min-height:0}
-#text-line{font-size:.94rem;line-height:1.78;color:#bfad7e}
-#text-line .spk{display:block;font-style:normal;font-weight:700;font-size:.84rem;letter-spacing:.06em;color:#c8a84a;margin-bottom:.22rem}
+#text-area{flex:1;display:flex;flex-direction:column;justify-content:center;padding:18px 20px 12px;cursor:pointer;border-bottom:1px solid rgba(200,168,74,.1);overflow:hidden;min-height:0}
+#text-log{overflow-y:auto}
+#text-line{font-size:1.1rem;line-height:1.78;color:#bfad7e}
+#text-line .spk{display:block;font-style:normal;font-weight:700;font-size:1rem;letter-spacing:.06em;color:#c8a84a;margin-bottom:.22rem}
+#text-line .spk.spk-player{color:#4ade80}
 #text-line .speech{font-style:italic}
 #choices{display:none;flex-direction:column;gap:6px;margin-top:12px;flex-shrink:0;overflow-y:auto;max-height:220px}
-.cbtn{font-family:'Libre Baskerville',serif;font-size:.82rem;color:#c4b484;background:rgba(200,168,74,.04);border:1px solid rgba(200,168,74,.22);padding:8px 13px;cursor:pointer;text-align:left;transition:all .18s;border-radius:2px}
+.cbtn{font-family:'Libre Baskerville',serif;font-size:.98rem;font-style:italic;color:#c4b484;background:rgba(200,168,74,.04);border:1px solid rgba(200,168,74,.22);padding:8px 13px;cursor:pointer;text-align:left;transition:all .18s;border-radius:2px}
 .cbtn:hover{background:rgba(200,168,74,.1);color:#e0c86a;border-color:rgba(200,168,74,.48)}
 #click-hint{flex-shrink:0;font-size:.67rem;letter-spacing:.1em;color:rgba(200,168,74,.58);text-align:right;margin-top:8px}
 
@@ -128,6 +129,7 @@ const TE = (() => {
   function _next() {
     if (!q.length) {
       _busy=false; _waiting=false; hintEl.textContent='';
+      textEl.innerHTML='';
       if (doneCb){const cb=doneCb;doneCb=null;cb();}
       return;
     }
@@ -136,7 +138,8 @@ const TE = (() => {
       textEl.innerHTML=it.t; _waiting=true;
       hintEl.textContent=q.length?'click to continue':'';
     } else if (it.k==='d'){
-      textEl.innerHTML=`<span class="spk">${it.s}</span><span class="speech">${it.t}</span>`;
+      const spkCls=it.s==='Yiannis'?'spk spk-player':'spk';
+      textEl.innerHTML=`<span class="${spkCls}">${it.s}</span><span class="speech">${it.t}</span>`;
       _waiting=true; hintEl.textContent=q.length?'click to continue':'';
     } else if (it.k==='acq'){addItem(it.item);_next();}
     else if (it.k==='remove'){removeItem(it.item);_next();}

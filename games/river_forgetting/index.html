@@ -17,8 +17,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0808;font-family:
 #title-main{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,3.8rem);font-weight:600;color:#c8a84a;letter-spacing:.06em;text-align:center;line-height:1.2}
 #title-sub{font-style:italic;font-size:clamp(.8rem,1.6vw,1rem);color:rgba(200,168,74,.45);letter-spacing:.12em;text-align:center;margin-top:.6rem}
 .t-rule{width:240px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,168,74,.3),transparent);margin:2rem auto}
+#btn-continue{font-family:'Libre Baskerville',serif;font-size:1rem;letter-spacing:.14em;color:#c8a84a;background:transparent;border:1px solid rgba(200,168,74,.35);padding:.75rem 2.8rem;cursor:pointer;transition:all .22s;display:none}
+#btn-continue:hover{color:#e8c86a;border-color:rgba(200,168,74,.75);background:rgba(200,168,74,.05)}
 #btn-start{font-family:'Libre Baskerville',serif;font-size:1rem;letter-spacing:.14em;color:#c8a84a;background:transparent;border:1px solid rgba(200,168,74,.35);padding:.75rem 2.8rem;cursor:pointer;transition:all .22s}
 #btn-start:hover{color:#e8c86a;border-color:rgba(200,168,74,.75);background:rgba(200,168,74,.05)}
+#btn-start.secondary{font-size:.8rem;letter-spacing:.12em;color:rgba(200,168,74,.4);border-color:rgba(200,168,74,.15);padding:.55rem 2rem;margin-top:.4rem}
+#btn-start.secondary:hover{color:rgba(200,168,74,.75);border-color:rgba(200,168,74,.35);background:rgba(200,168,74,.04)}
 
 /* ── GAME ── */
 #game{display:none;width:100%;height:100vh;flex-direction:row}
@@ -73,6 +77,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0808;font-family:
   <div id="title-main">The River<br>of Forgetting</div>
   <div id="title-sub">A story set in the world beneath the world</div>
   <div class="t-rule"></div>
+  <button id="btn-continue">Continue</button>
   <button id="btn-start">Begin</button>
 </div>
 
@@ -206,6 +211,7 @@ function _load(id){
   S.selectedItem=null; renderInv();
   if(LOADERS[id])LOADERS[id]();
   reposHS();
+  saveGame();
 }
 
 function setBG(f){imgPanel.style.backgroundImage=`url('assets/${f}')`;}
@@ -1032,6 +1038,7 @@ function loadScene10b(){
 
 // ── CREDITS ───────────────────────────────────────────────────────────────────
 function loadCredits(){
+  clearSave();
   document.getElementById('game').style.display='none';
   const cr=document.getElementById('credits');
   cr.style.display='flex';
@@ -1042,26 +1049,74 @@ function loadCredits(){
   setTimeout(()=>{cr.style.opacity='1';},100);
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-document.getElementById('btn-start').addEventListener('click',()=>{
-  OV.style.opacity='1';
-  setTimeout(()=>{
-    document.getElementById('title').style.display='none';
-    document.getElementById('game').style.display='flex';
-    _load('scene1');
-    setTimeout(fadeOut,120);
-  },560);
-});
+// ── SAVE / LOAD ───────────────────────────────────────────────────────────────
+const SAVE_KEY='rof_v1';
 
-document.getElementById('btn-again').addEventListener('click',()=>{
-  // Reset state
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify({
+      inventory:S.inventory,
+      flags:[...S.flags],
+      visited:Object.fromEntries(Object.entries(S.visited).map(([k,v])=>[k,[...v]])),
+      judgeAttempts:S.judgeAttempts,
+      currentScene:S.currentScene,
+    }));
+  }catch(e){}
+}
+
+function loadSave(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+    const d=JSON.parse(raw);
+    S.inventory=d.inventory||[];
+    S.flags=new Set(d.flags||[]);
+    S.visited=Object.fromEntries(Object.entries(d.visited||{}).map(([k,v])=>[k,new Set(v)]));
+    S.judgeAttempts=d.judgeAttempts||0;
+    S.currentScene=d.currentScene||'scene1';
+    return true;
+  }catch(e){return false;}
+}
+
+function clearSave(){localStorage.removeItem(SAVE_KEY);}
+function hasSave(){return !!localStorage.getItem(SAVE_KEY);}
+
+function resetState(){
   S.inventory.length=0; S.selectedItem=null;
   S.flags.clear(); S.visited={};
   S.judgeAttempts=0; S.currentScene=null;
-  document.getElementById('credits').style.display='none';
-  document.getElementById('game').style.display='flex';
+}
+
+function enterGame(scene){
   OV.style.opacity='1';
-  setTimeout(()=>{_load('scene1');setTimeout(fadeOut,120);},560);
+  setTimeout(()=>{
+    document.getElementById('title').style.display='none';
+    document.getElementById('credits').style.display='none';
+    document.getElementById('game').style.display='flex';
+    _load(scene);
+    setTimeout(fadeOut,120);
+  },560);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+
+// Show Continue button if a save exists
+if(hasSave()){
+  document.getElementById('btn-continue').style.display='';
+  document.getElementById('btn-start').textContent='New Game';
+  document.getElementById('btn-start').classList.add('secondary');
+}
+
+document.getElementById('btn-continue').addEventListener('click',()=>{
+  if(loadSave())enterGame(S.currentScene);
+});
+
+document.getElementById('btn-start').addEventListener('click',()=>{
+  clearSave(); resetState(); enterGame('scene1');
+});
+
+document.getElementById('btn-again').addEventListener('click',()=>{
+  clearSave(); resetState(); enterGame('scene1');
 });
 
 // Fade in the title screen on first load

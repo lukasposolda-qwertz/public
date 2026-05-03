@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Anpassningar i naturen</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-bg: #fffbeb;
+    --partial-border: #d97706;
+    --partial-text: #92400e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .quiz-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .quiz-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .quiz-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .question-type-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 1rem;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .option-label:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: #f8f9ff;
+  }
+
+  .option-label.selected:not(.checked) {
+    border-color: var(--accent);
+    background: #eef2ff;
+  }
+
+  .option-label.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .option-label.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .option-label.disabled {
+    cursor: default;
+  }
+
+  .option-input {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .option-indicator {
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 18px;
+    margin-top: 1px;
+    font-size: 1rem;
+  }
+
+  .option-text {
+    flex: 1;
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: #eef2ff;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .feedback-box {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0 10px 10px 0;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-box.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .feedback-box.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .feedback-box.partial {
+    border-color: var(--partial-border);
+    background: var(--partial-bg);
+    color: var(--partial-text);
+  }
+
+  .feedback-verdict {
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-screen {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .resume-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .resume-info {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-score {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 1.25rem; }
+    .quiz-title { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-title">Anpassningar i naturen</div>
+    <div class="quiz-subtitle">Biologi – Kapitel 5 | Årkurs 5–7</div>
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">Fråga 1 av 60</span>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionCard">
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz-progress-quiz-anpassningar-i-naturen';
+
+const quizData = [
+  {
+    q: "Vad menas med biologisk mångfald?",
+    type: "single",
+    opts: [
+      { t: "Att alla djur i ett område ser likadana ut", c: false },
+      { t: "Att det finns många olika arter och stor variation i naturen", c: true },
+      { t: "Att det finns mycket mat tillgänglig för djuren i ett område", c: false },
+      { t: "Att växter och djur lever i vatten", c: false }
+    ],
+    fb: "Biologisk mångfald beskriver bredden av olika arter och variationen inom och mellan dem i naturen. Det handlar om variation, inte likhet. Tillgången till mat är en ekologisk faktor, och biologisk mångfald gäller alla miljöer, inte enbart vattenmiljöer."
+  },
+  {
+    q: "Vilka påståenden om isbjörnen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Isbjörnen har vit päls som ger kamouflage i snön", c: true },
+      { t: "Isbjörnen lever enbart i Antarktis", c: false },
+      { t: "Hårstråna hos isbjörnen innehåller luft som ger extra isolering mot kyla", c: true },
+      { t: "Isbjörnen är ett djur som är anpassat till ett kallt klimat", c: true }
+    ],
+    fb: "Isbjörnen har vit päls för kamouflage mot snö och is, hårstråna innehåller luft som isolerar mot kyla, och isbjörnen är ett av de bäst anpassade djuren till arktisk kyla. Isbjörnen lever i Arktis (norra polområdet), inte Antarktis (södra polområdet) – Antarktis saknar isbjörnar."
+  },
+  {
+    q: "Vad kallas den stora barrskogen på norra halvklotet?",
+    type: "single",
+    opts: [
+      { t: "Savann", c: false },
+      { t: "Tundra", c: false },
+      { t: "Taiga", c: true },
+      { t: "Lövskog", c: false }
+    ],
+    fb: "Taiga är det ryska ordet för skog och används som internationell term för den stora barrskogen på norra halvklotet. Savann är en tropisk gräsmark. Tundra är den kalla, trädfria marken ännu närmre polerna. Lövskog domineras av lövfällande träd och återfinns söder om taigan."
+  },
+  {
+    q: "Vilka påståenden om anpassningar i polartrakterna är korrekta?",
+    type: "multi",
+    opts: [
+      { t: "Många djur byter till vit päls på vintern för att smälta in i snön", c: true },
+      { t: "Alla fåglar stannar kvar i polartrakterna hela vintern", c: false },
+      { t: "Tjock päls och fjäderdräkt hjälper djur att hålla värmen i kyla", c: true },
+      { t: "Sälungar föds med vit päls som fungerar som kamouflage mot isen", c: true }
+    ],
+    fb: "Vit vinterpäls ger kamouflage, tjock päls och fjäderdräkt isolerar mot kyla, och sälungar föds vita som skydd mot rovdjur på isen. Många fåglar i polartrakterna måste flytta söderut på vintern eftersom de inte kan hitta tillräckligt med mat under de korta polardagarna."
+  },
+  {
+    q: "Varför blommar vitsippor och blåsippor tidigt på våren innan lövträdens löv har slagit ut?",
+    type: "single",
+    opts: [
+      { t: "De behöver mer regn än andra blommor", c: false },
+      { t: "De klarar inte värmen på sommaren", c: false },
+      { t: "Solljuset når ner till skogsmarken innan träden fått löv, vilket blommorna utnyttjar", c: true },
+      { t: "De är inte anpassade till att blomma i skugga och hinner inte med att blomma på sommaren", c: false }
+    ],
+    fb: "Vårblommande skogsväxter blommar tidigt för att utnyttja det solljus som når marken innan lövträden slår ut sina löv. Regnbehovet styr inte blomningstiden. Det är inte värmen utan skuggan som är problemet – de undviker inte värme utan ljusbrist. Alternativ D rör samma sak men förklarar inte mekanismen lika korrekt."
+  },
+  {
+    q: "Vilka är exempel på naturtyper som beskrivs korrekt nedan?",
+    type: "multi",
+    opts: [
+      { t: "Taiga – barrskog på norra halvklotet", c: true },
+      { t: "Savann – torr gräsmark i tropiska områden", c: true },
+      { t: "Tundra – kall, trädfri mark nära polerna", c: true },
+      { t: "Korallrev – varm, torr ökenmark", c: false }
+    ],
+    fb: "Taiga är barrskogen på norra halvklotet, savann är en tropisk torr gräsmark, och tundra är den kalla, trädfria marken nära polerna. Korallrev är en marin livsmiljö i varmt grunt hav, inte en ökenmark."
+  },
+  {
+    q: "Hur undviker haren att bli uppäten av räven?",
+    type: "single",
+    opts: [
+      { t: "Haren gömmer sig under marken i ett bo", c: false },
+      { t: "Haren byter färg till vitt för att bli osynlig", c: false },
+      { t: "Haren springer snabbt och gör plötsliga riktningsändringar för att förvirra räven", c: true },
+      { t: "Haren bildar grupper för att försvara sig gemensamt", c: false }
+    ],
+    fb: "Haren överlever tack vare sin snabbhet och förmåga att plötsligt byta riktning, vilket förvirrar räven. Haren gräver inte bo under marken som skydd. Fjällharen byter färg till vitt i polartrakterna, men detta gäller inte alla harar. Harar är solitära och bildar inte försvarsgrupper."
+  },
+  {
+    q: "Vilka påståenden om regnskogen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Regnskogen växer runt ekvatorn där det är varmt och fuktigt hela året", c: true },
+      { t: "Regnskogen har lägst artrikedom av alla naturtyper på jorden", c: false },
+      { t: "Regnskogen är uppdelad i olika skikt, från marken upp till trädtopparna", c: true },
+      { t: "Många djur i regnskogen är aktiva på natten", c: true }
+    ],
+    fb: "Regnskogen växer runt ekvatorn i varmt och fuktigt klimat, är uppdelad i olika skikt, och många av dess djur är nattaktiva. Regnskogen är världens artrikaste miljö – inte den med lägst artrikedom."
+  },
+  {
+    q: "Vad är ett revir?",
+    type: "single",
+    opts: [
+      { t: "En typ av bo som rovdjur bygger i träd", c: false },
+      { t: "Ett område som ett djur försvarar mot artfränder, ofta för att säkra mat och förökningsplats", c: true },
+      { t: "Den stig som ett djur regelbundet använder när det letar efter vatten", c: false },
+      { t: "En grupp djur av samma art som lever och jagar tillsammans", c: false }
+    ],
+    fb: "Ett revir är ett område som ett djur försvarar mot artfränder för att säkra tillgång till mat, partner och utrymme för ungar. Det är inte ett bo, en vandringsled, eller en flock."
+  },
+  {
+    q: "Vilka anpassningar hjälper barrträd att klara vinterkyla?",
+    type: "multi",
+    opts: [
+      { t: "Barrens vaxartade yta skyddar mot uttorkning och kyla", c: true },
+      { t: "Barrträd tappar alla sina barr varje höst för att spara energi", c: false },
+      { t: "Hängande grenar låter snön glida av så att grenarna inte bryts", c: true },
+      { t: "Barrträd slutar växa helt under vintern och lagrar näring i rötterna", c: false }
+    ],
+    fb: "Barrens vaxyta skyddar mot kyla och uttorkning, och hängande grenar låter snön glida av. Barrträd tappar inte sina barr på vintern – det är just deras fördel. De är vintergröna och kan fotosyntetisera vid gynnsamma tillfällen."
+  },
+  {
+    q: "Vilket av följande påståenden om lövträd är korrekt?",
+    type: "single",
+    opts: [
+      { t: "Lövträd tappar sina löv på hösten för att spara energi under vintern", c: true },
+      { t: "Lövträd är enbart anpassade till tropiska klimat", c: false },
+      { t: "Lövträden behåller sina löv hela vintern, vilket gör att de kan fotosyntetisera även i kyla", c: false },
+      { t: "Lövträd har vaxartade blad som skyddar dem mot snö", c: false }
+    ],
+    fb: "Lövträd tappar sina löv på hösten för att minska vattenförlust och spara energi när det är kallt och mörkt. Lövträd finns i tempererade klimat, inte enbart tropiska. De kan inte fotosyntetisera utan löv under vintern. Det är barrträd, inte lövträd, som har vaxartade barr."
+  },
+  {
+    q: "Vilka påståenden om hur djur i barrskogar klarar vintern stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Ekorren samlar förråd av kottar och nötter inför vintern", c: true },
+      { t: "Mården är en skicklig klättrare som jagar bland trädgrenar", c: true },
+      { t: "Alla däggdjur i barrskogen går i ide under hela vintern", c: false },
+      { t: "Smågnagare kan söka föda under snön under vintern", c: true }
+    ],
+    fb: "Ekorren lägger upp vinterförråd, mården är en skicklig klättrare som jagar i träden, och smågnagare söker föda under snön. Det är inte sant att alla däggdjur i barrskogar går i ide – ekorren och mården är aktiva hela vintern."
+  },
+  {
+    q: "Vad är ett ekosystem?",
+    type: "single",
+    opts: [
+      { t: "En enskild djurart och dess ungar", c: false },
+      { t: "Alla växter och djur i ett område som lever tillsammans och påverkar varandra", c: true },
+      { t: "Havet och de djur som enbart lever i vatten", c: false },
+      { t: "En grupp djur av samma art som vandrar tillsammans", c: false }
+    ],
+    fb: "Ett ekosystem är samspelet mellan alla levande organismer och deras miljö i ett område. En enskild art och dess ungar är inte ett ekosystem. Havet är en specifik naturtyp. En vandrande grupp djur av samma art kallas en flock eller population."
+  },
+  {
+    q: "Vilka hot mot orangutangen är korrekta?",
+    type: "multi",
+    opts: [
+      { t: "Avverkning av regnskogen minskar orangutangens livsmiljö", c: true },
+      { t: "Orangutangen hotas av att skogar bränns för att ge plats åt odlingsmark", c: true },
+      { t: "Orangutangen lever i Sydamerika och hotas av jakt i Amazonas", c: false },
+      { t: "Antalet orangutanger i det vilda har minskat kraftigt de senaste decennierna", c: true }
+    ],
+    fb: "Avverkning minskar orangutangens livsmiljö, skogsbränder för odlingsmark förstör ytterligare skog, och populationen har minskat kraftigt. Orangutangen lever i Malaysia och Indonesien i Sydostasien – inte i Sydamerika."
+  },
+  {
+    q: "Varför är växter viktiga för djurlivet i en naturtyp?",
+    type: "single",
+    opts: [
+      { t: "Växter tillverkar syre och är den grundläggande näringskällan i de flesta ekosystem", c: true },
+      { t: "Växter skyddar djuren mot rovdjur genom att erbjuda gömställen, men har ingen betydelse som föda", c: false },
+      { t: "Växter reglerar temperaturen i ett område och är därför viktigast för kalla klimat", c: false },
+      { t: "Växter är enbart viktiga för insekter och saknar betydelse för däggdjur och fåglar", c: false }
+    ],
+    fb: "Växter producerar syre och är den grundläggande näringskällan i de flesta ekosystem – de utgör basen i näringspyramiden. Växter är avgörande som föda för växtätare. De är viktiga i alla klimat. Växter är avgörande för däggdjur och fåglar, antingen direkt eller indirekt via näringspyramiden."
+  },
+  {
+    q: "Vilka påståenden om vattenmiljöer och anpassningar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Laxen simmar upp i floder mot strömmen för att leka", c: true },
+      { t: "Trollsländans larv lever i vattnet men den vuxna trollsländan lever på land och i luften", c: true },
+      { t: "Alla djur i vattenmiljöer kan leva lika bra i både salt- och sötvatten", c: false },
+      { t: "Hämsken håller sig fast i botten med sugfötter för att inte spolas iväg av strömmen", c: true }
+    ],
+    fb: "Laxen simmar mot strömmen för att leka, trollsländan lever som larv i vatten och som vuxen i luften, och hämsken håller sig fast med sugfötter. De flesta vattendjur är specialiserade på antingen sött eller salt vatten och kan inte leva i båda."
+  },
+  {
+    q: "Hur kan flygekorren ta sig mellan träd utan att klättra ner till marken?",
+    type: "single",
+    opts: [
+      { t: "Den har en lång och kraftfull svans som den använder för att kasta sig mellan träd", c: false },
+      { t: "Den glider på hudveck längs kroppssidorna och kan färdas upp till 20 meter i luften", c: true },
+      { t: "Den springer längs lianer som hänger mellan träden", c: false },
+      { t: "Den hoppar korta sträckor men kompenserar med extremt snabba rörelser", c: false }
+    ],
+    fb: "Flygekorren har hudveck längs kroppssidorna som fungerar som ett glidsegel och gör att den kan glida upp till 20 meter mellan träd. Svansen används för styrning men är inte drivkraften. Flygekorren klättrar inte längs lianer utan glider. Det är långa glidflykter, inte korta hopp."
+  },
+  {
+    q: "Vilka påståenden om betesmarker och biologisk mångfald stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Betesmarker har en hög biologisk mångfald av blommor och insekter", c: true },
+      { t: "Det moderna jordbruket har minskat arealen betesmarker kraftigt", c: true },
+      { t: "Betesmarker skapas naturligt utan att djur betar på dem", c: false },
+      { t: "Utan betande djur skulle många ängar och hagar växa igen och förlora sin biologiska mångfald", c: true }
+    ],
+    fb: "Betesmarker har stor biologisk mångfald, det moderna jordbruket har minskat deras areal, och utan betande djur växer ängarna igen. Betesmarker är beroende av att djur betar på dem – utan bete tar buskar och träd över."
+  },
+  {
+    q: "Vilket påstående om spökdjuret i regnskogen är korrekt?",
+    type: "single",
+    opts: [
+      { t: "Det är dagaktivt och jagar under starka ljusförhållanden", c: false },
+      { t: "Det har enormt stora ögon för att se bättre i mörker under sin nattliga jakt", c: true },
+      { t: "Det är en rovfågel som lever i regnskogens övre skikt", c: false },
+      { t: "Det lever på växter och undviker kontakt med insekter", c: false }
+    ],
+    fb: "Spökdjuret är nattaktivt och har extremt stora ögon i förhållande till sin kroppsstorlek för att se i mörker när det jagar insekter. Det är ett litet primat, inte en rovfågel. Det är ett insektsätande rovdjur, inte växtätare."
+  },
+  {
+    q: "Vilka påståenden om hur klimat påverkar naturtyper är korrekta?",
+    type: "multi",
+    opts: [
+      { t: "Klimatet avgör vilka växter som kan växa i ett område", c: true },
+      { t: "I torra klimat med regelbunden torka dominerar gräs snarare än träd", c: true },
+      { t: "Klimatet har ingen betydelse för vilka djur som lever i ett område", c: false },
+      { t: "Regnskogen kräver ett varmt och fuktigt klimat för att existera", c: true }
+    ],
+    fb: "Klimatet styr vilka växter som kan växa i ett område, torrt klimat gynnar gräs framför träd, och regnskogen kräver varmt och fuktigt klimat. Klimatet påverkar kraftigt vilka djurarter som kan överleva i ett område."
+  },
+  {
+    q: "Vad menas med att en art är fridlyst?",
+    type: "single",
+    opts: [
+      { t: "Att arten är vanlig och kan jagas fritt", c: false },
+      { t: "Att arten är utrotad och inte längre finns i det vilda", c: false },
+      { t: "Att arten skyddas av lag och inte får jagas eller störas", c: true },
+      { t: "Att arten hålls i fångenskap på djurparker för att bevaras", c: false }
+    ],
+    fb: "En fridlyst art skyddas av lag och får inte jagas, fångas eller störas utan tillstånd. Fridlysning gäller skyddade, inte vanliga, arter. Utrotad innebär att arten redan är borta – fridlyst är ett skydd för att förhindra utrotning. Fridlysning handlar inte om djurparker utan om skydd i naturen."
+  },
+  {
+    q: "Vilka av följande anpassningar hjälper djur att undvika att bli uppätna?",
+    type: "multi",
+    opts: [
+      { t: "Kamouflage – att smälta in i omgivningens färger och mönster", c: true },
+      { t: "Att vara aktiv på natten när rovdjur har svårt att se", c: true },
+      { t: "Att alltid leva ensam utan kontakt med artfränder", c: false },
+      { t: "Snabbhet och förmåga att plötsligt byta riktning", c: true }
+    ],
+    fb: "Kamouflage gör djuret svårt att se, nattaktivitet minskar mötet med dagaktiva rovdjur, och snabbhet med riktningsändringar hjälper att undkomma. Att leva ensam är inte i sig ett skydd – flockbeteende kan tvärtom ge skydd genom att fler individer håller utkik."
+  },
+  {
+    q: "Varför kan vattenkraft påverka fiskarna i en flod negativt?",
+    type: "single",
+    opts: [
+      { t: "Vattentemperaturen ökar kraftigt nedströms kraftverket, vilket dödar fisken", c: false },
+      { t: "Kraftverk i floder hindrar fiskar som lax och öring från att vandra upp mot lekplatserna", c: true },
+      { t: "Kraftverkets ljud skrämmer bort fisken permanent från hela flodsystemet", c: false },
+      { t: "Vattnet i floden blir giftigt av de kemikalier som kraftverket släpper ut", c: false }
+    ],
+    fb: "Vattenkraftsdammar och kraftverksbyggen skapar hinder i floder som hindrar vandrande fisk som lax och öring från att nå sina lekplatser uppströms. Temperaturförändringar är inte den primära påverkan. Ljud är inte den väsentliga faktorn. Vattenkraft innebär inga kemiska utsläpp."
+  },
+  {
+    q: "Vilka påståenden om hotade fågelarter stämmer?",
+    type: "multi",
+    opts: [
+      { t: "De flesta hotade fågelarter lever i regnskogar", c: true },
+      { t: "Avverkning av skog gör att fåglar förlorar boplatser och föda", c: true },
+      { t: "Fåglar är aldrig hotade av förändringar i deras livsmiljö", c: false },
+      { t: "Minskad tillgång på insekter kan påverka insektsätande fåglars överlevnad", c: true }
+    ],
+    fb: "De flesta hotade fågelarter lever i regnskogar, skogsavverkning tar bort boplatser och föda, och minskat insektsbestånd drabbar fågelarter som lever av insekter. Fågelarter är starkt beroende av sina livsmiljöer och påverkas allvarligt av miljöförändringar."
+  },
+  {
+    q: "Varför har djur i polartrakterna ofta vit päls eller vita fjädrar på vintern?",
+    type: "single",
+    opts: [
+      { t: "Vit päls håller värmen bättre än mörk päls i kyla", c: false },
+      { t: "Vit färg ger kamouflage mot snö och is, vilket gör det svårare för rovdjur att se dem", c: true },
+      { t: "Vit päls hindrar UV-strålning som är starkare vid polerna", c: false },
+      { t: "Djur byter päls till vitt för att signalera till artfränder att det är parningssäsong", c: false }
+    ],
+    fb: "Vit färg ger kamouflage mot snö och is, vilket gör djuret svårare att upptäcka för rovdjur och byten. Vit päls isolerar inte bättre än mörk päls – tjockleken och luftinnehållet är det som isolerar. UV-skydd är inte skälet. Parningssignaler kopplas vanligtvis till andra beteenden."
+  },
+  {
+    q: "Vilka påståenden om hur människan påverkar naturen är korrekta?",
+    type: "multi",
+    opts: [
+      { t: "Städer och vägar tar mark i anspråk och förstör livsmiljöer för vilda djur", c: true },
+      { t: "Kemiska bekämpningsmedel inom jordbruket kan sprida sig till omgivande natur", c: true },
+      { t: "Människans påverkan på naturen är alltid positiv och ökar den biologiska mångfalden", c: false },
+      { t: "Avverkning av skog minskar livsutrymmet för skogslevande arter", c: true }
+    ],
+    fb: "Bebyggelse och vägar tar mark från naturen, kemikalier kan sprida sig utanför åkrarna, och avverkning minskar skogslevande arters livsutrymme. Mänsklig påverkan är inte alltid positiv – den leder ofta till förlust av biologisk mångfald."
+  },
+  {
+    q: "Vilken av följande beskriver bäst vad som händer på en savann under torrperioden?",
+    type: "single",
+    opts: [
+      { t: "Savannen täcks av tät skog eftersom träden växer snabbt utan konkurrens från gräset", c: false },
+      { t: "Gräset torkar, blommorna vissnar och djur kan behöva vandra långa sträckor för att hitta vatten", c: true },
+      { t: "Alla djur på savannen lägger sig i ide tills regnperioden börjar", c: false },
+      { t: "Vattenhålen torkar ut helt och savannen förvandlas till ett permanent ökenlandskap", c: false }
+    ],
+    fb: "Under torrperioden på savannen torkar gräset, blommorna vissnar och många djur måste vandra för att hitta vatten och mat. Under torrperioden minskar vegetationen – tät skog bildas inte. Savannens djur går inte i ide. Savannen är inte permanent öken – regnet återvänder och gräset växer tillbaka."
+  },
+  {
+    q: "Vilka påståenden om naturreservat och nationalparker stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Naturreservat inrättas för att skydda värdefulla naturmiljöer", c: true },
+      { t: "Alla länder har samma regler för vad som är tillåtet i naturreservat", c: false },
+      { t: "Skyddade områden kan bidra till att bevara hotade arters livsmiljöer", c: true },
+      { t: "I nationalparker finns det oftast specifika bestämmelser om vad man får och inte får göra", c: true }
+    ],
+    fb: "Naturreservat skyddar värdefulla naturmiljöer, skyddade områden bevarar hotade arters livsmiljöer, och nationalparker har specifika bestämmelser. Varje land och varje skyddat område har sina egna regler – det finns ingen global enhetlig lagstiftning."
+  },
+  {
+    q: "Vad är den viktigaste anledningen till att orangutangen är hotad?",
+    type: "single",
+    opts: [
+      { t: "Orangutangen jagas aktivt för sitt kött i hela Sydostasien", c: false },
+      { t: "Sjukdomar som spridits från människan har dödat stora delar av populationen", c: false },
+      { t: "Orangutangens naturliga livsmiljö i regnskogen förstörs när skog avverkas och bränns för odling", c: true },
+      { t: "Klimatförändringarna har gjort regnskogen för kall för orangutangen att överleva", c: false }
+    ],
+    fb: "Det huvudsakliga hotet mot orangutangen är att regnskogarna i Malaysia och Indonesien avverkas och bränns för odlingsmark, framför allt palmoljeplantager. Direkt jakt är ett problem men inte det dominerande hotet. Sjukdomar spelar inte en avgörande roll. Klimatförändringarna är inte den primära orsaken."
+  },
+  {
+    q: "Vilka anpassningar hos växter i regnskogen hjälper dem att nå solljuset?",
+    type: "multi",
+    opts: [
+      { t: "Smala stammar som växer snabbt uppåt mot ljuset", c: true },
+      { t: "Att leva som epifyt högt upp på andra träd för att komma nära solljuset", c: true },
+      { t: "Att växa längs marken och undvika direkt solljus", c: false },
+      { t: "Breda blad i de nedre skikten för att fånga upp det ljus som når igenom lövverket", c: true }
+    ],
+    fb: "Snabb tillväxt uppåt med smala stammar, att leva som epifyt högt upp, och breda blad för att fånga det ljus som når igenom är alla fungerande anpassningar. Att växa längs marken och undvika solljuset motverkar fotosyntesen och är ingen strategi för att nå solljuset."
+  },
+  {
+    q: "Vad innebär det att ett djur är nattaktivt?",
+    type: "single",
+    opts: [
+      { t: "Djuret sover enbart på natten och är aktivt dygnet runt i övrigt", c: false },
+      { t: "Djuret är aktivt på natten och vilar under dagen", c: true },
+      { t: "Djuret är aktivt enbart under gryning och skymning, inte under mörka nätter", c: false },
+      { t: "Djuret byter aktivitetsmönster beroende på årstid men är aldrig aktivt på vinternätterna", c: false }
+    ],
+    fb: "Nattaktiva djur är aktiva när det är mörkt och vilar när det är ljust. Skymningsaktiva djur kallas krepuskulära – nattaktiva djur är aktiva under hela natten. Nattaktivitet är ett fast beteendemönster hos många arter, inte årstidsberoende."
+  },
+  {
+    q: "Vilka påståenden om myskoxen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Myskoxen lever i kalla klimat nära polerna", c: true },
+      { t: "Myskoxens långa vinterpäls fungerar som isolering mot kyla", c: true },
+      { t: "Myskoxen är ett rovdjur som jagar lämlar och fåglar", c: false },
+      { t: "Myskoxar bildar grupper, vilket kan ge skydd mot rovdjur", c: true }
+    ],
+    fb: "Myskoxen lever i arktiska och subarktiska klimat, har lång isolerande vinterpäls, och bildar grupper som kan ge skydd mot rovdjur som vargar. Myskoxen är en växtätare, inte ett rovdjur."
+  },
+  {
+    q: "Vilket alternativ beskriver bäst varför vissa fåglar i polartrakterna måste flytta söderut på vintern?",
+    type: "single",
+    opts: [
+      { t: "Polardagarnas korthet gör att fåglarna inte hinner äta tillräckligt för att hålla värmen, och de måste söka mat längre söderut", c: true },
+      { t: "Polartrakternas rovdjur ökar i antal på vintern och tvingar bort fåglarna", c: false },
+      { t: "Fåglarna lämnar polerna för att söka varmare temperaturer eftersom de inte har päls som isolering", c: false },
+      { t: "Havsisen lägger sig och hindrar fåglarna från att dricka sötvatten", c: false }
+    ],
+    fb: "Polardagarnas korthet är en avgörande faktor – fåglarna hinner inte äta tillräckligt under de få ljusa timmarna och behöver flytta söderut. Rovdjurens antal är inte den primära orsaken. Fjäderdräkten isolerar mycket väl, så temperaturen i sig är inte avgörande. Sötvattentillgång är inte den begränsande faktorn."
+  },
+  {
+    q: "Vilka av följande stämmer om jordbrukets påverkan på naturen?",
+    type: "multi",
+    opts: [
+      { t: "Monokulturer, där bara en växtart odlas på ett fält, minskar den biologiska mångfalden", c: true },
+      { t: "Gödsling och kemiska bekämpningsmedel kan läcka ut i omgivande natur och skada ekosystem", c: true },
+      { t: "Modernt jordbruk har alltid en positiv effekt på biologisk mångfald", c: false },
+      { t: "Förädling av grödor har pågått i tusentals år och förändrat växter jämfört med deras vilda ursprung", c: true }
+    ],
+    fb: "Monokulturer minskar biologisk mångfald, kemikalier från jordbruket kan skada omgivande ekosystem, och förädling av grödor har pågått i årtusenden. Modernt storskaligt jordbruk minskar ofta den biologiska mångfalden snarare än att öka den."
+  },
+  {
+    q: "Vilket påstående om laxen och öringen är korrekt?",
+    type: "single",
+    opts: [
+      { t: "Lax och öring lever hela sina liv i havet och leker aldrig i sötvatten", c: false },
+      { t: "Lax och öring simmar upp i floder mot strömmen för att leka, tack vare starka muskler", c: true },
+      { t: "Lax och öring är enbart anpassade till stillastående sjöar och klarar inte strömmande vatten", c: false },
+      { t: "Lax och öring är samma art med olika namn beroende på om de lever i hav eller flod", c: false }
+    ],
+    fb: "Lax och öring är anadroma fiskar – de lever i havet men simmar upp i floder för att leka, tack vare kraftfulla muskler. De lever inte hela sina liv i havet. De är anpassade till strömmande vatten. Lax och öring är olika arter även om de är nära besläktade."
+  },
+  {
+    q: "Vilka påståenden om savannen och dess djur stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Elefanter kan vandra långa sträckor för att hitta vatten under torrperioden", c: true },
+      { t: "Akaciaträd är anpassade till savanns torra klimat", c: true },
+      { t: "På savannen regnar det lika mycket varje månad under hela året", c: false },
+      { t: "Savannen är en gräsmark i tropiska områden", c: true }
+    ],
+    fb: "Elefanter vandrar långa sträckor efter vatten under torrperioden, akaciaträd är välkänt anpassade till savanns torra klimat, och savannen är en tropisk gräsmark. Savannen har en tydlig regnperiod och en torrperiod – inte jämnt fördelat regn."
+  },
+  {
+    q: "Vad är syftet med att djur markerar revir med doftspår?",
+    type: "single",
+    opts: [
+      { t: "Att signalera till bytesdjur att de befinner sig i ett farligt område", c: false },
+      { t: "Att tala om för artfränder att området är taget, för att minska konflikter om mat och partner", c: true },
+      { t: "Att locka till sig byten med hjälp av lukt", c: false },
+      { t: "Att varna för naturkatastrofer och brand", c: false }
+    ],
+    fb: "Revirsmarkering med doftspår kommunicerar till artfränder att ett område är taget, vilket minskar konflikter om resurser. Doftspår riktas mot artfränder, inte mot bytesdjur. Rovdjur smyger sig på byten och använder inte dofter för att locka dem. Doftspår används inte för att varna för naturkatastrofer."
+  },
+  {
+    q: "Vilka påståenden om regnskogens skiktning stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Regnskogen har olika skikt från marken till trädtopparna med olika arter i varje skikt", c: true },
+      { t: "Mest solljus finns i de övre skikten, nära trädtopparna", c: true },
+      { t: "Marken i regnskogen är den ljusaste delen av skogen", c: false },
+      { t: "Olika djurarter är anpassade till att leva i olika skikt av regnskogen", c: true }
+    ],
+    fb: "Regnskogen har tydliga skikt, de övre skikten nära trädtopparna tar emot mest solljus, och olika djurarter är anpassade till olika skikt. Marken i regnskogen är den mörkaste delen eftersom den skuggas av alla skikten ovanför."
+  },
+  {
+    q: "Vad händer med gräset på savannen på sommaren när det är som torrast?",
+    type: "single",
+    opts: [
+      { t: "Gräset blommar och växer som allra mest under den torra perioden", c: false },
+      { t: "Gräset torkar men kan växa tillbaka när regnet återvänder, eftersom rötterna överlever torkan", c: true },
+      { t: "Gräset dör permanent och ersätts av buskar och träd", c: false },
+      { t: "Gräset börjar producera mer vatten inuti stråna för att hålla sig levande", c: false }
+    ],
+    fb: "Gräset på savannen torkar under torrperioden men är anpassat till denna cykel – rötterna överlever under marken och gräset skjuter upp igen när regnet återvänder. Gräset blommar inte under torrperioden. Det dör inte permanent. Det producerar inte extra vatten inuti stråna."
+  },
+  {
+    q: "Vilka påståenden om biologisk mångfald stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Biologisk mångfald innebär variation av arter i naturen", c: true },
+      { t: "Det finns uppskattningsvis 25 000 olika orkidéarter på jorden", c: true },
+      { t: "Biologisk mångfald är onödig eftersom alla ekosystem fungerar lika bra med få arter", c: false },
+      { t: "Förlusten av en art kan påverka andra arter i samma ekosystem", c: true }
+    ],
+    fb: "Biologisk mångfald innebär variation av arter, det finns uppskattningsvis 25 000 orkidéarter globalt, och förlust av en art kan påverka hela ekosystem. Ekosystem med låg artrikedom är mer sårbara för störningar – mångfald ökar stabiliteten."
+  },
+  {
+    q: "Vilket påstående om epifyter i regnskogen är korrekt?",
+    type: "single",
+    opts: [
+      { t: "Epifyter är växter som parasiterar på andra träd och suger näring ur dem", c: false },
+      { t: "Epifyter är växter som lever högt upp på andra träd för att nå solljuset, utan att skada värdträdet", c: true },
+      { t: "Epifyter är djur som lever på trädens bark och äter insekter", c: false },
+      { t: "Epifyter är växter som enbart växer på marken i regnskogens skugga", c: false }
+    ],
+    fb: "Epifyter lever högt uppe på andra träd för att nå solljuset, men de tar ingen näring från värdträdet – de är inte parasiter. De tar näring från luften, regnvattnet och nedfallande organiskt material. Epifyter är växter, inte djur. De lever i de övre skikten, inte på marken."
+  },
+  {
+    q: "Vilka av följande är viktiga skäl till att skydda naturen?",
+    type: "multi",
+    opts: [
+      { t: "Att bevara biologisk mångfald för framtida generationer", c: true },
+      { t: "Att säkerställa att ekosystem kan fortsätta leverera tjänster som rent vatten och luft", c: true },
+      { t: "Naturskydd är enbart viktigt i länder med mycket skog", c: false },
+      { t: "Att ge skydd åt utrotningshotade arter så att de kan överleva", c: true }
+    ],
+    fb: "Naturskydd bevarar biologisk mångfald för framtida generationer, välmående ekosystem levererar ekosystemtjänster som rent vatten och luft, och fridlysning skyddar hotade arter. Naturskydd är viktigt globalt i alla länder och biom, inte enbart i skogsrika länder."
+  },
+  {
+    q: "Varför är det problematiskt att odla enbart en enda växtart på stora åkrar (monokultur)?",
+    type: "single",
+    opts: [
+      { t: "En enda växtart ger alltid lägre skörd än om man odlar flera arter blandat", c: false },
+      { t: "Monokulturer minskar den biologiska mångfalden och gör grödorna mer sårbara för sjukdomar och skadedjur", c: true },
+      { t: "Monokulturer kräver mer regnvatten än blandat jordbruk och leder till torka", c: false },
+      { t: "En enda växtart på ett fält gör marken bördigare och minskar behovet av gödsel", c: false }
+    ],
+    fb: "Monokulturer minskar biologisk mångfald och gör grödorna mer sårbara – om en sjukdom angriper arten kan hela skörden slås ut eftersom det saknas naturliga motståndare och genetisk variation. Skördeavkastning kan vara hög i monokulturer. Regnbehovet varierar inte automatiskt. Monokulturer kan utarma marken på lång sikt."
+  },
+  {
+    q: "Vilka påståenden om djurs anpassningar till vattenmiljöer stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Starka muskler hjälper laxen att simma mot strömmen i floder", c: true },
+      { t: "Hämsken har sugfötter för att hålla sig fast i botten av strömmande vatten", c: true },
+      { t: "Alla vattenlevande djur andas med gälar under hela sina liv", c: false },
+      { t: "Trollsländan lever som larv i vattnet men blir flygande som vuxen", c: true }
+    ],
+    fb: "Starka muskler hjälper laxen, hämsken har sugfötter för att hålla sig fast, och trollsländan lever som larv i vatten men flyger som vuxen. Inte alla vattenlevande djur andas med gälar hela livet – trollsländelarver andas med gälar men den vuxna trollsländan andas luft."
+  },
+  {
+    q: "Vilket av följande är ett exempel på att människan förändrat djur och växter medvetet under lång tid?",
+    type: "single",
+    opts: [
+      { t: "Att vilda djur naturligt anpassar sig till städer och människors närvaro", c: false },
+      { t: "Att djur och grödor förändrats genom avel och förädling för att ge mer mat eller vara lättare att hantera", c: true },
+      { t: "Att invasiva arter sprider sig till nya områden med hjälp av globala handelsrutter", c: false },
+      { t: "Att människan återintroducerar utrotningshotade djur i deras ursprungliga livsmiljöer", c: false }
+    ],
+    fb: "Avel och förädling innebär att människan under tusentals år medvetet valt ut och korsat djur och växter med önskade egenskaper, vilket gradvis förändrat dem. Naturlig anpassning till städer sker utan mänsklig styrning. Invasiva arters spridning är inte avel. Återintroduktion av hotade djur är naturvård, inte avel."
+  },
+  {
+    q: "Vilka påståenden om tundran stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Tundran ligger nära polerna och har ett kallt klimat", c: true },
+      { t: "Det finns inga levande organismer alls på tundran", c: false },
+      { t: "Tundran är en trädfri naturtyp", c: true },
+      { t: "Djur på tundran måste klara extrema köldgrader", c: true }
+    ],
+    fb: "Tundran ligger nära polerna med ett kallt klimat, är en trädfri naturtyp, och djur som lever där måste klara extrema köldgrader. Tundran hyser ett flertal organismer: mossor, lavar, insekter, fåglar och däggdjur som ren och fjällräv."
+  },
+  {
+    q: "Vilket alternativ beskriver bäst varför regnskogen har så hög artrikedom?",
+    type: "single",
+    opts: [
+      { t: "Regnskogen är ung och nya arter hinner bildas snabbare där än i äldre skogar", c: false },
+      { t: "Det varma och fuktiga klimatet i regnskogen möjliggör att ett mycket stort antal arter kan leva och frodas året runt", c: true },
+      { t: "Regnskogen saknar rovdjur, vilket gör att fler arter kan överleva", c: false },
+      { t: "Regnskogen täcker en så stor yta att antalet arter automatiskt ökar med arealen", c: false }
+    ],
+    fb: "Det stabilt varma och fuktiga klimatet i regnskogen möjliggör artrikedom utan vintrar som dödar av organismer eller tvingar dem att migrera. Regnskogen är en av jordens äldsta skogstyper. Regnskogen har många rovdjur. Yta är en faktor, men klimatets rikedom och beständighet är den primära orsaken."
+  },
+  {
+    q: "Vilka påståenden om varför djur samarbetar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Samarbete kan hjälpa djur att försvara sig mot rovdjur", c: true },
+      { t: "Djur i grupp kan lättare hitta och fånga byten", c: true },
+      { t: "Alla djur samarbetar alltid och inga lever solitärt", c: false },
+      { t: "Samarbete och flockbeteende förekommer hos många, men inte alla, djurarter", c: true }
+    ],
+    fb: "Samarbete ger skydd mot rovdjur, flockar kan jaga effektivare, och samarbete förekommer hos många men inte alla djurarter. Många djur lever solitärt och samarbetar inte alls – att påstå att alla djur alltid samarbetar är felaktigt."
+  },
+  {
+    q: "Vad innebär det att en art är utrotningshotad?",
+    type: "single",
+    opts: [
+      { t: "Arten har försvunnit helt från planeten", c: false },
+      { t: "Arten riskerar att försvinna från planeten om inget görs för att skydda den", c: true },
+      { t: "Arten är skyddad i hela världen och kan inte längre hotas", c: false },
+      { t: "Arten minskar i antal men är fortfarande så vanlig att den inte behöver skydd", c: false }
+    ],
+    fb: "En utrotningshotad art riskerar att försvinna permanent om inga åtgärder vidtas. Utrotad innebär att arten redan är borta – utrotningshotad är ett förstadium. Utrotningshotade arter är inte automatiskt fullständigt skyddade globalt. En art som minskar allvarligt i antal är hotad oavsett hur vanlig den en gång var."
+  },
+  {
+    q: "Vilka påståenden om nattaktiva djur i regnskogen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Att vara nattaktiv kan minska risken att bli uppäten av dagaktiva rovdjur", c: true },
+      { t: "Nattaktiva djur behöver ofta anpassade sinnen, som stora ögon, för att klara sig i mörker", c: true },
+      { t: "Nattaktiva djur kan aldrig hitta mat i mörker och svälter därför ofta", c: false },
+      { t: "Spökdjuret är ett exempel på ett nattaktivt djur i regnskogen", c: true }
+    ],
+    fb: "Nattaktivitet minskar mötet med dagaktiva rovdjur, stora ögon är en anpassning för att se i mörker, och spökdjuret är ett välkänt nattaktivt djur i regnskogen. Nattaktiva djur hittar mat i mörker med hjälp av anpassade sinnen som stora ögon, känslig hörsel och luktsinne."
+  },
+  {
+    q: "Vilket påstående om ekorren och dess vinterförberedelser är korrekt?",
+    type: "single",
+    opts: [
+      { t: "Ekorren går i ide hela vintern och lever på kroppsfett", c: false },
+      { t: "Ekorren samlar förråd av kottar och nötter på hösten som den lever på under vintern", c: true },
+      { t: "Ekorren migrerar söderut på hösten och återvänder till barrskogen på våren", c: false },
+      { t: "Ekorren lever hela vintern på insekter som den hittar under snön", c: false }
+    ],
+    fb: "Ekorren samlar aktivt förråd av kottar, nötter och frön under hösten och gömmer dem på flera platser som den sedan återvänder till under vintern. Ekorren går inte i ide – den är aktiv under vintern. Den migrerar inte söderut. Den lever primärt på sina nedgömda förråd, inte på insekter."
+  },
+  {
+    q: "Vilka påståenden om lövskogen och dess årstidsväxlingar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Lövträd tappar sina löv på hösten för att minska vattenförlust och spara energi under vintern", c: true },
+      { t: "Lövskogen förändrar mycket i utseende mellan årstiderna", c: true },
+      { t: "I lövskogen är det alltid lika ljust på marken oavsett årstid", c: false },
+      { t: "Vårblommande örter utnyttjar det ljus som når marken innan lövträden fått sina löv", c: true }
+    ],
+    fb: "Lövträd tappar löven för att spara energi och vatten, lövskogen förändras dramatiskt mellan årstiderna, och vårblommande örter utnyttjar ljuset innan trädens löv slår ut. Ljuset på marken i lövskogen varierar kraftigt: ljust på våren och hösten men skuggigt under sommaren."
+  },
+  {
+    q: "Vad innebär det att en växt eller ett djur är förädlat respektive avlat av människan?",
+    type: "single",
+    opts: [
+      { t: "Att arten lämnats helt i fred och utvecklats naturligt utan mänsklig inblandning", c: false },
+      { t: "Att arten medvetet valts ut och korsats under generationer för att förstärka önskade egenskaper", c: true },
+      { t: "Att arten importerats från ett annat land och introducerats i en ny miljö", c: false },
+      { t: "Att arten skyddas av naturvårdslagstiftning och inte får jagas", c: false }
+    ],
+    fb: "Förädling och avel innebär att människan under generationer medvetet valt djur och växter med önskade egenskaper och låtit dem föröka sig. Det är inte naturlig evolution, inte introduktion av nya arter, och inte fridlysning."
+  },
+  {
+    q: "Vilka påståenden om hur djur i barrskogar klarar vintern stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Björnen går i ide under vintern och lever på upplagrat kroppsfett", c: true },
+      { t: "Renen gräver efter lavar under snön med sina hovar", c: true },
+      { t: "Alla fåglar i barrskogar flyger söderut på hösten utan undantag", c: false },
+      { t: "Hermelin byter päls till vitt på vintern som kamouflage mot snön", c: true }
+    ],
+    fb: "Björnen går i ide och lever på fett, renen gräver efter lavar under snön, och hermelin byter päls till vitt på vintern. Inte alla fåglar i barrskogar flyttar söderut – korsnäbb och tofsmes är exempel på fåglar som stannar i taigan hela vintern."
+  },
+  {
+    q: "Vilken anpassning har hämsken som gör att den kan leva i strömmande vatten?",
+    type: "single",
+    opts: [
+      { t: "Hämsken simmar extremt snabbt och undviker strömmen genom rörelseförmåga", c: false },
+      { t: "Hämsken har sugfötter som den använder för att fästa sig vid botten och inte spolas iväg", c: true },
+      { t: "Hämsken andas luft och behöver inte vara i kontakt med botten", c: false },
+      { t: "Hämsken lever i stillastående vatten och undviker strömmande delar av vattendrag", c: false }
+    ],
+    fb: "Hämsken är anpassad till att leva i strömmande vatten tack vare sugfötter som fäster den vid stenar och klippor på botten. Den simmar inte mot strömmen som primärt sätt. Den lever under vatten och andas inte luft. Den är specifikt anpassad till strömmande, inte stillastående, vatten."
+  },
+  {
+    q: "Vilka påståenden om hur naturen påverkas av mänskliga ingrepp stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Vägbyggen och bebyggelse kan dela upp naturliga livsmiljöer och isolera djurpopulationer", c: true },
+      { t: "Övergödning av sjöar och vattendrag kan leda till algblomning och syrebrist i vattnet", c: true },
+      { t: "Mänskliga ingrepp påverkar aldrig flytten av fåglar eller vandrande däggdjur", c: false },
+      { t: "Skogsavverkning kan minska livsutrymmet för skogslevande djur och växter", c: true }
+    ],
+    fb: "Vägar och bebyggelse kan isolera djurpopulationer, övergödning är ett allvarligt problem för vattenmiljöer, och skogsavverkning minskar skogslevande arters livsutrymme. Mänskliga ingrepp som dammar, vägar och jordbruk påverkar vandringsrutter för fåglar och däggdjur avsevärt."
+  },
+  {
+    q: "Vilket påstående om kamouflage som anpassning är korrekt?",
+    type: "single",
+    opts: [
+      { t: "Kamouflage förekommer enbart hos rovdjur för att smyga sig på byten", c: false },
+      { t: "Kamouflage hjälper djur att smälta in i omgivningen och kan minska risken att upptäckas av rovdjur eller byten", c: true },
+      { t: "Kamouflage är enbart vanlig hos kalla klimatets djur och förekommer inte i varma regioner", c: false },
+      { t: "Kamouflage kräver alltid att djuret är vitt, eftersom de flesta rovdjur jagar i snöiga miljöer", c: false }
+    ],
+    fb: "Kamouflage hjälper djur att bli svårare att upptäcka, vilket gynnar både bytesdjur och rovdjur. Det förekommer hos båda grupperna. Kamouflage är vanligt i alla klimat och naturtyper, inklusive regnskogen och savannen. Det kan innebära alla färger och mönster beroende på miljön."
+  },
+  {
+    q: "Vilka påståenden om taigas djurliv stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Mården är en skicklig klättrare anpassad till livet i barrskogen", c: true },
+      { t: "Taigan saknar helt däggdjur eftersom vintrarna är för kalla", c: false },
+      { t: "Ekorren är ett exempel på ett djur som klarar barrskogens vintrar", c: true },
+      { t: "Många djur i taigan har tjockare vinterpäls än sommarpäls", c: true }
+    ],
+    fb: "Mården är en skicklig klättrare i barrskogar, ekorren klarar barrskogens vintrar, och många djur i taigan har tjockare vinterpäls. Taigan hyser många däggdjur: björn, älg, lo, ekorre, hare och mård – påståendet att inga däggdjur lever där är helt felaktigt."
+  },
+  {
+    q: "En elev påstår: \"Alla djur i naturen lever ensamma och konkurrerar alltid med varandra.\" Vilket svar är korrekt?",
+    type: "single",
+    opts: [
+      { t: "Påståendet stämmer – konkurrens är den enda relationen mellan djur i naturen", c: false },
+      { t: "Påståendet stämmer delvis – samarbete förekommer men enbart inom samma familjegrupp hos däggdjur", c: false },
+      { t: "Påståendet är felaktigt – många djur samarbetar i grupper och samarbete är vanligt i naturen vid till exempel jakt och försvar mot rovdjur", c: true },
+      { t: "Påståendet är korrekt för rovdjur men felaktigt för växtätare", c: false }
+    ],
+    fb: "Påståendet är felaktigt – samarbete är utbrett i naturen. Vargar jagar i flock, myskoxar skyddar kalvar gemensamt, och många fåglar häckar i kolonier. Samarbete förekommer hos insekter, fisk i stim och många andra djur utöver däggdjur. Rovdjur som vargar och lejon samarbetar aktivt vid jakt."
+  },
+  {
+    q: "Vilka påståenden om biologisk mångfald och naturskydd stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Förlust av arter kan störa ekosystems funktion och stabilitet", c: true },
+      { t: "Naturskyddslagar och fridlysning av arter är verktyg för att bevara biologisk mångfald", c: true },
+      { t: "Biologisk mångfald är enbart viktig för forskare och har ingen praktisk betydelse för vanliga människor", c: false },
+      { t: "Internationella naturreservat och nationalparker bidrar till att skydda hotade livsmiljöer", c: true }
+    ],
+    fb: "Förlust av arter kan störa ekosystems funktion och stabilitet, lagar och fridlysning är viktiga skyddsverktyg, och naturreservat skyddar hotade livsmiljöer. Biologisk mångfald har stor praktisk betydelse för alla människor: välmående ekosystem producerar rent vatten, renar luft, pollinerar grödor och reglerar klimat."
+  }
+];
+
+let current = 0;
+let score = 0;
+let answers = [];
+let checked = false;
+
+// ── localStorage helpers ──────────────────────────────────────────
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentQuestion: current + 1,
+      score: score,
+      answers: answers
+    }));
+  } catch(e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// ── Card template ─────────────────────────────────────────────────
+function getCardTemplate() {
+  return `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  `;
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  const saved = loadProgress();
+  if (saved && saved.currentQuestion > 0 && saved.currentQuestion < quizData.length) {
+    showResumeScreen(saved);
+  } else {
+    clearProgress();
+    render();
+  }
+}
+
+function showResumeScreen(saved) {
+  const nextQ = saved.currentQuestion;
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (nextQ + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width =
+    (nextQ / quizData.length * 100) + '%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div class="resume-screen">' +
+    '<div class="resume-title">Fortsätt där du slutade</div>' +
+    '<div class="resume-info">Du är på fråga <strong>' + (nextQ + 1) + '</strong> av ' + quizData.length + '</div>' +
+    '<div class="resume-score">' + saved.score + ' rätt hittills</div>' +
+    '<div class="btn-row" style="justify-content:center; margin-top:1.5rem;">' +
+    '<button class="btn" onclick="continueQuiz()">Fortsätt</button>' +
+    '<button class="btn btn-outline" onclick="freshStart()">Börja om</button>' +
+    '</div></div>';
+}
+
+function continueQuiz() {
+  const saved = loadProgress();
+  if (saved) {
+    current = saved.currentQuestion;
+    score = saved.score;
+    answers = saved.answers || [];
+  }
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+function freshStart() {
+  clearProgress();
+  current = 0; score = 0; answers = [];
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  const q = quizData[current];
+  const isSingle = q.type === 'single';
+  const pct = (current / quizData.length) * 100;
+
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (current + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  document.getElementById('typeBadge').textContent = isSingle
+    ? 'Enval – välj ett alternativ'
+    : 'Flerval – ett eller flera alternativ kan vara rätta';
+
+  document.getElementById('questionText').textContent = q.q;
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+
+  q.opts.forEach(function(opt, i) {
+    var label = document.createElement('label');
+    label.className = 'option-label';
+
+    var input = document.createElement('input');
+    input.type = isSingle ? 'radio' : 'checkbox';
+    input.className = 'option-input';
+    input.id = 'opt' + i;
+    if (isSingle) input.name = 'quiz-option';
+
+    var textSpan = document.createElement('span');
+    textSpan.className = 'option-text';
+    textSpan.textContent = ['A', 'B', 'C', 'D'][i] + ') ' + opt.t;
+
+    label.appendChild(input);
+    label.appendChild(textSpan);
+
+    input.addEventListener('change', function() {
+      if (checked) return;
+      if (isSingle) {
+        list.querySelectorAll('.option-label').forEach(function(l) {
+          l.classList.remove('selected');
+        });
+      }
+      label.classList.toggle('selected', input.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  document.getElementById('checkBtn').style.display = 'inline-block';
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('nextBtn').style.display = 'none';
+
+  var fb = document.getElementById('feedbackBox');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+  checked = false;
+}
+
+// ── Check answer ──────────────────────────────────────────────────
+function checkAnswer() {
+  if (checked) return;
+  checked = true;
+
+  var q = quizData[current];
+  var isSingle = q.type === 'single';
+  var labels = document.querySelectorAll('.option-label');
+  var inputs = isSingle
+    ? document.querySelectorAll('input[name="quiz-option"]')
+    : document.querySelectorAll('.option-input');
+
+  var selected = [];
+  inputs.forEach(function(inp, i) { if (inp.checked) selected.push(i); });
+
+  var correct = [];
+  q.opts.forEach(function(opt, i) { if (opt.c) correct.push(i); });
+
+  labels.forEach(function(label, i) {
+    label.classList.add('disabled', 'checked');
+    var inp = label.querySelector('input');
+    inp.disabled = true;
+    var textSpan = label.querySelector('.option-text');
+    var isCorrect = q.opts[i].c;
+    var wasSelected = inp.checked;
+
+    if (isCorrect) {
+      label.classList.add('correct');
+      var ind = document.createElement('span');
+      ind.className = 'option-indicator';
+      ind.textContent = '✓';
+      label.insertBefore(ind, textSpan);
+    } else if (wasSelected && !isCorrect) {
+      label.classList.add('incorrect');
+      var ind2 = document.createElement('span');
+      ind2.className = 'option-indicator';
+      ind2.textContent = '✗';
+      label.insertBefore(ind2, textSpan);
+    }
+    label.classList.remove('selected');
+  });
+
+  var correctSet = new Set(correct);
+  var isExact = selected.length === correct.length &&
+                selected.every(function(i) { return correctSet.has(i); });
+  var isPartial = !isSingle && !isExact && selected.length > 0 &&
+                  selected.some(function(i) { return correctSet.has(i); });
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  var fbText = document.getElementById('feedbackText');
+
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt.';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+
+  fbText.textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+// ── Navigation ────────────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= quizData.length) {
+    showResults();
+  } else {
+    render();
+  }
+}
+
+function showResults() {
+  clearProgress();
+  document.getElementById('progressText').textContent = 'Resultat';
+  document.getElementById('progressBar').style.width = '100%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div style="text-align:center; padding:1rem 0;">' +
+    '<div style="font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:1.5rem;">Resultat</div>' +
+    '<div style="font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1;">' + score + '</div>' +
+    '<div style="font-size:1rem;color:var(--text-secondary);margin-top:0.5rem;margin-bottom:0.25rem;">av ' + quizData.length + ' rätt</div>' +
+    '<div style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:2rem;">Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor.</div>' +
+    '<button class="btn" onclick="restart()">Starta om</button>' +
+    '</div>';
+}
+
+function restart() {
+  clearProgress();
+  current = 0; score = 0; answers = []; checked = false;
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

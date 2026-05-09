@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Vår och sommar</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-bg: #fffbeb;
+    --partial-border: #d97706;
+    --partial-text: #92400e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .container { max-width: 720px; margin: 0 auto; }
+
+  .quiz-header { text-align: center; margin-bottom: 1.5rem; }
+  .quiz-title { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem; }
+  .quiz-subtitle { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem; }
+
+  .progress-row { display: flex; align-items: center; gap: 0.75rem; }
+  .progress-text { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
+  .progress-bar-track { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+
+  .card { background: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: 2rem; margin-bottom: 1rem; }
+
+  .question-type-badge { display: inline-block; font-size: 0.8rem; font-style: italic; color: var(--text-secondary); margin-bottom: 0.75rem; }
+  .question-text { font-size: 1.1rem; font-weight: 600; line-height: 1.5; margin-bottom: 1.5rem; color: var(--text-primary); }
+
+  .options-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+
+  .option-label {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.875rem 1rem; border: 1px solid #e2e8f0; border-radius: 10px;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    font-size: 1rem; line-height: 1.4; user-select: none;
+  }
+  .option-label:hover:not(.disabled) { border-color: var(--accent); background: #f8f9ff; }
+  .option-label.selected:not(.checked) { border-color: var(--accent); background: #eef2ff; }
+  .option-label.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .option-label.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+  .option-label.disabled { cursor: default; }
+
+  .option-input { accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  .option-indicator { font-weight: 700; flex-shrink: 0; width: 18px; margin-top: 1px; font-size: 1rem; }
+  .option-text { flex: 1; }
+
+  .btn {
+    display: inline-block; background: var(--accent); color: white; border: none;
+    border-radius: 10px; padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: background 0.15s;
+  }
+  .btn:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-outline { background: transparent; border: 2px solid var(--accent); color: var(--accent); }
+  .btn-outline:hover:not(:disabled) { background: #eef2ff; }
+  .btn-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+  .feedback-box { margin-top: 1.25rem; padding: 1rem 1.25rem; border-radius: 0 10px 10px 0; border-left: 4px solid; font-size: 0.95rem; line-height: 1.6; display: none; }
+  .feedback-box.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .feedback-box.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+  .feedback-box.partial { border-color: var(--partial-border); background: var(--partial-bg); color: var(--partial-text); }
+  .feedback-verdict { font-weight: 700; margin-bottom: 0.4rem; }
+
+  .resume-screen { text-align: center; padding: 1rem 0; }
+  .resume-title { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
+  .resume-info { font-size: 1rem; color: var(--text-secondary); margin-bottom: 0.4rem; }
+  .resume-score { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 2rem; }
+
+  @media (max-width: 480px) { .card { padding: 1.25rem; } .quiz-title { font-size: 1.25rem; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-title">Vår och sommar</div>
+    <div class="quiz-subtitle">Biologi – Vår och sommar | Årkurs 4–6</div>
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">Fråga 1 av 50</span>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionCard">
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga &rarr;</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz-progress-quiz-var-och-sommar';
+
+const quizData = [
+  {
+    q: "Vilken del av blomman producerar pollen?",
+    type: "single",
+    opts: [
+      { t: "Pistill", c: false },
+      { t: "Kronblad", c: false },
+      { t: "Foderblad", c: false },
+      { t: "Ståndare", c: true }
+    ],
+    fb: "Ståndaren är blommans hanliga del och producerar pollen. Pistillen är den honliga delen som tar emot pollen. Kronbladen är blombladen som lockar pollinerare. Foderbladen skyddar blomman i knoppen."
+  },
+  {
+    q: "Vilka av dessa är delar av blommans honliga funktion?",
+    type: "multi",
+    opts: [
+      { t: "Kronblad", c: false },
+      { t: "Pistill", c: true },
+      { t: "Ståndare", c: false },
+      { t: "Fröämne", c: true }
+    ],
+    fb: "B och D är korrekta. Pistillen är den honliga könsdelen som tar emot pollen. Fröämnet är det som efter befruktning utvecklas till ett frö. Kronbladen lockar pollinerare men är inte del av den honliga funktionen. Ståndaren är den hanliga delen som producerar pollen."
+  },
+  {
+    q: "Vad kallas processen när pollen förs från en blommas ståndare till en annan blommas pistill?",
+    type: "single",
+    opts: [
+      { t: "Fotosyntes", c: false },
+      { t: "Pollinering", c: true },
+      { t: "Groddning", c: false },
+      { t: "Transpiration", c: false }
+    ],
+    fb: "Pollinering är när pollen förs från en blommas ståndare till pistillen i en blomma av samma art, vilket möjliggör befruktning och bildning av frön. Fotosyntes är växtens sätt att tillverka näring. Groddning är när ett frö börjar växa. Transpiration är vattenavdunstning från blad."
+  },
+  {
+    q: "Vilka av dessa växter pollineras med vindens hjälp?",
+    type: "multi",
+    opts: [
+      { t: "Björk", c: true },
+      { t: "Syren", c: false },
+      { t: "Gran", c: true },
+      { t: "Havre", c: true }
+    ],
+    fb: "A, C och D är korrekta. Björk, gran och havre pollineras av vinden och har därför oansenliga blommor utan starka färger eller dofter. Syren pollineras däremot av insekter och har vackra, doftande blommor för att locka pollinerare."
+  },
+  {
+    q: "Vad kallas den söta vätska inuti blommor som insekter söker?",
+    type: "single",
+    opts: [
+      { t: "Frövita", c: false },
+      { t: "Koldioxid", c: false },
+      { t: "Nektar", c: true },
+      { t: "Klorofyll", c: false }
+    ],
+    fb: "Nektar är den söta, sockerrika vätskan inuti blommor som är näring för insekter. Det är nektarn som lockar bin, humlor, fjärilar och blomflugor till blommorna. Frövita är näringen i fröet. Klorofyll är det gröna pigmentet i blad."
+  },
+  {
+    q: "Vilka av dessa påståenden om drönarna i ett bisamhälle stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Drönare är honor", c: false },
+      { t: "Drönare samlar nektar till kupan", c: false },
+      { t: "Drönarna parar sig med drottningen", c: true },
+      { t: "Drönare bevakar kupans ingång", c: false }
+    ],
+    fb: "Endast C stämmer. Drönarna är hannarna i bisamhället och deras enda uppgift är att para sig med drottningen. Drönare är alltså hanar, inte honor. Det är arbetsbin (honor) som samlar nektar och bevakar ingången."
+  },
+  {
+    q: "Vad kallas hanarna i ett bisamhälle?",
+    type: "single",
+    opts: [
+      { t: "Drönare", c: true },
+      { t: "Vaktbin", c: false },
+      { t: "Arbetsbin", c: false },
+      { t: "Samlingsbin", c: false }
+    ],
+    fb: "Hanarna i ett bisamhälle kallas drönare. Deras enda uppgift är att para sig med drottningen. Arbetsbin och vaktbin är honor med arbetsuppgifter i kupan och ute i naturen."
+  },
+  {
+    q: "Vilka av dessa stämmer om vaktbin?",
+    type: "multi",
+    opts: [
+      { t: "Vaktbin samlar nektar från blommor", c: false },
+      { t: "Vaktbin bevakar ingången till kupan", c: true },
+      { t: "Vaktbin lägger ägg åt drottningen", c: false },
+      { t: "Vaktbin tillverkar honungsceller i vaxkakorna", c: false }
+    ],
+    fb: "Endast B stämmer. Vaktbin är arbetsbin vars uppgift är att bevaka ingången till kupan så att inga andra insekter tar sig in. Det är andra arbetsbin som flyger ut och samlar nektar. Bara drottningen lägger ägg. Vaxkakorna byggs och underhålls av arbetsbin i kupan, inte vaktbin."
+  },
+  {
+    q: "Vad är drottningens uppgift i bisamhället?",
+    type: "single",
+    opts: [
+      { t: "Samla nektar från blommor", c: false },
+      { t: "Bevaka ingången till kupan", c: false },
+      { t: "Tillverka honung av nektaren", c: false },
+      { t: "Lägga ägg", c: true }
+    ],
+    fb: "Drottningens enda uppgift är att lägga ägg. Nektar samlas av arbetsbin. Ingången bevakas av vaktbin. Honungen tillverkas av arbetsbin som bearbetar nektaren i vaxkakorna."
+  },
+  {
+    q: "Vilka påståenden om fotosyntes stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Växten tar upp koldioxid från luften", c: true },
+      { t: "Solljus behövs för processen", c: true },
+      { t: "Syre förbrukas som råvara vid fotosyntes", c: false },
+      { t: "Kolhydrater bildas som näring till växten", c: true }
+    ],
+    fb: "A, B och D stämmer. Fotosyntes kräver koldioxid (från luften) och solljus, och produkterna är kolhydrater (växtens näring) och syre. C stämmer inte – fotosyntes förbrukar koldioxid och frigör syre som biprodukt. Syre är alltså en produkt, inte en råvara."
+  },
+  {
+    q: "I vilken ordning sker fjärilens fullständiga förvandling?",
+    type: "single",
+    opts: [
+      { t: "Ägg → nymf → puppa → fjäril", c: false },
+      { t: "Ägg → larv → puppa → fjäril", c: true },
+      { t: "Ägg → puppa → larv → fjäril", c: false },
+      { t: "Larv → ägg → puppa → fjäril", c: false }
+    ],
+    fb: "Fjärilen genomgår fullständig förvandling i ordningen: ägg kläcks till larv (som äter och växer), larven omvandlas till en puppa (spinner in sig och hänger orörlig), och ur puppan kryper den färdiga fjärilen. Nymf förekommer inte i fjärilens utveckling – det är ett stadium hos gräshoppa och bärfis."
+  },
+  {
+    q: "Vilka av dessa stämmer om fjärilen?",
+    type: "multi",
+    opts: [
+      { t: "Fjärilar är viktiga pollinerare", c: true },
+      { t: "Nattfjärilar hittar blommor med hjälp av lukt", c: true },
+      { t: "Larven lever på att äta blad", c: true },
+      { t: "Alla fjärilar är aktiva under dagtid", c: false }
+    ],
+    fb: "A, B och C stämmer. Fjärilar är viktiga pollinerare som för pollen mellan blommor. Nattfjärilar hittar blommorna med doft i mörkret. Larverna äter blad för att växa. D stämmer inte – fjärilar delas in i dagfjärilar och nattfjärilar. Nattfjärilarna är aktiva nattetid och har dovare, mörkare färger."
+  },
+  {
+    q: "Vad innebär det att ett djur har kamouflage?",
+    type: "single",
+    opts: [
+      { t: "Det kommunicerar med ljud för att varna artfränder", c: false },
+      { t: "Det migrerar söderut på vintern", c: false },
+      { t: "Det har ett utseende som smälter in i omgivningen", c: true },
+      { t: "Det är giftigt och varnar fiender med starka färger", c: false }
+    ],
+    fb: "Kamouflage innebär att ett djur har ett utseende – färg, mönster eller form – som gör det svårt att skilja från omgivningen, vilket skyddar det mot fiender. Fjärilar kan exempelvis se ut som barkflagor när de fäller ihop vingarna. Varningsfärger (gult/svart) är tvärtom ett sätt att synas, inte att gömma sig."
+  },
+  {
+    q: "Vilka av dessa stämmer om nymfer?",
+    type: "multi",
+    opts: [
+      { t: "Nymfer saknar vingar när de nyss kläcks", c: true },
+      { t: "Nymfer är ett stadium i fjärilens förvandling", c: false },
+      { t: "Nymfer förekommer hos gräshoppa och bärfis", c: true },
+      { t: "Nymfer är larver som lever i vatten", c: false }
+    ],
+    fb: "A och C stämmer. En nymf kläcks ur ägget och liknar den vuxna insekten men saknar vingar. Den ömsar hud flera gånger tills den är fullvuxen. Nymfstadiet förekommer hos gräshoppa och bärfis. B stämmer inte – fjärilen har larv- och puppstadium, inte nymfstadium. D stämmer inte – nymfer lever inte i vatten (det är ett annat begrepp)."
+  },
+  {
+    q: "Vilka tre saker behöver en växt för att utföra fotosyntes?",
+    type: "single",
+    opts: [
+      { t: "Koldioxid, solljus och vatten", c: true },
+      { t: "Syre, vatten och jord", c: false },
+      { t: "Kväve, solljus och koldioxid", c: false },
+      { t: "Vatten, syre och kolhydrater", c: false }
+    ],
+    fb: "Fotosyntes kräver koldioxid (från luften), solljus (energikällan) och vatten (upptas via rötterna). Produkterna är kolhydrater och syre. Syre och kolhydrater är produkter, inte råvaror. Kväve behövs för tillväxt men ingår inte direkt i fotosyntesreaktionen."
+  },
+  {
+    q: "Vilka stämmer om ett fröets tidiga tillväxt?",
+    type: "multi",
+    opts: [
+      { t: "Fröet innehåller näring kallad frövita", c: true },
+      { t: "De första bladen kallas hjärtblad", c: true },
+      { t: "Rötterna växer neråt i marken", c: true },
+      { t: "Fröet behöver solljus för att starta groningen", c: false }
+    ],
+    fb: "A, B och C stämmer. Frövitan är näringen i fröet som ger energi att gro. De första bladen kallas hjärtblad och är gröna. Rötterna växer neråt för att förankra plantan och ta upp vatten. D stämmer inte – fröet gror i marken där det inte finns solljus. Det är värme och fukt som startar groningen. Solljus behövs däremot för fotosyntesen när bladen kommit upp."
+  },
+  {
+    q: "Vad kallas de allra första bladen som ett frö skjuter upp ur marken?",
+    type: "single",
+    opts: [
+      { t: "Kronblad", c: false },
+      { t: "Foderblad", c: false },
+      { t: "Frövita", c: false },
+      { t: "Hjärtblad", c: true }
+    ],
+    fb: "De första bladen som ett frö skjuter upp kallas hjärtblad. De är gröna och ger plantan energi via fotosyntes tills den kan bilda fler blad. Frövita är näringen som finns lagrad i fröet, inte ett blad. Kronblad och foderblad är delar av blomman."
+  },
+  {
+    q: "Vilka av dessa stämmer om vitsippan?",
+    type: "multi",
+    opts: [
+      { t: "Vitsippan blommar tidigt på våren", c: true },
+      { t: "Vitsippan är giftig för bin och humlor", c: false },
+      { t: "Vitsippan kan sprida sig med långa rotskott", c: true },
+      { t: "Flera vitsippor på ett ställe kan tillhöra samma individ", c: true }
+    ],
+    fb: "A, C och D stämmer. Vitsippan är en tidig vårblomma. Den sprider sig med långa rotskott under marken, och ett helt fält av vitsippor kan vara en och samma individ med gemensam rot – precis som blommorna i ett äppelträd. B stämmer inte – vitsippan nämns inte som giftig för pollinerare."
+  },
+  {
+    q: "Varför sjunger fågelhanen på våren?",
+    type: "single",
+    opts: [
+      { t: "För att varna artfränder för rovdjur i närheten", c: false },
+      { t: "För att locka till sig en hona och markera sitt revir", c: true },
+      { t: "För att kommunicera med sina ungar i boet", c: false },
+      { t: "För att hålla sig varm under kalla vårnätter", c: false }
+    ],
+    fb: "Fågelhanens sång har två syften: att locka till sig en hona och att signalera till andra hanar att området är upptagit. Hanen vill att maten i området ska räcka till hans familj. Sången är alltså både en kärleksuppvisning och en revirhävdning."
+  },
+  {
+    q: "Vilka av dessa påståenden om drottningens liv i bisamhället stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Drottningen samlar nektar och pollen från blommor", c: false },
+      { t: "Drottningen bevakar ingången till kupan", c: false },
+      { t: "Drottningen lagar och bygger vaxkakor", c: false },
+      { t: "Drottningen är den minsta individen i bisamhället", c: false }
+    ],
+    fb: "Ingen av dessa stämmer. Drottningens enda uppgift är att lägga ägg. Nektar och pollen samlas av arbetsbin. Ingången bevakas av vaktbin. Vaxkakorna byggs av arbetsbin. Drottningen är dessutom den största individen i samhället, inte den minsta."
+  },
+  {
+    q: "Vad är en växtätare?",
+    type: "single",
+    opts: [
+      { t: "En växt som fångar och äter insekter", c: false },
+      { t: "En svamp som lever av dött växtmaterial", c: false },
+      { t: "Ett djur som äter växter för att få näring", c: true },
+      { t: "En insekt som pollinerar blommor", c: false }
+    ],
+    fb: "En växtätare är ett djur som äter växter för att få i sig näring, till exempel harar och rådjur. Djur kan inte själva utföra fotosyntes och måste äta för att få sin näring. Rovdjur äter växtätare. Köttätande växter finns men kallas inte växtätare i biologisk mening."
+  },
+  {
+    q: "Vilka av dessa insekter är viktiga pollinerare?",
+    type: "multi",
+    opts: [
+      { t: "Bin", c: true },
+      { t: "Humlor", c: true },
+      { t: "Blomflugor", c: true },
+      { t: "Fjärilar", c: true }
+    ],
+    fb: "Alla fyra stämmer. Bin, humlor, blomflugor och fjärilar är alla viktiga pollinerare som för pollen mellan blommor när de söker nektar. Bin och humlor samlar dessutom pollen som mat till sina larver. Fjärilar hittar blommor med luktsinnet i antennerna."
+  },
+  {
+    q: "Varför blommar vindpollinerade växter tidigt på våren?",
+    type: "single",
+    opts: [
+      { t: "För att löven ännu inte slagit ut och inte är i vägen för pollenspridningen", c: true },
+      { t: "Eftersom vinden är starkast tidigt på våren", c: false },
+      { t: "Eftersom det är varmare tidigt på våren", c: false },
+      { t: "Eftersom insekterna inte har vaknat och inte kan störa", c: false }
+    ],
+    fb: "Vindpollinerade växter som björken blommar tidigt på våren innan löven slår ut, annars skulle löven vara i vägen och hindra pollenet från att flyga fritt i luften. Vindens styrka varierar inte systematiskt med årstiden på detta sätt, och insekternas aktivitet är irrelevant för vindpollinering."
+  },
+  {
+    q: "Vilka av dessa stämmer om processen när nektar blir till honung?",
+    type: "multi",
+    opts: [
+      { t: "Bina tillsätter saliv till nektaren", c: true },
+      { t: "Bina fladdar med vingarna för att avdunsta vatten ur nektaren", c: true },
+      { t: "Vattnet i nektaren ska bevaras för att ge honungen sin söta smak", c: false },
+      { t: "Honungsproduktionen sker utanför kupan i blommorna", c: false }
+    ],
+    fb: "A och B stämmer. Bina tillsätter saliv och springer runt på vaxkakorna medan de fladdar med vingarna för att avdunsta vattnet så snabbt som möjligt. C stämmer inte – tvärtom ska vattnet avdunsta, det är det som omvandlar nektar till honung. D stämmer inte – honungsproduktionen sker inne i kupan."
+  },
+  {
+    q: "Vad gör bina för att förvandla nektar till honung?",
+    type: "single",
+    opts: [
+      { t: "De kyler ned nektaren tills den stelnar", c: false },
+      { t: "De blandar nektaren med pollen och låter det jäsa", c: false },
+      { t: "De hettar upp nektaren med värme från sina kroppar", c: false },
+      { t: "De tillsätter saliv och fladdar med vingarna för att avdunsta vatten", c: true }
+    ],
+    fb: "Bina tillsätter saliv till nektaren och springer runt på vaxkakorna medan de fladdar med vingarna. Det gör att vattnet i nektaren avdunstar snabbt och nektaren koncentreras till honung. Kylning, jäsning och upphettning är alla felaktiga beskrivningar av processen."
+  },
+  {
+    q: "Vilka av dessa stämmer om igelkotten?",
+    type: "multi",
+    opts: [
+      { t: "Igelkotten rör sig snabbt och har skarp syn", c: false },
+      { t: "Igelkotten har ca 6 000 taggar", c: true },
+      { t: "Igelkotten rullar ihop sig till en taggig boll när det hotas", c: true },
+      { t: "Igelkotten äter sniglar, snäckor och daggmaskar", c: true }
+    ],
+    fb: "B, C och D stämmer. Igelkotten har ca 6 000 taggar, rullar ihop sig till en boll vid fara, och äter bland annat sniglar, snäckor och daggmaskar. A stämmer inte – igelkotten har svag syn och hörsel och rör sig ganska långsamt. Det är just därför man kan studera det på nära håll."
+  },
+  {
+    q: "Vad kallas de besvär med rinnande näsa och ögonsveda som pollen i luften kan orsaka?",
+    type: "single",
+    opts: [
+      { t: "Hösnuva", c: false },
+      { t: "Pollenallergi", c: true },
+      { t: "Luftvägsinfektion", c: false },
+      { t: "Pollinit", c: false }
+    ],
+    fb: "Pollenallergi är det korrekta medicinska begreppet. Besvären – rinnande näsa, sveda i ögon, svårt att andas – orsakas av att man andas in pollen. Hösnuva var det gamla folkliga namnet för samma tillstånd; förr trodde man att det var en förkylning. Man kan ta mediciner mot pollenallergi."
+  },
+  {
+    q: "Vilka av dessa stämmer om fåglars beteende på våren?",
+    type: "multi",
+    opts: [
+      { t: "Fåglarna bildar par på våren", c: true },
+      { t: "Honan ruvar äggen", c: true },
+      { t: "Fågelföräldrar matar ungarna med insekter", c: true },
+      { t: "Hannen sjunger för att locka till sig en hona", c: true }
+    ],
+    fb: "Alla fyra stämmer. På våren bildar fåglarna par, bygger bo och lägger ägg. Honan ruvar äggen. När ungarna kläcks matar föräldrarna dem med insekter. Hannen sjunger för att locka en hona och markera sitt revir."
+  },
+  {
+    q: "Vilken fågel är den vanligaste i Sverige?",
+    type: "single",
+    opts: [
+      { t: "Bofink", c: false },
+      { t: "Hackspett", c: false },
+      { t: "Lövsångare", c: true },
+      { t: "Stare", c: false }
+    ],
+    fb: "Lövsångaren är den vanligaste fågeln i Sverige. Bofinken är också vanlig. Staren trivs i fågelholkar och ihåliga träd. Hackspetten trummar i skogen. Men ingen av dessa är den vanligaste – det är lövsångaren."
+  },
+  {
+    q: "Vilka av dessa stämmer om växter och näring?",
+    type: "multi",
+    opts: [
+      { t: "Växterna tar upp näring via rötterna", c: true },
+      { t: "Alla växter klarar sig utan näring från marken om de har tillräckligt med solljus", c: false },
+      { t: "Konstgödsel försämrar växternas tillväxt", c: false },
+      { t: "Växter kan lagra näring i blad, rötter och frukter", c: true }
+    ],
+    fb: "A och D stämmer. Rötterna tar upp vatten och näring från marken. Växterna kan lagra näring i blad, rötter och frukter. B stämmer inte – växter behöver näring från marken oavsett hur mycket solljus de har. C stämmer inte – konstgödsel tillför näring och gör skördarna större, det försämrar inte tillväxten."
+  },
+  {
+    q: "Varför bränner brännässlan?",
+    type: "single",
+    opts: [
+      { t: "Den har brännhår med irriterande vätska som rinner ut när man nuddar bladet", c: true },
+      { t: "Den producerar ett surt ämne i bladen när den skadas", c: false },
+      { t: "Den är giftig och utsöndrar gift via sina rötter till marken", c: false },
+      { t: "Den använder en elektrisk urladdning för att avskräcka djur", c: false }
+    ],
+    fb: "Brännässlan har brännhår på bladen. Håren innehåller irriterande vätska. När man nuddar bladet brister brännhåret och vätskan rinner ut, vilket ger en brännande känsla. Det är nässlans försvar mot att bli uppäten. Brännässlan är faktiskt ätlig (man kan koka soppa på den) och innehåller inga egentliga gifter."
+  },
+  {
+    q: "Vilka av dessa stämmer om blommornas ståndare?",
+    type: "multi",
+    opts: [
+      { t: "Ståndaren är blommans hanliga könsdel", c: true },
+      { t: "Pollen produceras på ståndarna", c: true },
+      { t: "Ståndaren tar emot pollen och leder det till fröämnet", c: false },
+      { t: "Ståndaren är det som utvecklas till ett frö efter befruktning", c: false }
+    ],
+    fb: "A och B stämmer. Ståndaren är den hanliga könsdelen och det är där pollen bildas. C stämmer inte – det är pistillen (den honliga delen) som tar emot pollen. D stämmer inte – fröämnet (som sitter i pistillen) är det som efter befruktning utvecklas till ett frö."
+  },
+  {
+    q: "Vad är frövita?",
+    type: "single",
+    opts: [
+      { t: "Det gröna pigmentet i blad som fångar solljus", c: false },
+      { t: "Den söta vätskan i blommor som lockar insekter", c: false },
+      { t: "Det gulaktiga pulvret som produceras på ståndarna", c: false },
+      { t: "Näringen som finns lagrat inuti ett frö och ger energi vid groddning", c: true }
+    ],
+    fb: "Frövita är näringen som finns lagrad inuti fröet. Den ger fröet energi att börja gro och växa tills plantan kan utföra fotosyntes med sina egna blad. Det gröna pigmentet i blad är klorofyll. Den söta vätskan är nektar. Det gulaktiga pulvret på ståndarna är pollen."
+  },
+  {
+    q: "Vilka av dessa stämmer om blommors sätt att locka pollinerare?",
+    type: "multi",
+    opts: [
+      { t: "Alla blommor lockar insekter med starka, klara dofter", c: false },
+      { t: "Nektar erbjuder insekterna näring som belöning för pollineringen", c: true },
+      { t: "Vindpollinerade blommor har de starkaste färgerna för att locka insekter", c: false },
+      { t: "Blommornas färger och dofter är enbart dekorativa och påverkar inte insekterna", c: false }
+    ],
+    fb: "Endast B stämmer. Nektar är den söta vätska som lockar insekter och ger dem näring – det är deras belöning för att pollinera blomman. A stämmer inte – inte alla blommor doftar; många lockar enbart med färg. C stämmer inte – vindpollinerade blommor (som björk och gran) har inga starka färger alls. D stämmer inte – färger och dofter är avsiktliga signaler som aktivt lockar pollinerare."
+  },
+  {
+    q: "Hur skyddar sig igelkotten när det hotas?",
+    type: "single",
+    opts: [
+      { t: "Det flyr snabbt till ett gömsle under marken", c: false },
+      { t: "Det rullar ihop sig till en taggig boll", c: true },
+      { t: "Det biter och klöser med sina klor", c: false },
+      { t: "Det låtsas vara dött tills faran är över", c: false }
+    ],
+    fb: "När igelkotten hotas rullar det snabbt ihop sig till en taggig boll. Igelkottets ca 6 000 taggar gör det omöjligt för de flesta rovdjur att attackera. Igelkotten rör sig dessutom ganska långsamt och kan inte fly snabbt."
+  },
+  {
+    q: "Vilka av dessa stämmer om nattfjärilar?",
+    type: "multi",
+    opts: [
+      { t: "Nattfjärilar har starka, klara färger för att synas i mörkret", c: false },
+      { t: "Nattfjärilar hittar blommor med hjälp av doft", c: true },
+      { t: "Nattfjärilar är de vanligaste fjärilarna i Sverige", c: false },
+      { t: "Nattfjärilar lockar insekter med sina ljusa vingar", c: false }
+    ],
+    fb: "Endast B stämmer. Nattfjärilar hittar blommorna med hjälp av doft i mörkret, eftersom de inte kan förlita sig på syn. A stämmer inte – nattfjärilar har dovare, mörkare färger (inte starka), vilket ger kamouflage. C och D stämmer inte – nattfjärilar lockar inte insekter och påståendet om dem som vanligast är odokumenterat."
+  },
+  {
+    q: "Hur skiljer sig gräshoppans utveckling från fjärilens?",
+    type: "single",
+    opts: [
+      { t: "Gräshoppan lägger inte ägg utan föder levande ungar", c: false },
+      { t: "Gräshoppan går direkt från ägg till vuxen insekt utan mellansteg", c: false },
+      { t: "Gräshoppan har ett nymfstadium men inget puppstadium", c: true },
+      { t: "Gräshoppans larv kallas puppa precis som fjärilens", c: false }
+    ],
+    fb: "Gräshoppan saknar puppstadium. När ägget kläcks kryper en nymf ut – en liten insekt utan vingar som liknar den vuxna. Nymfen ömsar hud flera gånger tills den är fullvuxen och får vingar. Fjärilen däremot genomgår ägg → larv → puppa → fjäril. Gräshoppan lägger ägg som alla insekter."
+  },
+  {
+    q: "Vilka av dessa stämmer om sniglar?",
+    type: "multi",
+    opts: [
+      { t: "Sniglar och snäckor är nära besläktade", c: true },
+      { t: "Sniglar har ett hårt skal på ryggen", c: false },
+      { t: "Sniglar hör till djurgruppen blötdjur", c: true },
+      { t: "Sniglar är som mest aktiva mitt på dagen i solskenet", c: false }
+    ],
+    fb: "A och C stämmer. Sniglar och snäckor är nära släkt och tillhör blötdjuren. B stämmer inte – det är snäckor som har skal, inte sniglar. D stämmer inte – sniglar är oftast framme på kvällen och tål inte för mycket sol eftersom de har fuktig hud."
+  },
+  {
+    q: "Var i biet förvaras den insamlade nektaren under hemresan till kupan?",
+    type: "single",
+    opts: [
+      { t: "I en särskild blåsa (nektarbläsa) i kroppen", c: true },
+      { t: "I korgar på bakbenen", c: false },
+      { t: "I ett honungsförråd inuti vingroten", c: false },
+      { t: "I munhålan innanför käkarna", c: false }
+    ],
+    fb: "Nektaren förvaras i en särskild blåsa i kroppen – nektarbläsan – som beskrivs som 'som en ballong i kroppen'. Korgarna på bakbenen används för att transportera pollen, inte nektar. Munhålan och vingroten är inte lagringsplatser för nektar."
+  },
+  {
+    q: "Vilka av dessa stämmer om konstgödsel?",
+    type: "multi",
+    opts: [
+      { t: "Konstgödsel tillverkas industriellt i fabriker", c: true },
+      { t: "Konstgödsel innehåller ämnena kväve, fosfor och kalium", c: true },
+      { t: "Konstgödsel har använts i jordbruket i tusentals år", c: false },
+      { t: "Konstgödsel minskar skördarna jämfört med naturgödsel", c: false }
+    ],
+    fb: "A och B stämmer. Konstgödsel tillverkas industriellt och innehåller kväve (N), fosfor (P) och kalium (K). C stämmer inte – naturgödsel (spillning från djur) har använts i tusentals år, men konstgödsel kom med det moderna jordbruket under de senaste 200 åren. D stämmer inte – konstgödsel gör skördarna mycket större."
+  },
+  {
+    q: "Vad av följande produceras vid fotosyntes?",
+    type: "single",
+    opts: [
+      { t: "Koldioxid och vatten", c: false },
+      { t: "Pollen och nektar", c: false },
+      { t: "Kväve och mineraler", c: false },
+      { t: "Syre och kolhydrater", c: true }
+    ],
+    fb: "Vid fotosyntes omvandlar växten koldioxid, solljus och vatten till kolhydrater (växtens näring) och syre (som frigörs i luften). Koldioxid och vatten är råvaror, inte produkter. Pollen och nektar bildas inte vid fotosyntes. Kväve är ett näringsämne som tas upp via rötterna."
+  },
+  {
+    q: "Vilka av dessa påståenden om hackspetten stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Hackspetten är den vanligaste fågeln i Sverige", c: false },
+      { t: "Hackspetten sjunger melodiska sånger för att locka till sig en hona", c: false },
+      { t: "Hackspetten lägger sina ägg i vaxkakor", c: false },
+      { t: "Hackspetten bygger sitt bo i marken under vintern", c: false }
+    ],
+    fb: "Ingen av dessa stämmer. Lövsångaren (inte hackspetten) är den vanligaste fågeln i Sverige. Hackspetten trummar mot träd – det är inte melodisk sång – för att locka hona. Vaxkakor är biets, inte hackspettens. Hackspetten hackar hål i träd för att bygga bo, inte i marken."
+  },
+  {
+    q: "Varför är pollen bra mat för bilarver?",
+    type: "single",
+    opts: [
+      { t: "Det är lätt att smälta och skonsamt för larvernas matsmältning", c: false },
+      { t: "Det är rikt på vitaminer och näring", c: true },
+      { t: "Det innehåller mycket vatten som larverna behöver", c: false },
+      { t: "Det är sött och ger snabb energi likt socker", c: false }
+    ],
+    fb: "Pollen är rikt på vitaminer och näring och är därför idealisk mat för bilarver. Arbetsbin matar yngel och larver med pollen och nektar. Pollen är en proteinrik föda snarare än en enkel sockerkälla."
+  },
+  {
+    q: "Vilka av dessa stämmer om fjärilslarvens liv?",
+    type: "multi",
+    opts: [
+      { t: "Larven äter blad för att växa", c: true },
+      { t: "Larven spinner in sig till en puppa när den är tillräckligt stor", c: true },
+      { t: "Larven lever i vaxkakor precis som bilarver gör", c: false },
+      { t: "Olika arters larver är anpassade till att äta olika sorters blad", c: true }
+    ],
+    fb: "A, B och D stämmer. Fjärilslarven äter blad och är ofta anpassad till specifika växter. När larven är tillräckligt stor spinner den in sig och bildar en puppa, ur vilken den färdiga fjärilen kryper. C stämmer inte – bilarver lever i vaxkakor och äter pollen och nektar, inte blad. Fjärilslarver lever ute i naturen på blad."
+  },
+  {
+    q: "Vad är en pollinerare?",
+    type: "single",
+    opts: [
+      { t: "En blomma som är rik på pollen", c: false },
+      { t: "En kemisk process som sker i blommans pistill", c: false },
+      { t: "Ett djur eller en insekt som för pollen mellan blommor", c: true },
+      { t: "Vinden som sprider pollen i luften", c: false }
+    ],
+    fb: "En pollinerare är ett djur eller insekt – som bi, humla, blomfluga eller fjäril – som för pollen från en blommas ståndare till en annan blommas pistill när det söker nektar. Vinden sprider pollen hos vindpollinerade växter men kallas inte pollinerare."
+  },
+  {
+    q: "Vilka av dessa stämmer om björkens pollinering?",
+    type: "multi",
+    opts: [
+      { t: "Björken pollineras av bin och humlor", c: false },
+      { t: "Björkens långa hängen innehåller hanblommor rika på pollen", c: true },
+      { t: "Björken blommar sent på sommaren när det är varmt", c: false },
+      { t: "Björkens blommor har starka färger för att locka pollinerare", c: false }
+    ],
+    fb: "Endast B stämmer. Björkens karakteristiska hängen är hanblommor som innehåller massor med pollen. C stämmer inte – björken blommar tidigt på våren innan löven slår ut. A stämmer inte – björken pollineras av vinden, inte av insekter. D stämmer inte – björkens blommor är oansenliga och knappt synliga, precis för att de inte behöver locka insekter."
+  },
+  {
+    q: "Varför bygger fåglar bon på våren?",
+    type: "single",
+    opts: [
+      { t: "För att lägga ägg och föda upp ungar", c: true },
+      { t: "För att markera revir mot andra fågelpar", c: false },
+      { t: "För att skydda sig mot kylan under vårnätterna", c: false },
+      { t: "För att samla och lagra mat inför sommaren", c: false }
+    ],
+    fb: "Fåglarna bygger bon på våren för att lägga ägg och föda upp sina ungar. Våren passar bra eftersom det finns rikligt med insekter som mat till de nykläckta ungarna. Reviret markeras framför allt med sång, inte med bobygge."
+  },
+  {
+    q: "Vilka av dessa påståenden om staren stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Staren är den vanligaste fågeln i Sverige", c: false },
+      { t: "Staren sjunger melodiska sånger för att imponera på honan", c: false },
+      { t: "Staren lämnar sin spillning i boet för att hålla ungarna varma", c: false },
+      { t: "Staren matar sina ungar med honung och pollen", c: false }
+    ],
+    fb: "Ingen av dessa stämmer. Lövsångaren (inte staren) är den vanligaste fågeln. Det sägs inte att staren sjunger melodiska sånger. Staren BÄR UT spillning ur boet – lämnar den inte kvar – för att hålla boet rent. Staren matar ungarna med insekter och maskar, inte honung."
+  },
+  {
+    q: "Vad gör fågelhonan med äggen efter att de lagts?",
+    type: "single",
+    opts: [
+      { t: "Hon lämnar äggen och söker mat medan hanen vaktar", c: false },
+      { t: "Hanen ruvar äggen ensam medan honan söker mat", c: false },
+      { t: "Bägge föräldrarna turas om att ruva äggen lika mycket", c: false },
+      { t: "Hon ruvar äggen tills de kläcks", c: true }
+    ],
+    fb: "Det är honan som ruvar äggen. När en hane och hona hittat varandra och byggt bo lägger honan ägg och ruvar dem. När ungarna kläcks är det ett väldigt slit för fågelföräldrarna att mata sina hungriga ungar med insekter."
+  },
+  {
+    q: "Vilka av dessa stämmer om växtätare och rovdjur?",
+    type: "multi",
+    opts: [
+      { t: "Växtätare äter växter för att få näring", c: true },
+      { t: "Rovdjur äter växtätare", c: true },
+      { t: "Djur kan inte själva tillverka näring via fotosyntes", c: true },
+      { t: "Alla näringskedjor börjar med växter som producerar näringen", c: true }
+    ],
+    fb: "Alla fyra stämmer. Växtätare (som harar) äter växter. Rovdjur (som rävar) äter växtätare. Djur kan inte utföra fotosyntes och måste äta för att få sin näring. I alla näringskedjor börjar näringen med växter – de enda organismer som kan producera sin egen näring via fotosyntes. För både växtätare och rovdjur är växter livsviktiga."
+  }
+];
+
+let currentQuestion = 0;
+let score = 0;
+let answers = [];
+
+function loadProgress() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return false;
+    const p = JSON.parse(saved);
+    if (p.currentQuestion >= quizData.length) return false;
+    currentQuestion = p.currentQuestion;
+    score = p.score;
+    answers = p.answers || [];
+    return true;
+  } catch(e) { return false; }
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentQuestion, score, answers }));
+  } catch(e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function showResume(q, sc) {
+  const card = document.getElementById('questionCard');
+  card.innerHTML = `
+    <div class="resume-screen">
+      <div class="resume-title">Fortsätt där du slutade?</div>
+      <div class="resume-info">Du har kommit till fråga ${q} av ${quizData.length}</div>
+      <div class="resume-score">${sc} rätt hittills</div>
+      <div class="btn-row" style="justify-content:center">
+        <button class="btn" onclick="continueQuiz()">Fortsätt</button>
+        <button class="btn btn-outline" onclick="restartQuiz()">Börja om</button>
+      </div>
+    </div>`;
+}
+
+function continueQuiz() { renderQuestion(); }
+
+function restartQuiz() {
+  clearProgress();
+  currentQuestion = 0; score = 0; answers = [];
+  renderCard();
+  renderQuestion();
+}
+
+function renderCard() {
+  document.getElementById('questionCard').innerHTML = `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga &rarr;</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>`;
+}
+
+function renderQuestion() {
+  const total = quizData.length;
+  document.getElementById('progressText').textContent = `Fråga ${currentQuestion + 1} av ${total}`;
+  document.getElementById('progressBar').style.width = `${(currentQuestion / total) * 100}%`;
+
+  const q = quizData[currentQuestion];
+  document.getElementById('typeBadge').textContent =
+    q.type === 'multi'
+      ? 'Flerval – ett eller flera alternativ kan vara rätta'
+      : 'Enval – välj ett alternativ';
+  document.getElementById('questionText').textContent = `${currentQuestion + 1}. ${q.question || q.q}`;
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const label = document.createElement('label');
+    label.className = 'option-label';
+    label.dataset.index = i;
+    const input = document.createElement('input');
+    input.className = 'option-input';
+    input.type = q.type === 'multi' ? 'checkbox' : 'radio';
+    input.name = 'opt';
+    input.value = i;
+    input.addEventListener('change', () => {
+      list.querySelectorAll('.option-label').forEach(l => l.classList.remove('selected'));
+      if (q.type === 'single') {
+        label.classList.add('selected');
+      } else {
+        if (input.checked) label.classList.add('selected');
+        else label.classList.remove('selected');
+      }
+      document.getElementById('checkBtn').disabled = !anySelected();
+    });
+    const letters = ['A', 'B', 'C', 'D'];
+    const span = document.createElement('span');
+    span.className = 'option-text';
+    span.textContent = `${letters[i]}) ${opt.t}`;
+    label.appendChild(input);
+    label.appendChild(span);
+    list.appendChild(label);
+  });
+
+  const checkBtn = document.getElementById('checkBtn');
+  checkBtn.disabled = true;
+  checkBtn.style.display = 'inline-block';
+  document.getElementById('nextBtn').style.display = 'none';
+  const fb = document.getElementById('feedbackBox');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+}
+
+function anySelected() {
+  return !!document.querySelector('.option-input:checked');
+}
+
+function checkAnswer() {
+  const q = quizData[currentQuestion];
+  const labels = document.querySelectorAll('.option-label');
+  const inputs = document.querySelectorAll('.option-input');
+
+  inputs.forEach(inp => inp.disabled = true);
+  labels.forEach(l => { l.classList.add('disabled', 'checked'); l.classList.remove('selected'); });
+
+  const correctSet = new Set(q.opts.map((o, i) => o.c ? i : -1).filter(i => i >= 0));
+  const selectedSet = new Set();
+  inputs.forEach((inp, i) => { if (inp.checked) selectedSet.add(i); });
+
+  let isCorrect = false;
+  let isPartial = false;
+
+  if (q.type === 'single') {
+    const sel = [...selectedSet][0];
+    isCorrect = q.opts[sel]?.c === true;
+  } else {
+    const allCorrectSelected = [...correctSet].every(i => selectedSet.has(i));
+    const noWrongSelected = [...selectedSet].every(i => correctSet.has(i));
+    isCorrect = allCorrectSelected && noWrongSelected;
+    if (!isCorrect) {
+      const anyCorrectSelected = [...selectedSet].some(i => correctSet.has(i));
+      isPartial = anyCorrectSelected || correctSet.size === 0;
+    }
+  }
+
+  labels.forEach((label, i) => {
+    const correct = q.opts[i].c;
+    const selected = selectedSet.has(i);
+    if (correct) {
+      label.classList.add('correct');
+      const sp = label.querySelector('.option-text');
+      sp.textContent = '✓ ' + sp.textContent;
+    } else if (selected) {
+      label.classList.add('incorrect');
+      const sp = label.querySelector('.option-text');
+      sp.textContent = '✗ ' + sp.textContent;
+    }
+  });
+
+  const fb = document.getElementById('feedbackBox');
+  const verdict = document.getElementById('feedbackVerdict');
+  const fbText = document.getElementById('feedbackText');
+
+  if (isCorrect) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt!';
+    score++;
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt.';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+  fbText.textContent = q.fb || q.feedback || '';
+  fb.style.display = 'block';
+
+  answers.push(isCorrect ? 1 : 0);
+  currentQuestion++;
+  saveProgress();
+
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function nextQuestion() {
+  if (currentQuestion >= quizData.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  clearProgress();
+  document.getElementById('progressText').textContent = `Fråga ${quizData.length} av ${quizData.length}`;
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('questionCard').innerHTML = `
+    <div class="resume-screen">
+      <div class="resume-title">Resultat</div>
+      <div class="resume-info">Du svarade rätt på ${score} av ${quizData.length} frågor</div>
+      <div style="margin-top:2rem">
+        <button class="btn" onclick="restartQuiz()">Starta om</button>
+      </div>
+    </div>`;
+}
+
+(function init() {
+  const hasSaved = loadProgress();
+  if (hasSaved && currentQuestion > 0) {
+    showResume(currentQuestion + 1, score);
+  } else {
+    renderQuestion();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Hinduism och buddhism</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #e84393;
+    --accent-hover: #c0306f;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-bg: #fffbeb;
+    --partial-border: #d97706;
+    --partial-text: #92400e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .quiz-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .quiz-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .quiz-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .question-type-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 1rem;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .option-label:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: #fff5f9;
+  }
+
+  .option-label.selected:not(.checked) {
+    border-color: var(--accent);
+    background: #fce7f3;
+  }
+
+  .option-label.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .option-label.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .option-label.disabled {
+    cursor: default;
+  }
+
+  .option-input {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .option-indicator {
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 18px;
+    margin-top: 1px;
+    font-size: 1rem;
+  }
+
+  .option-text {
+    flex: 1;
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: #fce7f3;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .feedback-box {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0 10px 10px 0;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-box.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .feedback-box.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .feedback-box.partial {
+    border-color: var(--partial-border);
+    background: var(--partial-bg);
+    color: var(--partial-text);
+  }
+
+  .feedback-verdict {
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-screen {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .resume-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .resume-info {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-score {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 1.25rem; }
+    .quiz-title { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-title">Hinduism och buddhism</div>
+    <div class="quiz-subtitle">Religionskunskap – s. 120–133 | Årkurs 5–7</div>
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">Fråga 1 av 50</span>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionCard">
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz-progress-quiz-hinduism-buddhism';
+
+const quizData = [
+  // ── Introduktion ──────────────────────────────────────────────────
+  {
+    q: "Varför räknas hinduismen och buddhismen till de fem världsreligionerna?",
+    type: "single",
+    opts: [
+      { t: "De är de äldsta religionerna i mänsklighetens historia", c: false },
+      { t: "De har många anhängare och räknas därför till de globalt största", c: true },
+      { t: "De är de enda religionerna utan en känd grundare", c: false },
+      { t: "De är de enda religionerna som uppstod i Asien", c: false }
+    ],
+    fb: "Världsreligionerna definieras utifrån antalet anhängare och global utbredning. Hinduismen och buddhismen har båda många anhängare världen över. De är inte nödvändigtvis äldst, och buddhismen har faktiskt en känd grundare – Siddharta Gautama."
+  },
+  {
+    q: "Vilka påståenden stämmer om hinduismens och buddhismens ursprung och likheter?",
+    type: "multi",
+    opts: [
+      { t: "Båda religionerna har sitt ursprung i området kring Indusdalen", c: true },
+      { t: "Båda religionerna är abrahamitiska religioner", c: false },
+      { t: "Hinduismen och buddhismen delar liknande syn på livet och döden", c: true },
+      { t: "Trots likheter finns det också tydliga skillnader mellan dem", c: true }
+    ],
+    fb: "Hinduismen och buddhismen har båda sina rötter i Indusdalen (Pakistan/Indien) och delar liknande synsätt kring liv och död. De är inte abrahamitiska religioner – det är judendom, kristendom och islam. Att de har likheter utesluter inte att det också finns tydliga skillnader."
+  },
+  {
+    q: "Vad är det geografiska ursprungsområdet för hinduismen och buddhismen?",
+    type: "single",
+    opts: [
+      { t: "Nilens delta i norra Afrika", c: false },
+      { t: "Mesopotamien mellan Tigris och Eufrat", c: false },
+      { t: "Indusdalen mellan Pakistan och Indien", c: true },
+      { t: "Gula floden i norra Kina", c: false }
+    ],
+    fb: "Indusdalen, som ligger mellan Pakistan och Indien, är ursprungsplatsen för hinduismen och buddhismen. Nildalen är förknippad med det forntida Egypten, Mesopotamien med forntidens Mellanöstern och Gula floden med Kinas tidiga civilisation."
+  },
+
+  // ── Hinduismens grundidéer ─────────────────────────────────────────
+  {
+    q: "Vilka påståenden om dharma inom hinduismen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Dharma är den ordning som hela universum följer", c: true },
+      { t: "Naturen klarar av sig själv att hålla dharma-balansen", c: true },
+      { t: "Människor behöver religiösa riter och regler för att leva i harmoni med dharma", c: true },
+      { t: "Dharma är en gudinna som hinduer ber till för balans", c: false }
+    ],
+    fb: "Dharma är den universella ordning som allt ska följa för att balans ska råda. Naturen klarar av sig själv att hålla balansen, men människor behöver religionens hjälp. Dharma är inte en gudinna utan ett begrepp för världsordningen."
+  },
+  {
+    q: "Vad är skillnaden mellan brahman och atman inom hinduismen?",
+    type: "single",
+    opts: [
+      { t: "Brahman är en gud som skapade världen, atman är en ängel som skyddar individen", c: false },
+      { t: "Brahman är världssjälen i hela universum, atman är den individuella själen i varje levande varelse", c: true },
+      { t: "Brahman och atman är två namn på samma sak", c: false },
+      { t: "Brahman tillhör gudar, atman tillhör bara människor", c: false }
+    ],
+    fb: "Brahman är världssjälen – en osynlig helig kraft i hela universum. Atman är den individuella själen i alla levande varelser. De är alltså två separata begrepp: det universella (brahman) och det individuella (atman). Atmans mål är att förenas med brahman."
+  },
+  {
+    q: "Vilka påståenden om samsara och karma i hinduismen är korrekta?",
+    type: "multi",
+    opts: [
+      { t: "Samsara är det eviga kretsloppet av födslar och återfödelser", c: true },
+      { t: "Karma är summan av de handlingar man gjort under sitt liv", c: true },
+      { t: "God karma avgör till vad eller vem man återföds", c: true },
+      { t: "Alla varelser kan fritt välja sitt nästa liv oberoende av karma", c: false }
+    ],
+    fb: "Samsara är det eviga kretsloppet. Karma summerar ens handlingar och avgör vad man återföds till – man kan alltså inte fritt välja. God karma ökar chansen att återfödas till ett bättre liv."
+  },
+  {
+    q: "Vilket är det slutliga målet för alla levande varelser inom hinduismen?",
+    type: "single",
+    opts: [
+      { t: "Att samla tillräckligt med god karma för att leva ett lyckligt mänskligt liv", c: false },
+      { t: "Att atman befrias från samsara och förenas med brahman", c: true },
+      { t: "Att uppnå den högsta kasten i sitt nuvarande liv", c: false },
+      { t: "Att utföra tillräckligt många religiösa riter för att undgå döden", c: false }
+    ],
+    fb: "Det slutliga målet är att atman befriar sig från samsaras kretslopp och förenas med brahman – världssjälen. Det handlar inte om kast, rikedom eller att undkomma döden, utan om att slippa återfödas och uppnå befrielse."
+  },
+  {
+    q: "Vilka påståenden om de tre vägarna till befrielse från samsara stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Kärlekens väg innebär att visa kärlek till det gudomliga och offra till gudar", c: true },
+      { t: "Handlingens väg befriar inte atman direkt men ökar chansen till bättre återfödelse", c: true },
+      { t: "Vishetens väg är den enklaste och vanligaste vägen", c: false },
+      { t: "Vishetens väg kräver studier av heliga texter och meditation för att nå högre medvetenhet", c: true }
+    ],
+    fb: "Kärlekens väg visar kärlek till det gudomliga via bön och offer. Handlingens väg ger bättre karma men befriar inte direkt. Vishetens väg är den svåraste – den kräver studier och meditation – inte den enklaste. Det är tvärtom få som klarar att följa den."
+  },
+  {
+    q: "Varför är handlingens väg ändå värdefull trots att den inte direkt befriar atman från samsara?",
+    type: "single",
+    opts: [
+      { t: "Den ger ett lyckligare liv i nästa liv men leder aldrig till befrielse", c: false },
+      { t: "Den ökar chansen att återfödas till någon som kan följa en av de andra vägarna", c: true },
+      { t: "Den är den säkraste vägen till att förenas med brahman", c: false },
+      { t: "Den är obligatorisk innan man kan följa de andra vägarna", c: false }
+    ],
+    fb: "Handlingens väg – att utföra ritualer och goda handlingar – ger god karma och ökar chansen att återfödas till en person som sedan kan följa kärlekens eller vishetens väg. Det är alltså ett steg i rätt riktning, även om det inte räcker hela vägen."
+  },
+
+  // ── Hinduismens gudar ──────────────────────────────────────────────
+  {
+    q: "Vilka påståenden om guden Vishnu inom hinduismen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Vishnu skyddar och bevarar ordningen i världen", c: true },
+      { t: "Han kan stiga ner till jorden och kallas ibland Rama eller Krishna", c: true },
+      { t: "Hans hustru Lakshmi ber man till för rikedom och lycka", c: true },
+      { t: "Vishnu är kraftens gud som kan förstöra och återskapa universum", c: false }
+    ],
+    fb: "Vishnu är ordningens och skyddets gud, och han kan anta former som Rama eller Krishna. Hans hustru Lakshmi förknippas med rikedom och lycka. Det är Shiva, inte Vishnu, som är kraftens gud med förmågan att bygga upp och förstöra."
+  },
+  {
+    q: "Vad är Ganesha känd för och varför är han populär bland elever?",
+    type: "single",
+    opts: [
+      { t: "Ganesha är vattnets gud och beskyddar sjömän och resenärer", c: false },
+      { t: "Ganesha är Shivas och Parvatis son med elefanthuvud och beskyddar dem som studerar", c: true },
+      { t: "Ganesha är krigsguden som hjälper hinduer att besegra sina fiender", c: false },
+      { t: "Ganesha är en form av Vishnu som visar sig för barn", c: false }
+    ],
+    fb: "Ganesha är Shivas och Parvatis son och avbildas med ett elefanthuvud. Han är en av hinduismens populäraste gudar och anses beskydda och ge framgång åt dem som studerar – därför är han särskilt viktig för elever. Han är inte en krigargestalt eller en form av Vishnu."
+  },
+  {
+    q: "Vilka påståenden om gudinnorna Durga och Lakshmi är korrekta?",
+    type: "multi",
+    opts: [
+      { t: "Durga är en beskyddande gudinna som kallas världens moder", c: true },
+      { t: "Durga avbildas ofta med många armar och vapen ridande på en tiger", c: true },
+      { t: "Lakshmi är Vishnus hustru och förknippas med rikedom och lycka", c: true },
+      { t: "Durga och Lakshmi är samma gudinna med olika namn", c: false }
+    ],
+    fb: "Durga är en krigisk beskyddande gudinna med många armar och vapen, ridande på tiger. Lakshmi är Vishnus hustru och ber man till för rikedom. De är inte samma gudinna – Durga är en av Shivas hustrus former, medan Lakshmi tillhör Vishnu."
+  },
+  {
+    q: "Vad innebär panteism och hur skiljer det sig från polyteism?",
+    type: "single",
+    opts: [
+      { t: "Panteism betyder tro på en enda gud, polyteism betyder tro på naturen som helig", c: false },
+      { t: "Panteism betyder att Gud finns i allt, polyteism betyder tro på flera separata gudar", c: true },
+      { t: "Panteism och polyteism är två namn på samma tro inom hinduismen", c: false },
+      { t: "Panteism förekommer enbart inom buddhismen, inte inom hinduismen", c: false }
+    ],
+    fb: "Panteism innebär att Gud finns i allt – allting är gudomligt. Polyteism innebär tro på flera separata gudar. Inom hinduismen är panteism vanlig: de flesta hinduer säger att de tror på Gud och att denna gud kan visa sig i flera former. Panteism är alltså inte detsamma som polyteism."
+  },
+  {
+    q: "Vilka påståenden om Shiva och hans familj inom hinduismen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Shiva är kraftens gud som kan bygga upp och förstöra", c: true },
+      { t: "Shivas hustru kallas Durga eller Kali i sin krigiska form och Parvati i sin lugna form", c: true },
+      { t: "Ganesha är Shivas och Parvatis son", c: true },
+      { t: "Shiva är alltid fredlig och skapar aldrig förstörelse", c: false }
+    ],
+    fb: "Shiva är kraftens gud med dubbla aspekter – skapande och förstörande. Hans hustru antar flera former: krigisk (Durga/Kali) och lugn (Parvati). Ganesha är deras son. Att Shiva alltid skulle vara fredlig stämmer inte – hans förstörande sida är en central del av hans karaktär."
+  },
+
+  // ── Att leva som hindu ─────────────────────────────────────────────
+  {
+    q: "Varför kan hinduismen se så olika ut på olika platser och bland olika hinduer?",
+    type: "single",
+    opts: [
+      { t: "Hinduismen är en ny religion utan etablerade traditioner ännu", c: false },
+      { t: "Hinduismen saknar känd grundare och har ingen central ledare som styr hur man ska tro", c: true },
+      { t: "Hinduismen tillåter varje individ att skapa sin helt egna religion", c: false },
+      { t: "Det beror på att hinduismens heliga texter är skrivna på ett svårförstått språk", c: false }
+    ],
+    fb: "Hinduismen saknar en känd grundare och har ingen central ledarfigur som styr tro och praktik. Det gör att hinduism ser ut på många olika sätt – städer och landsbygd, olika platser och familjer har sina egna uttryck och gudar. Det handlar inte om att skapa en helt personlig religion utan om decentraliserad mångfald."
+  },
+  {
+    q: "Vilka påståenden om kastsystemet i Indien stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Man föds in i sin kast och kan inte byta under sitt nuvarande liv", c: true },
+      { t: "Kastväsendet är formellt förbjudet men lever kvar i praktiken", c: false },
+      { t: "De olika kasterna har historiskt haft olika rättigheter och regler", c: true },
+      { t: "Kastväsendet är förbjudet men lever kvar i praktiken", c: true }
+    ],
+    fb: "Man föds in i sin kast och byter den först i nästa liv. Kastväsendet är formellt förbjudet enligt lag men praktiseras fortfarande i praktiken. Kasterna innebär olika historiska rättigheter och regler. Observera att alternativ B och D säger samma sak fast omvänt – det är D som är korrekt formulerat."
+  },
+  {
+    q: "Vilken av de fem levnadsreglerna för hinduer handlar om ärlighet i kommunikation?",
+    type: "single",
+    opts: [
+      { t: "Stjäl inte", c: false },
+      { t: "Tala alltid sanning", c: true },
+      { t: "Utför religiösa riter", c: false },
+      { t: "Visa tålamod", c: false }
+    ],
+    fb: "En av de fem levnadsreglerna är att alltid tala sanning, vilket direkt handlar om ärlighet i hur man kommunicerar med andra. De övriga reglerna – riter, tålamod, att inte stjäla och att inte döda – rör andra aspekter av livet."
+  },
+  {
+    q: "Vilka påståenden om mat- och dryckesvaner bland hinduer är korrekta?",
+    type: "multi",
+    opts: [
+      { t: "Många hinduer är vegetarianer på grund av regeln att inte döda", c: true },
+      { t: "Kor räknas som heliga djur och de flesta hinduer äter inte nötkött", c: true },
+      { t: "Alla hinduer är lagstadgat förbjudna att äta kött", c: false },
+      { t: "Många hinduer avstår från alkohol och droger för att behålla rätt uppfattningsförmåga", c: true }
+    ],
+    fb: "Regeln om att inte döda motiverar vegetarianism, kor är heliga och nötkött undviks, och alkohol/droger undviks av religiösa skäl. Det finns dock inga universella lagstadgade matregler – varje hindu och familj gör sina egna val. Hinduismen varierar kraftigt."
+  },
+  {
+    q: "Hur används familjealtaret i ett hinduistiskt hem?",
+    type: "single",
+    opts: [
+      { t: "Det besöks enbart under de stora högtiderna diwali och holi", c: false },
+      { t: "Familjemedlemmarna ber och offrar varje morgon och kväll, tänder rökelse och lägger fram blommor och mat", c: true },
+      { t: "Det är ett samlingsställe för hela familjen men används enbart för matlagning", c: false },
+      { t: "Det är ett altare som enbart äldre hinduer använder vid dödsfall", c: false }
+    ],
+    fb: "I de flesta hinduiska hem finns ett familjealtare där man ber och offrar varje morgon och kväll. Det är en daglig religiös praktik – man tänder rökelse och lägger fram blommor, frukt och mat till guden. Det är alltså inte begränsat till högtider."
+  },
+  {
+    q: "Vilka faktorer förklarar varför hinduismen är den tredje största världsreligionen trots att den inte missionerar?",
+    type: "multi",
+    opts: [
+      { t: "Hinduismen är rotad i Indien och Nepal där ca 80 procent av befolkningen är hinduer", c: true },
+      { t: "Hinduer föds vanligen in i religionen och behöver inte omvändas", c: true },
+      { t: "Hinduismen missionerar aktivt i Europa och Nordamerika", c: false },
+      { t: "Det finns även hinduer i länder utanför Sydasien, exempelvis i Sydamerika", c: true }
+    ],
+    fb: "Hinduismens storlek förklaras av att man föds in i den och att Indien och Nepal har enorma befolkningar med stor hinduisk andel. Det finns även hinduer i länder som Guyana och Surinam i Sydamerika. Hinduismen missionerar dock inte – det är buddhismen som är missionerande."
+  },
+  {
+    q: "Varför vallfärdar många hinduer till Varanasi?",
+    type: "single",
+    opts: [
+      { t: "Det är Indiens politiska huvudstad och centrum för religiösa beslut", c: false },
+      { t: "Det är platsen där hinduismen grundades av en profet för 3000 år sedan", c: false },
+      { t: "Det är en helig stad vid floden Ganges där hinduer vill bada för religiös rening", c: true },
+      { t: "Det är platsen där den viktigaste hinduistiska högtiden alltid firas", c: false }
+    ],
+    fb: "Varanasi är en av hinduismens viktigaste heliga platser – belägen vid den heliga floden Ganges. Att bada i Ganges anses vara en helig och renande handling. Det är inte Indiens huvudstad (det är New Delhi) och ingen specifik grundare startade hinduismen där."
+  },
+
+  // ── Hinduiska riter ────────────────────────────────────────────────
+  {
+    q: "Vilka påståenden om födsloriten inom hinduismen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "En brahmin ber att inga onda andar ska skada det nyfödda barnet", c: true },
+      { t: "Barnet får sitt namn direkt vid födseln", c: false },
+      { t: "Brahminen ber om hälsa, långt liv och kunskap för barnet", c: true },
+      { t: "Barnet namnges efter tolv dagar", c: true }
+    ],
+    fb: "Vid ett barns födelse ber brahminen om skydd mot onda andar samt önskar barnet hälsa, långt liv och kunskap. Barnet namnges inte direkt vid födseln utan tolv dagar senare. Det är en genomtänkt ritual som markerar barnets inträde i livet."
+  },
+  {
+    q: "Vad innebär riten upanayana och varför är den betydelsefull?",
+    type: "single",
+    opts: [
+      { t: "Det är en vigselrit som markerar att ett par ingår äktenskap", c: false },
+      { t: "En brahmin lägger en helig tråd runt pojkens överkropp – ett tecken på rätten att lära sig de heliga skrifterna", c: true },
+      { t: "Det är en dödsrit där den äldste mannen i familjen leds vidare till nästa liv", c: false },
+      { t: "Alla barn i Indien genomgår upanayana som en del av skolgången", c: false }
+    ],
+    fb: "Upanayana är en initieringsrit för pojkar (8–12 år) i de högsta kastgrupperna. En brahmin lägger en helig tråd runt pojkens överkropp som symboliserar att han nu har rätt att lära sig de heliga skrifterna på sanskrit med hjälp av en guru. Det är alltså en övergång till religiös bildning, inte en vigsel eller dödsrit."
+  },
+  {
+    q: "Vilka påståenden om hinduistisk begravning stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Hinduer tror att kroppen dör men atman sitter instängd och måste befrias", c: true },
+      { t: "Den döda kroppen kremeras (bränns) för att befria atman", c: true },
+      { t: "Den äldste manlige släktingen tänder kremationsbålet", c: true },
+      { t: "Askan begravs i jordens mark för att atman ska återfödas i naturen", c: false }
+    ],
+    fb: "Hinduismen kräver kremering eftersom atman sitter instängd i kroppen och måste befrias. Den äldste manlige släktingen tänder bålet, och askan sprids sedan i ett rinnande vattendrag – inte begravs i marken. Markbegravning är inte den hinduistiska traditionen."
+  },
+  {
+    q: "Vad symboliserar det att brudparet vandrar sju varv runt elden vid ett hinduistiskt bröllop?",
+    type: "single",
+    opts: [
+      { t: "De sju varven representerar de sju viktigaste hinduistiska gudarna", c: false },
+      { t: "De sju varven är kopplade till de löften paret uttalar till varandra", c: true },
+      { t: "Det är en hälsningsrit som välkomnar gästerna till bröllopsfesten", c: false },
+      { t: "Det symboliserar de sju stegen mot befrielse från samsara", c: false }
+    ],
+    fb: "Under den hinduistiska vigseln vandrar brudparet sju varv runt en eld och uttalar löften till varandra. Det är vigseln kärnsymbol. Det finns ingen hinduistisk teologi om sju steg till befrielse – det är tre vägar. Elden representerar det gudomliga vittnet, inte gudarna."
+  },
+  {
+    q: "Vilka påståenden om meditation och yoga inom hinduismen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Meditation är en form av bön inom hinduismen", c: true },
+      { t: "Den som mediterar ska ha en lärare, guru, som ger ett mantra", c: true },
+      { t: "Yoga är kroppsövningar som ger kontroll över kroppen inför meditationen", c: true },
+      { t: "Meditation och yoga är moderna uppfinningar utan koppling till hinduismen", c: false }
+    ],
+    fb: "Inom hinduismen är meditation en form av bön. Guru är läraren som ger ett mantra – ord som upprepas under bönen. Yoga är de kroppsövningar som förbereder kroppen för effektiv meditation. Meditation och yoga har djupa hinduistiska rötter, även om de numera praktiseras globalt."
+  },
+
+  // ── Hinduiska högtider ─────────────────────────────────────────────
+  {
+    q: "Vad är syftet med att tända oljelamporna under diwali?",
+    type: "single",
+    opts: [
+      { t: "Lamporna tänds för att hedra de döda förfädernas andar", c: false },
+      { t: "Lamporna tänds för att välkomna gudinnnan Lakshmi och bjuda in lycka och välgång", c: true },
+      { t: "Lamporna symboliserar Shivas kraft och ska hålla ondskan borta", c: false },
+      { t: "Lamporna tänds som ett offer till guden Vishnu under nyårsnatten", c: false }
+    ],
+    fb: "Under diwali tänds små oljelampor utanför husen för att välkomna gudinnnan Lakshmi, som förknippas med rikedom och lycka. Tanken är att Lakshmi ska ge lycka och välgång under det kommande året. Det är alltså kopplat till Lakshmi, inte Shiva eller Vishnu."
+  },
+  {
+    q: "Vilka påståenden om holi-festen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Holi är en vår- och färgfest med budskapet att det goda ska segra", c: true },
+      { t: "Festen firas under två dagar i februari eller mars", c: true },
+      { t: "Första kvällen tänder man en stor eld", c: true },
+      { t: "Under holi tänder man oljelampor för att välkomna Lakshmi", c: false }
+    ],
+    fb: "Holi är en glad vår- och färgfest vars budskap är det godas seger. Den firas i februari/mars under två dagar – eld första kvällen och färgstänk den andra dagen. Oljelampor för att välkomna Lakshmi är diwali, inte holi."
+  },
+
+  // ── Buddhism ────────────────────────────────────────────────────────
+  {
+    q: "Vilka påståenden om Siddharta Gautamas väg till upplysning stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Han föddes som prins och levde länge i lyx", c: true },
+      { t: "Mötet med sjuka, åldrande och döda människor fick honom att ifrågasätta livets mening", c: true },
+      { t: "Han uppnådde upplysning direkt efter att ha lämnat palatset", c: false },
+      { t: "Han valde en medelväg och nådde upplysning genom meditation", c: true }
+    ],
+    fb: "Siddharta levde som prins i lyx men upplevde existentiell kris när han konfronterades med lidande. Han provade asketism som fattig munk – utan resultat. Upplysningen nådde han inte direkt utan efter en lång process; han valde en medelväg och mediterade sig fram till insikten."
+  },
+  {
+    q: "Vad innebär det att vara 'upplyst' (Buddha) enligt buddhismen?",
+    type: "single",
+    opts: [
+      { t: "Att ha uppnått permanent lycka och aldrig mer uppleva några problem", c: false },
+      { t: "Att ha rätt kunskaper och förstå vad som håller människor fångade i samsara", c: true },
+      { t: "Att ha studerat heliga texter i tio år under en guru", c: false },
+      { t: "Att ha visat exceptionell osjälviskhet i ett enda liv", c: false }
+    ],
+    fb: "Att vara upplyst (buddha) innebär att ha rätt kunskap och förstå vad som håller människor fångade i kretsloppet. Den som nått upplysning behöver inte återfödas. Det är en insikt om verklighetens natur, inte enbart en känsla av lycka eller ett resultat av studier."
+  },
+  {
+    q: "Vilka påståenden om de fyra sanningarna i buddhismen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "En av sanningarna handlar om lidandets existens", c: true },
+      { t: "En av sanningarna handlar om hur lidandet uppstår", c: true },
+      { t: "Den åttafaldiga vägen ingår som en del i de fyra sanningarna", c: true },
+      { t: "De fyra sanningarna handlar enbart om regler för bön och tempelbesök", c: false }
+    ],
+    fb: "De fyra sanningarna täcker: lidandets existens, dess uppkomst (att aldrig vara nöjd), möjligheten till befrielse, och den åttafaldiga vägen som metod. De är alltså bredare än enbart böneregler – de beskriver hela Buddhas filosofi om lidande och befrielse."
+  },
+  {
+    q: "Varför är hjulet med åtta ekrar en symbol för den åttafaldiga vägen?",
+    type: "single",
+    opts: [
+      { t: "Hjulet symboliserar samsarans eviga kretslopp som man vill fly ifrån", c: false },
+      { t: "Varje eker representerar en levnadsregel – saknas en eker rullar hjulet sämre och lidande uppstår", c: true },
+      { t: "Hjulet är ett forntida indiskt verktyg som Buddha använde i sin undervisning", c: false },
+      { t: "De åtta ekrarna symboliserar de åtta länder dit buddhismen spred sig", c: false }
+    ],
+    fb: "Varje eker i hjulet motsvarar en av de åtta levnadsreglerna. Om en eker saknas eller är kortare rullar hjulet sämre – det uppstår lidande. Symboliken betonar balans och helhet i levnadsreglerna. Det handlar inte om samsara eller geografisk spridning."
+  },
+  {
+    q: "Vilka levnadsregler ingår i den åttafaldiga vägen?",
+    type: "multi",
+    opts: [
+      { t: "Rätt tal – att inte ljuga, säga elaka saker eller prata strunt", c: true },
+      { t: "Rätt yrke – att inte arbeta med något som skadar andra", c: true },
+      { t: "Rätt ägande – att inte äga mer än man absolut behöver", c: false },
+      { t: "Rätt koncentration – att meditera på ett riktigt sätt enligt Buddhas instruktioner", c: true }
+    ],
+    fb: "Rätt tal, rätt yrke och rätt koncentration finns med bland de åtta levnadsreglerna. 'Rätt ägande' är däremot inte en av reglerna. De åtta är: rätt kunskap, sinne, tal, handlande, yrke, strävan, medvetenhet och koncentration."
+  },
+  {
+    q: "Vad är en bodhisattva?",
+    type: "single",
+    opts: [
+      { t: "En munk som lever i kloster och studerar heliga texter", c: false },
+      { t: "En person som nått upplysning men av medkänsla valt att stanna kvar i världen", c: true },
+      { t: "En ond ande som försöker hindra buddhister från att nå nirvana", c: false },
+      { t: "En helgedom där man ber och mediterar", c: false }
+    ],
+    fb: "En bodhisattva är en person som nått upplysning och kunnat lämna samsara men av medkänsla med alla andra varelser valt att stanna kvar. Många buddhister ber och offrar till bodhisattvor. Det är alltså inte en munk, en ond ande eller en plats för bön."
+  },
+  {
+    q: "Vilka påståenden om buddhismens syn på gudar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Buddha förnekade inte gudarnas existens men undervisade inte om dem", c: true },
+      { t: "I vissa länder fortsatte folk att be till sina gamla gudar vid sidan av buddhismen", c: true },
+      { t: "Alla buddhister i hela världen har samma enhetliga syn och förkastar alla gudar", c: false },
+      { t: "Många buddhister tror på osynliga makter och andar efter döda släktingar", c: true }
+    ],
+    fb: "Buddhas tystnad om gudar öppnade för lokal variation – folk behöll sina gudar. Tro på bodhisattvor, andar och lokala gudar är vanlig. Det finns alltså inte ett enhetligt förnekande av gudar inom buddhismen; tvärtom är mångfalden stor."
+  },
+  {
+    q: "Varför trängdes buddhismen nästan bort från Indien under 900-talet?",
+    type: "single",
+    opts: [
+      { t: "En stor naturkatastrof förstörde buddhismens kloster och tempel i Indien", c: false },
+      { t: "Det indiska kungadömet förbjöd buddhismen per lag", c: false },
+      { t: "Hinduerna trängde bort buddhismen, som sedan spred sig till andra delar av Asien", c: true },
+      { t: "Buddhismens grundare förklarade att läran inte tillhörde Indien", c: false }
+    ],
+    fb: "På 900-talet trängde hinduerna bort buddhismen från sitt ursprungsland Indien. Läran spred sig sedan vidare till andra delar av Asien och blandades med lokala traditioner – det är därför buddhismen ser så olika ut i dag i olika länder."
+  },
+  {
+    q: "Vilka påståenden om karma inom buddhismen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Karma handlar inte bara om handlingen utan även om avsikten bakom den", c: true },
+      { t: "Dålig karma kan undvikas genom att vara fokuserad och medveten om sina handlingar", c: true },
+      { t: "Karma är identiskt formulerad inom hinduism och buddhism utan skillnader", c: false },
+      { t: "Buddhister betonar vikten av att vara osjälviska och göra gott för andra", c: true }
+    ],
+    fb: "I buddhismen spelar avsikten bakom en handling en central roll – inte bara handlingen i sig. Medvetenhet och fokus minskar dålig karma. Att vara osjälvisk är viktigt. Karma förekommer i båda religionerna men uttrycks inte identiskt – de har delvis olika betoningar."
+  },
+
+  // ── Att leva som buddhist ──────────────────────────────────────────
+  {
+    q: "Vad utmärker buddhismen som missionerande religion jämfört med hinduismen?",
+    type: "single",
+    opts: [
+      { t: "Buddhister omvänder folk med tvång, hinduister inte", c: false },
+      { t: "Buddhismen har aktivt arbetat för att sprida sin lära, hinduismen gör det inte", c: true },
+      { t: "Buddhismen kräver att man genomgår en speciell ceremoni för att bli buddhist", c: false },
+      { t: "Missionering inom buddhismen sker enbart av munkar i kloster", c: false }
+    ],
+    fb: "Buddhismen är missionerande – den har historiskt aktivt spridit sin lära till nya folk och länder. Hinduismen däremot försöker inte omvända andra. För att bli buddhist krävs ingen speciell ceremoni; den som vill följa Buddhas lära kan välja att göra det."
+  },
+  {
+    q: "Vilka påståenden om hur buddhismen varierar mellan länder stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Tempel och heliga platser kan se väldigt olika ut i olika länder", c: true },
+      { t: "Buddhas lära blandades med lokala religioner och traditioner när den spreds", c: true },
+      { t: "Sättet att be och meditera kan variera från land till land", c: true },
+      { t: "Buddhismen ser exakt likadan ut i alla länder eftersom Buddhas lära är oföränderlig", c: false }
+    ],
+    fb: "Buddhismen spred sig och blandades med lokala traditioner, vilket skapar stor variation i tempel, ritualer och bönepraktiker. Kärnan i läran är densamma men uttrycken varierar kraftigt. Det är just därför buddhism ser annorlunda ut i exempelvis Thailand, Tibet och Japan."
+  },
+  {
+    q: "Varför väljer många buddhister att vara vegetarianer trots att det inte finns strikta matregler?",
+    type: "single",
+    opts: [
+      { t: "Det är ett arv från hinduismen som alla buddhister automatiskt tar över", c: false },
+      { t: "De tolkar regeln om att inte döda som ett skäl att undvika att äta kött", c: true },
+      { t: "Det är ett obligatoriskt krav för att nå nirvana", c: false },
+      { t: "Buddhisten meditera bättre när kroppen är fri från kött", c: false }
+    ],
+    fb: "Det finns inga specifika matregler i buddhismen, men många väljer vegetarianism utifrån regeln om att inte döda. Tolkningen varierar – t.ex. äter många tibetanska buddhister kött eftersom det är svårt att odla mat högt uppe i bergen. Det är alltså ett personligt val, inte ett krav."
+  },
+  {
+    q: "Vilka påståenden om munkar och nunnors roll i buddhistiska samhällen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Munkar och nunnor är viktiga samhällsresurser som folk vänder sig till med religiösa och vardagliga frågor", c: true },
+      { t: "De rakar sina huvuden och bär speciella dräkter för att visa att de är avskilda från världen", c: true },
+      { t: "De ägnar sin tid åt studier av heliga skrifter, meditation och undervisning", c: true },
+      { t: "De försörjer sig genom eget arbete och handel för att vara självständiga", c: false }
+    ],
+    fb: "Munkar och nunnor är centrala i buddhistiska samhällen – de är tillgängliga för både religiösa och vardagliga frågor. De rakar huvuden och bär dräkter som markerar avskildhet. De ägnar sig åt studier, meditation och undervisning och får sin mat av folk i närheten – de arbetar inte för sin försörjning."
+  },
+  {
+    q: "Vilken roll spelar bön och meditation i en buddhists dagliga liv?",
+    type: "single",
+    opts: [
+      { t: "Bön sker enbart i templet under högtider, meditation är frivillig", c: false },
+      { t: "Bön och meditation hjälper buddhisten att stänga av yttre intryck och komma till ro", c: true },
+      { t: "Daglig meditation är obligatorisk för alla buddhister utan undantag", c: false },
+      { t: "Meditation praktiseras enbart av munkar, inte av vanliga buddhister", c: false }
+    ],
+    fb: "Många buddhister ber och mediterar varje dag – det är ett sätt att stänga av sinnesintryck och komma till ro. Det kan ske på egen hand eller i tempel. Det är inte obligatoriskt men väldigt vanligt. Buddhistisk meditation har dessutom spridits globalt till icke-buddhistiska länder."
+  },
+
+  // ── Buddhistiska riter ─────────────────────────────────────────────
+  {
+    q: "Vilka påståenden om buddhistiska riter kring barns födelse och ungdomar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Buddhistiska föräldrar kan gå till ett tempel där en munk välsignar det nyfödda barnet", c: true },
+      { t: "I vissa länder är det vanligt att pojkar och flickor tillbringar en tid i kloster", c: true },
+      { t: "Att gifta sig räknas som en helig religiös handling inom buddhismen", c: false },
+      { t: "Unga kan bo i kloster allt från några veckor till flera år", c: true }
+    ],
+    fb: "En munk välsignar det nyfödda barnet vid ett tempelbesök. I vissa länder är det vanligt med en period i kloster för unga – allt från veckor till år. Att gifta sig räknas däremot inte som en religiös handling i buddhismen, även om paret kan be om välsignelse i templet."
+  },
+  {
+    q: "Hur skiljer sig synen på döden och begravning inom buddhismen från en icke-religiös syn?",
+    type: "single",
+    opts: [
+      { t: "Buddhister anser att döden är det definitiva slutet och begravningen enbart är ett avsked", c: false },
+      { t: "Döden ses som en övergång till nästa liv, och ritualer runt döden är noggrant genomtänkta", c: true },
+      { t: "Buddhister fruktar döden mer än andra eftersom de vet att karma kan leda till ett sämre nästa liv", c: false },
+      { t: "Begravningen genomförs utan ceremonier eftersom döden är privat inom buddhismen", c: false }
+    ],
+    fb: "Inom buddhismen är döden inte ett slut utan en övergång till nästa liv. Den döende vill gärna själv bestämma var döden ska ske, helst med en munk som läser heliga texter. Begravningen inkluderar musik och heliga texter – det är alltså en ceremoniell och välplanerad händelse."
+  },
+  {
+    q: "Vilka påståenden om buddhistisk begravning stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Helst ska en munk läsa heliga texter för den som är på väg att dö", c: true },
+      { t: "Vid begravningen lyssnar man på heliga texter och musik", c: true },
+      { t: "Den döende vill gärna själv bestämma var döden ska ske", c: true },
+      { t: "Buddhister begravs alltid i marken i enlighet med Buddhas direkta instruktioner", c: false }
+    ],
+    fb: "Buddhistisk begravningspraxis inkluderar munkens läsning inför döden, musik och heliga texter vid ceremonin, och att den döende gärna bestämmer platsen. Det finns inga universella instruktioner om markbegravning – kremering är vanlig i många buddhistiska kulturer."
+  },
+
+  // ── Buddhistiska högtider ──────────────────────────────────────────
+  {
+    q: "Varför firas vesak på den första fullmånen i maj?",
+    type: "single",
+    opts: [
+      { t: "Det är den dag då buddhismen spred sig till Thailand och Sri Lanka", c: false },
+      { t: "Det minns den dag då Buddha föddes, upplystes och dog – tre händelser kopplade till samma dag", c: true },
+      { t: "Fullmånen i maj representerar nirvana och Buddhas eviga närvaro", c: false },
+      { t: "Det är ett datum som valdes av de första munkarna utan religiös koppling till Buddhas liv", c: false }
+    ],
+    fb: "Vesak firas för att minnas tre centrala händelser i Buddhas liv som alla traditionen anser inföll på samma dag: hans födelse, upplysning och bortgång. Det är buddhismens viktigaste högtid och firas med stor variation från land till land."
+  },
+  {
+    q: "Vilka sätt att fira vesak nämns i texten?",
+    type: "multi",
+    opts: [
+      { t: "I Thailand släpper man burfåglar fria", c: true },
+      { t: "I Singapore placerar man bladguld på en buddhastaty", c: true },
+      { t: "Man häller te över en buddhastaty som symboliserar Buddhas första bad", c: true },
+      { t: "Man stänker färgat vatten och pulver på varandra", c: false }
+    ],
+    fb: "Vesak firas på olika sätt: burfåglar i Thailand, bladguld i Singapore, te-hällning i Sydostasien. Att stänka färgat vatten är en del av holi – hinduismens färgfest – och hör inte till vesak."
+  },
+  {
+    q: "Vad firas under dharmadagen och när infaller den?",
+    type: "single",
+    opts: [
+      { t: "Buddhas födelsedag, firas vid fullmåne i maj", c: false },
+      { t: "Det tillfälle då Buddha för första gången undervisade, firas vid fullmåne i juli", c: true },
+      { t: "Buddhismens spridning till Asien, firas vid fullmåne i november", c: false },
+      { t: "Nirvana-dagen, firas vid nymåne i januari", c: false }
+    ],
+    fb: "Dharmadagen firas vid fullmåne i juli och minns det tillfälle då Buddha för första gången undervisade om sin lära. Under dharmadagen läser man ofta högt ur buddhistiska texter. Det ska inte förväxlas med vesak, som firas i maj och minns Buddhas födelse, upplysning och död."
+  },
+  {
+    q: "Vilka påståenden om buddhistiska högtider generellt stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Högtider firas på olika sätt i olika länder", c: true },
+      { t: "Under högtider besöker man ofta tempel och kloster", c: true },
+      { t: "Man tar med presenter och offergåvor till munkarna och nunnorna", c: true },
+      { t: "Alla buddhistiska högtider firas på exakt samma datum varje år i hela världen", c: false }
+    ],
+    fb: "Buddhistiska högtider varierar kraftigt från land till land och inkluderar tempelbesök med gåvor till munkar och nunnor. Många högtider följer månkalendern och infaller vid fullmåne – datumet varierar alltså från år till år. Enhetliga globala datum finns inte."
+  }
+];
+
+let current = 0;
+let score = 0;
+let answers = [];
+let checked = false;
+
+// ── localStorage helpers ──────────────────────────────────────────
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentQuestion: current + 1,
+      score: score,
+      answers: answers
+    }));
+  } catch(e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// ── Card template ─────────────────────────────────────────────────
+function getCardTemplate() {
+  return `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  `;
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  const saved = loadProgress();
+  if (saved && saved.currentQuestion > 0 && saved.currentQuestion < quizData.length) {
+    showResumeScreen(saved);
+  } else {
+    clearProgress();
+    render();
+  }
+}
+
+function showResumeScreen(saved) {
+  const nextQ = saved.currentQuestion;
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (nextQ + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width =
+    (nextQ / quizData.length * 100) + '%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div class="resume-screen">' +
+    '<div class="resume-title">Fortsätt där du slutade</div>' +
+    '<div class="resume-info">Du är på fråga <strong>' + (nextQ + 1) + '</strong> av ' + quizData.length + '</div>' +
+    '<div class="resume-score">' + saved.score + ' rätt hittills</div>' +
+    '<div class="btn-row" style="justify-content:center; margin-top:1.5rem;">' +
+    '<button class="btn" onclick="continueQuiz()">Fortsätt</button>' +
+    '<button class="btn btn-outline" onclick="freshStart()">Börja om</button>' +
+    '</div></div>';
+}
+
+function continueQuiz() {
+  const saved = loadProgress();
+  if (saved) {
+    current = saved.currentQuestion;
+    score = saved.score;
+    answers = saved.answers || [];
+  }
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+function freshStart() {
+  clearProgress();
+  current = 0; score = 0; answers = [];
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  const q = quizData[current];
+  const isSingle = q.type === 'single';
+  const pct = (current / quizData.length) * 100;
+
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (current + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  document.getElementById('typeBadge').textContent = isSingle
+    ? 'Enval – välj ett alternativ'
+    : 'Flerval – ett eller flera alternativ kan vara rätta';
+
+  document.getElementById('questionText').textContent = q.q;
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+
+  q.opts.forEach(function(opt, i) {
+    var label = document.createElement('label');
+    label.className = 'option-label';
+
+    var input = document.createElement('input');
+    input.type = isSingle ? 'radio' : 'checkbox';
+    input.className = 'option-input';
+    input.id = 'opt' + i;
+    if (isSingle) input.name = 'quiz-option';
+
+    var textSpan = document.createElement('span');
+    textSpan.className = 'option-text';
+    textSpan.textContent = ['A', 'B', 'C', 'D'][i] + ') ' + opt.t;
+
+    label.appendChild(input);
+    label.appendChild(textSpan);
+
+    input.addEventListener('change', function() {
+      if (checked) return;
+      if (isSingle) {
+        list.querySelectorAll('.option-label').forEach(function(l) {
+          l.classList.remove('selected');
+        });
+      }
+      label.classList.toggle('selected', input.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  document.getElementById('checkBtn').style.display = 'inline-block';
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('nextBtn').style.display = 'none';
+
+  var fb = document.getElementById('feedbackBox');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+  checked = false;
+}
+
+// ── Check answer ──────────────────────────────────────────────────
+function checkAnswer() {
+  if (checked) return;
+  checked = true;
+
+  var q = quizData[current];
+  var isSingle = q.type === 'single';
+  var labels = document.querySelectorAll('.option-label');
+  var inputs = isSingle
+    ? document.querySelectorAll('input[name="quiz-option"]')
+    : document.querySelectorAll('.option-input');
+
+  var selected = [];
+  inputs.forEach(function(inp, i) { if (inp.checked) selected.push(i); });
+
+  var correct = [];
+  q.opts.forEach(function(opt, i) { if (opt.c) correct.push(i); });
+
+  labels.forEach(function(label, i) {
+    label.classList.add('disabled', 'checked');
+    var inp = label.querySelector('input');
+    inp.disabled = true;
+    var textSpan = label.querySelector('.option-text');
+    var isCorrect = q.opts[i].c;
+    var wasSelected = inp.checked;
+
+    if (isCorrect) {
+      label.classList.add('correct');
+      var ind = document.createElement('span');
+      ind.className = 'option-indicator';
+      ind.textContent = '✓';
+      label.insertBefore(ind, textSpan);
+    } else if (wasSelected && !isCorrect) {
+      label.classList.add('incorrect');
+      var ind2 = document.createElement('span');
+      ind2.className = 'option-indicator';
+      ind2.textContent = '✗';
+      label.insertBefore(ind2, textSpan);
+    }
+    label.classList.remove('selected');
+  });
+
+  var correctSet = new Set(correct);
+  var isExact = selected.length === correct.length &&
+                selected.every(function(i) { return correctSet.has(i); });
+  var isPartial = !isSingle && !isExact && selected.length > 0 &&
+                  selected.some(function(i) { return correctSet.has(i); });
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  var fbText = document.getElementById('feedbackText');
+
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt.';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+
+  fbText.textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+// ── Navigation ────────────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= quizData.length) {
+    showResults();
+  } else {
+    render();
+  }
+}
+
+function showResults() {
+  clearProgress();
+  document.getElementById('progressText').textContent = 'Resultat';
+  document.getElementById('progressBar').style.width = '100%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div style="text-align:center; padding:1rem 0;">' +
+    '<div style="font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:1.5rem;">Resultat</div>' +
+    '<div style="font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1;">' + score + '</div>' +
+    '<div style="font-size:1rem;color:var(--text-secondary);margin-top:0.5rem;margin-bottom:0.25rem;">av ' + quizData.length + ' rätt</div>' +
+    '<div style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:2rem;">Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor.</div>' +
+    '<button class="btn" onclick="restart()">Starta om</button>' +
+    '</div>';
+}
+
+function restart() {
+  clearProgress();
+  current = 0; score = 0; answers = []; checked = false;
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

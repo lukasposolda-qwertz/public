@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Medeltiden Del 2</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #e84393;
+    --accent-hover: #c0306f;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-bg: #fffbeb;
+    --partial-border: #d97706;
+    --partial-text: #92400e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .quiz-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .quiz-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .quiz-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .question-type-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 1rem;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .option-label:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: #fff5f9;
+  }
+
+  .option-label.selected:not(.checked) {
+    border-color: var(--accent);
+    background: #fce7f3;
+  }
+
+  .option-label.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .option-label.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .option-label.disabled {
+    cursor: default;
+  }
+
+  .option-input {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .option-text { flex: 1; }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-outline:hover:not(:disabled) { background: #fce7f3; }
+
+  .btn-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .feedback-box {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0 10px 10px 0;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-box.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .feedback-box.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+  .feedback-box.partial { border-color: var(--partial-border); background: var(--partial-bg); color: var(--partial-text); }
+
+  .feedback-verdict { font-weight: 700; margin-bottom: 0.4rem; }
+
+  .resume-screen { text-align: center; padding: 1rem 0; }
+  .resume-title { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
+  .resume-info { font-size: 1rem; color: var(--text-secondary); margin-bottom: 0.4rem; }
+  .resume-score { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 2rem; }
+
+  .results-screen { text-align: center; padding: 1rem 0; }
+  .results-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .results-score { font-size: 3rem; font-weight: 900; color: var(--accent); margin: 1rem 0; }
+  .results-label { font-size: 1rem; color: var(--text-secondary); margin-bottom: 2rem; }
+
+  @media (max-width: 480px) {
+    .card { padding: 1.25rem; }
+    .quiz-title { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-title">Medeltiden Del 2</div>
+    <div class="quiz-subtitle">Historia – Handel, Hansan &amp; Kalmarunionen | Årkurs 5–7</div>
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">Fråga 1 av 50</span>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionCard">
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz-progress-medeltiden-del2';
+
+const quizData = [
+  // ── Städer och handel ──────────────────────────────────────────────
+  {
+    q: "I början av 1400-talet växte städerna igen efter digerdöden. Vad kallades den skatt som de styrande tog ut på varorna i staden?",
+    type: "single",
+    opts: [
+      { t: "Tionde", c: false },
+      { t: "Tullar", c: true },
+      { t: "Arrende", c: false },
+      { t: "Skatteprivilegier", c: false }
+    ],
+    fb: "Den skatt som togs ut på varor för att kontrollera handeln kallades tullar. De styrande i städerna gjorde stora vinster på dessa tullar."
+  },
+  {
+    q: "Vad kallades de invånare i en stad som betalade skatt och hade rätt att bedriva handel och hantverk?",
+    type: "single",
+    opts: [
+      { t: "Frälsemän", c: false },
+      { t: "Stormän", c: false },
+      { t: "Borgare", c: true },
+      { t: "Bönder", c: false }
+    ],
+    fb: "De kallades borgare. Det var borgarna som betalade skatt i staden och som hade stadsprivilegier."
+  },
+  {
+    q: "Vad innebar stadsprivilegier under medeltiden?",
+    type: "single",
+    opts: [
+      { t: "Att alla invånare i en stad fick rösta om hur skatten skulle användas", c: false },
+      { t: "Att borgarna slapp betala tullar", c: false },
+      { t: "Att det var endast borgare som fick syssla med handel och hantverk", c: true },
+      { t: "Att borgarna hade rätt att bära vapen i staden", c: false }
+    ],
+    fb: "Stadsprivilegier innebar att handel och hantverk var förbehållet borgarna. Ingen annan fick driva dessa verksamheter i staden."
+  },
+  {
+    q: "Varför låg de flesta städerna vid vattnet under medeltiden?",
+    type: "single",
+    opts: [
+      { t: "Det var lättare att försvara en stad vid vattnet", c: false },
+      { t: "Det var enklast att frakta varor med båt", c: true },
+      { t: "Vatten behövdes för att driva kvarnar i varje stad", c: false },
+      { t: "Fiskhantering var den viktigaste näringen", c: false }
+    ],
+    fb: "Under medeltiden var sjötransport den effektivaste och billigaste metoden att frakta varor. Därför anlades städerna nära sjöar, floder eller hav."
+  },
+  {
+    q: "Vilka påståenden om hur en medeltida stad kunde se ut stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Städerna hade ofta en mur, vallgrav eller borg som skydd mot fiender", c: true },
+      { t: "I mitten av staden låg en kyrka och ett rådhus byggda i sten", c: true },
+      { t: "Alla hus i staden var byggda i sten för att stå emot bränder", c: false },
+      { t: "Handelsmännens gårdar låg mitt i staden med byggnader för deras varor", c: true }
+    ],
+    fb: "Städerna hade murar, vallgravar eller borgar som skydd. I mitten låg en kyrka och ett rådhus i sten, medan övriga hus var av trä. Handelsmännen hade sina gårdar centralt i staden."
+  },
+  // ── Östersjön och Hansan ──────────────────────────────────────────
+  {
+    q: "Varför var Östersjön viktig under medeltiden?",
+    type: "single",
+    opts: [
+      { t: "Östersjön var lätt att försvara mot sjörövare", c: false },
+      { t: "Östersjön var en viktig handelssträcka där många skepp färdades", c: true },
+      { t: "Fisket i Östersjön försörjde hela Europa", c: false },
+      { t: "Östersjön var den enda farbara vattenvägen i Norden", c: false }
+    ],
+    fb: "Östersjön var en central handelssträcka under medeltiden. Många skepp med varor färdades längs dess kuster, vilket gjorde det till ett strategiskt viktigt hav."
+  },
+  {
+    q: "Vem bildade Hansan och varför?",
+    type: "single",
+    opts: [
+      { t: "Svenska stormän bildade Hansan för att kontrollera handeln i Östersjön", c: false },
+      { t: "Tyska köpmän bildade Hansan för att kunna transportera varor billigare och säkrare", c: true },
+      { t: "Danska och norska kungen bildade Hansan för att bekämpa sjörövare", c: false },
+      { t: "Kyrkan bildade Hansan för att finansiera katedralbyggen", c: false }
+    ],
+    fb: "Tyska köpmän som bosatte sig vid Östersjöns städer bildade handelsförbundet Hansan. Målet var att samarbeta för billigare och säkrare transport av varor."
+  },
+  {
+    q: "Vilka påståenden om Hansan stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Hansan hade egna krigsfartyg för att skydda sig mot sjörövare", c: true },
+      { t: "Hansan börjare som ett förbund av köpmän och blev sedan ett förbund av hela städer", c: true },
+      { t: "Hansan grundades av den svenske kungen för att kontrollera Östersjöhandeln", c: false },
+      { t: "Hansan samarbetade för att kunna transportera varor billigare", c: true }
+    ],
+    fb: "Hansan hade egna krigsfartyg mot sjörövare, och det som började som ett köpmannaförbund växte till ett förbund mellan hela städer. Det var tyska köpmän – inte den svenske kungen – som grundade det."
+  },
+  {
+    q: "Vad hette den viktigaste hansestaden?",
+    type: "single",
+    opts: [
+      { t: "Hamburg", c: false },
+      { t: "Bremen", c: false },
+      { t: "Lübeck", c: true },
+      { t: "Visby", c: false }
+    ],
+    fb: "Lübeck var den viktigaste och mäktigaste av hansestäderna. Den låg strategiskt vid Östersjöns västra ingång."
+  },
+  {
+    q: "Vilken stad var Nordens största och modernaste under medeltiden?",
+    type: "single",
+    opts: [
+      { t: "Stockholm", c: false },
+      { t: "Köpenhamn", c: false },
+      { t: "Bergen", c: false },
+      { t: "Visby", c: true }
+    ],
+    fb: "Visby på Gotland var Nordens största och modernaste stad under medeltiden, tack vare sitt strategiska läge mitt i Östersjön."
+  },
+  {
+    q: "Varför blev Visby så stor och viktig under medeltiden?",
+    type: "multi",
+    opts: [
+      { t: "Visby låg mitt i Östersjön där många handelsskepp passerade", c: true },
+      { t: "Många tyska köpmän bosatte sig i Visby", c: true },
+      { t: "Visby var säte för den nordiska kyrkan", c: false },
+      { t: "Köpmännen i Visby byggde en mur runt staden som skydd mot inkräktare", c: true }
+    ],
+    fb: "Visbys storhet berodde på det geografiska läget mitt i Östersjöns handelsstråk och de många tyska köpmännen som bosatte sig där. Köpmännen lät också bygga en mur runt staden."
+  },
+  // ── Ståndssamhället ────────────────────────────────────────────────
+  {
+    q: "Vad kallas det samhällssystem som växte fram i Europa under medeltiden, där människor delades in i grupper?",
+    type: "single",
+    opts: [
+      { t: "Feodalsamhället", c: false },
+      { t: "Ståndssamhället", c: true },
+      { t: "Skråsamhället", c: false },
+      { t: "Borgarsamhället", c: false }
+    ],
+    fb: "Det kallas ståndssamhälle. Systemet innebar att alla invånare tillhörde en viss grupp – ett stånd – med tillhörande rättigheter och skyldigheter."
+  },
+  {
+    q: "Vilka fyra ständer fanns det i Sverige under medeltiden?",
+    type: "multi",
+    opts: [
+      { t: "Adel", c: true },
+      { t: "Präster", c: true },
+      { t: "Borgare", c: true },
+      { t: "Bönder", c: true }
+    ],
+    fb: "De fyra ständerna var adel, präster, borgare och bönder. Varje stånd hade olika rättigheter och skyldigheter i samhället."
+  },
+  {
+    q: "Hur länge bestod ståndssamhällets indelning i Sverige?",
+    type: "single",
+    opts: [
+      { t: "Till slutet av 1700-talet", c: false },
+      { t: "Till 1800-talet", c: true },
+      { t: "Till den svenska reformationen på 1500-talet", c: false },
+      { t: "Det avskaffades i och med Kalmarunionen", c: false }
+    ],
+    fb: "Ståndssamhällets indelning bestod ända till 1800-talet – alltså i flera hundra år efter medeltiden."
+  },
+  {
+    q: "Vilka påståenden om adeln stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Adeln var det rikaste av de fyra ständerna", c: true },
+      { t: "Adeln betalade inte skatt till kungen", c: true },
+      { t: "Adeln var tvungen att hjälpa kungen med soldater och krigsrustade hästar om det blev krig", c: true },
+      { t: "Adeln bodde alltid i städerna och bedrev handel", c: false }
+    ],
+    fb: "Adeln var det rikaste ståndet, betalade inte skatt, men var skyldiga att ställa upp med soldater och hästar i krig. De bodde på bondgårdar eller slott – inte nödvändigtvis i städerna."
+  },
+  {
+    q: "Vad hade prästerna för uppgifter i det medeltida samhället?",
+    type: "multi",
+    opts: [
+      { t: "De höll gudstjänster, dop, bröllop och begravningar", c: true },
+      { t: "De lärde ut kristendomen till befolkningen", c: true },
+      { t: "De betalade skatt till kungen precis som borgarna", c: false },
+      { t: "De bad böner för människornas själar", c: true }
+    ],
+    fb: "Prästerna hade hand om alla religiösa ceremonier och undervisade i kristendom. De bad böner för folks själar – ett arbete som ansågs så viktigt att de slapp betala skatt till kungen."
+  },
+  {
+    q: "Varför behövde prästerna inte betala skatt till regenten?",
+    type: "single",
+    opts: [
+      { t: "Prästerna var för fattiga för att kunna betala skatt", c: false },
+      { t: "Kyrkan hade ett särskilt avtal med kungen om skattefrihet", c: false },
+      { t: "Att be böner för människornas själar ansågs vara ett så viktigt arbete att de slapp betala skatt", c: true },
+      { t: "Prästerna betalade istället skatt direkt till påven", c: false }
+    ],
+    fb: "Prästernas bön för folks själar ansågs vara en så viktig samhällsuppgift att de inte behövde betala skatt till kungen. Det var en form av bidrag till samhällets andliga välmående."
+  },
+  {
+    q: "Vilka präster hade störst makt i det medeltida samhället?",
+    type: "single",
+    opts: [
+      { t: "Sockenpräster på landsbygden med flest församlingsbor", c: false },
+      { t: "Biskoparna, som hade lång utbildning och de mäktigaste satt i riksrådet", c: true },
+      { t: "Klostermunkar som ägde mest mark", c: false },
+      { t: "De präster som tjänstgjorde vid kungliga slottskapell", c: false }
+    ],
+    fb: "Biskoparna var de mäktigaste prästerna. De hade lång utbildning och de allra mäktigaste biskoparna satt med i riksrådet – det organ som rådde kungen."
+  },
+  {
+    q: "Vilka påståenden om borgarna i ståndssamhället stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Borgarna bodde i städerna", c: true },
+      { t: "Borgarna var hantverkare eller handelsmän", c: true },
+      { t: "Borgarna betalade skatt till staden", c: true },
+      { t: "Borgarna var befriade från alla samhällstjänster", c: false }
+    ],
+    fb: "Borgarna var stadsboende hantverkare och handelsmän som betalade skatt till staden. De var också tvungna att delta i uppgifter som brandvakt och stadsbevakning."
+  },
+  {
+    q: "Vilket stånd var det största i det medeltida Sverige?",
+    type: "single",
+    opts: [
+      { t: "Adeln", c: false },
+      { t: "Prästerna", c: false },
+      { t: "Borgarna", c: false },
+      { t: "Bönderna", c: true }
+    ],
+    fb: "Bönderna var det i särklass största ståndet, eftersom de allra flesta människor i medeltidens Sverige levde av jordbruk."
+  },
+  {
+    q: "Vad var skillnaden mellan en skattebonde och en frälsebonde?",
+    type: "single",
+    opts: [
+      { t: "Skattebonden arbetade för adeln, frälsebonden ägde sin gård fritt", c: false },
+      { t: "Skattebonden ägde sin gård och betalade skatt till regenten; frälsebonden arrenderade mark av adeln eller kyrkan och var inte skyldig skatt till regenten", c: true },
+      { t: "Skattebonden betalade tionde till kyrkan, frälsebonden var befriad från tionde", c: false },
+      { t: "Det var ingen skillnad – alla bönder hade samma skyldigheter", c: false }
+    ],
+    fb: "Skattebonden ägde sin gård och betalade skatt direkt till regenten. Frälsebonden hyrde (arrenderade) sin mark av en adelsman eller kyrkan och betalade inte skatt till regenten – men var tvungen att arbeta för sin hyresvärd några dagar per år."
+  },
+  {
+    q: "Vad innebar tionde för bönderna under medeltiden?",
+    type: "single",
+    opts: [
+      { t: "Att man gav en tiondel av sin skörd och produktion till kyrkan", c: true },
+      { t: "Att man betalade tio procent av sin inkomst till kungen", c: false },
+      { t: "Att man var tvungen att arbeta tio dagar per år åt adeln", c: false },
+      { t: "En frivillig gåva man gav till prästerna", c: false }
+    ],
+    fb: "Tionde innebar att alla bönder gav en tiondel av allt arbetet gav – spannmål, boskap, kött osv. – till kyrkan. Det var en obligatorisk skatt, inte en frivillig gåva."
+  },
+  {
+    q: "Vilka tillhörde INTE något av de fyra ständerna i ståndssamhället?",
+    type: "multi",
+    opts: [
+      { t: "Tiggare", c: true },
+      { t: "Gamla människor utan familj", c: true },
+      { t: "Arbetare på bondgårdar och adelsgårdar", c: true },
+      { t: "Biskopar", c: false }
+    ],
+    fb: "Utanför ständerna stod tiggare, gamla utan familj och de som arbetade som drängar och pigor på andras gårdar. Biskopar tillhörde prästeståndet."
+  },
+  // ── Magnus Eriksson och Albrekt ────────────────────────────────────
+  {
+    q: "Vad hände när kung Magnus Eriksson tvingades fly till Norge?",
+    type: "single",
+    opts: [
+      { t: "Erik av Pommern valdes till ny kung i Sverige", c: false },
+      { t: "Albrekt av Mecklenburg valdes till kung i Sverige", c: true },
+      { t: "Drottning Margareta tog direkt makten i Sverige", c: false },
+      { t: "Sverige regerades av riksrådet utan kung i flera år", c: false }
+    ],
+    fb: "När Magnus Eriksson tvingades fly valdes Albrekt av Mecklenburg till kung i Sverige."
+  },
+  {
+    q: "Vilka problem uppstod i Sverige under Albrekts styre?",
+    type: "multi",
+    opts: [
+      { t: "Albrekt var tysk och snart bestämde tyskar i städerna, krigsmakten och kungens råd", c: true },
+      { t: "Stormännen och bönderna gjorde uppror mot Albrekts styre", c: true },
+      { t: "Albrekt förstörde Kalmarunionen och startade krig mot Danmark", c: false },
+      { t: "Man bad Danmark om hjälp mot Albrekt", c: true }
+    ],
+    fb: "Albrekt var tysk, och det ledde till att tyskar fick maktpositioner överallt. Stormännen och bönderna reste sig i uppror och vände sig till Danmark om hjälp."
+  },
+  {
+    q: "Vem regerade Danmark när de svenska stormännen bad om hjälp mot Albrekt av Mecklenburg?",
+    type: "single",
+    opts: [
+      { t: "Erik av Pommern", c: false },
+      { t: "Sten Sture den äldre", c: false },
+      { t: "Drottning Margareta", c: true },
+      { t: "Kristian II", c: false }
+    ],
+    fb: "Det var drottning Margareta som regerade Danmark när de svenska stormännen sökte hjälp. Hon var känd som en skicklig politiker."
+  },
+  // ── Drottning Margareta och Kalmarunionen ─────────────────────────
+  {
+    q: "Vilka länder regerade drottning Margareta över?",
+    type: "single",
+    opts: [
+      { t: "Danmark och Norge", c: false },
+      { t: "Sverige och Danmark", c: false },
+      { t: "Sverige, Danmark och Norge – hela Norden", c: true },
+      { t: "Sverige, Danmark, Norge och Finland", c: false }
+    ],
+    fb: "Drottning Margareta regerade över hela Norden: Sverige, Danmark och Norge."
+  },
+  {
+    q: "Vad var Margareta särskilt känd för som politiker?",
+    type: "single",
+    opts: [
+      { t: "Att hon ledde militära fälttåg mot Hansan", c: false },
+      { t: "Att hon var särskilt duktig på att lösa konflikter utan våld", c: true },
+      { t: "Att hon avskaffade ståndssamhället i hela Norden", c: false },
+      { t: "Att hon var den första kvinnan att grunda en union", c: false }
+    ],
+    fb: "Margareta var känd för sin förmåga att lösa konflikter diplomatiskt, utan att ta till vapen."
+  },
+  {
+    q: "Hur kom Kalmarunionen till?",
+    type: "single",
+    opts: [
+      { t: "Hansan tvingade Nordens länder att bilda en union", c: false },
+      { t: "Margareta samlade Nordens biskopar i Kalmar och lät kröna sin fosterson Erik av Pommern till kung", c: true },
+      { t: "Erik av Pommern erövrade Sverige och Danmark med militär styrka", c: false },
+      { t: "Riksråden i de tre länderna röstade för att bilda en union", c: false }
+    ],
+    fb: "Margareta samlade Nordens biskopar i Kalmar där hennes fosterson Erik av Pommern kröntes till kung över hela Norden. Så bildades Kalmarunionen."
+  },
+  {
+    q: "Vad innebar Kalmarunionen?",
+    type: "multi",
+    opts: [
+      { t: "De nordiska länderna skulle ha samma kung", c: true },
+      { t: "De nordiska länderna behöll sina egna lagar", c: true },
+      { t: "Länderna skulle samarbeta istället för att kriga mot varandra", c: true },
+      { t: "Länderna skulle dela på samma riksråd och lagstiftning", c: false }
+    ],
+    fb: "Kalmarunionen innebar gemensam kung men egna lagar i varje land. Syftet var samarbete och fred länderna emellan – inte fullständig sammanslagning."
+  },
+  {
+    q: "Vad var Erik av Pommerns förhållande till drottning Margareta?",
+    type: "single",
+    opts: [
+      { t: "Han var hennes son", c: false },
+      { t: "Han var hennes brorson", c: false },
+      { t: "Han var hennes fosterson", c: true },
+      { t: "Han var hennes make", c: false }
+    ],
+    fb: "Erik av Pommern var Margaretas fosterson. Hon bestämde att han skulle ta över makten efter henne."
+  },
+  {
+    q: "Varför stiftade Erik av Pommern en tull i Öresund?",
+    type: "single",
+    opts: [
+      { t: "För att finansiera bygget av nya skepp åt unionen", c: false },
+      { t: "För att minska Hansans makt i Östersjön", c: true },
+      { t: "För att hindra svenska stormän från att fly landet", c: false },
+      { t: "På uppmaning av kyrkan för att finansiera korsfarare", c: false }
+    ],
+    fb: "Öresundstullen var riktad mot Hansan för att minska dess dominans i Östersjöhandeln. Alla fartyg som seglade genom det smala sundet mellan Sverige och Danmark tvingades betala."
+  },
+  {
+    q: "Var ligger Öresund?",
+    type: "single",
+    opts: [
+      { t: "Mellan Sverige och Finland", c: false },
+      { t: "Mellan Norge och Danmark", c: false },
+      { t: "Mellan Danmark och Sverige", c: true },
+      { t: "Mellan Gotland och fastlandet", c: false }
+    ],
+    fb: "Öresund är det smala vattenområdet mellan Danmark och Sverige. Den som kontrollerade detta sund kontrollerade all trafik in i och ut ur Östersjön."
+  },
+  // ── Sturepartiet ──────────────────────────────────────────────────
+  {
+    q: "Vad ville Sturepartiet?",
+    type: "single",
+    opts: [
+      { t: "Att Sverige skulle gå ur Kalmarunionen och bli självständigt", c: true },
+      { t: "Att Sverige och Danmark skulle bilda ett ännu starkare förbund", c: false },
+      { t: "Att Hansan skulle få mer makt i Sverige", c: false },
+      { t: "Att kyrkan skulle styra Sverige utan en kung", c: false }
+    ],
+    fb: "Sturepartiet kämpade för svensk självständighet och ville bryta sig ur Kalmarunionen."
+  },
+  {
+    q: "Vem var ledare för Sturepartiet?",
+    type: "single",
+    opts: [
+      { t: "Gustav Trolle", c: false },
+      { t: "Erik av Pommern", c: false },
+      { t: "Kristian II", c: false },
+      { t: "Sten Sture den äldre", c: true }
+    ],
+    fb: "Sten Sture den äldre ledde Sturepartiet och var riksföreståndare i Sverige. Han var en av de främsta förespråkarna för svensk självständighet."
+  },
+  {
+    q: "Vilket parti tillhörde Gustav Trolle?",
+    type: "single",
+    opts: [
+      { t: "Sturepartiet", c: false },
+      { t: "Unionspartiet", c: true },
+      { t: "Hansapartiet", c: false },
+      { t: "Riksrådspartiet", c: false }
+    ],
+    fb: "Gustav Trolle tillhörde Unionspartiet, som stod på danskarnas sida och ville bevara Kalmarunionen."
+  },
+  {
+    q: "Vad var Unionspartiet för något och vem var det motståndare till?",
+    type: "single",
+    opts: [
+      { t: "Unionspartiet var allierat med Hansan och motståndare till kyrkan", c: false },
+      { t: "Unionspartiet stod på danskarnas sida och var motståndare till Sturepartiet", c: true },
+      { t: "Unionspartiet ville avskaffa kungamakten och regeras av riksrådet", c: false },
+      { t: "Unionspartiet bildades av borgare som ville ha mer handelsfrihet", c: false }
+    ],
+    fb: "Unionspartiet ville bevara Kalmarunionen och stod på Danskarnas sida – i direkt opposition till Sturepartiets strävan efter svensk självständighet."
+  },
+  // ── Stockholms blodbad ────────────────────────────────────────────
+  {
+    q: "Vem bjöd in de svenska biskoparna och stormännen till den fest som ledde till Stockholms blodbad?",
+    type: "single",
+    opts: [
+      { t: "Gustav Trolle", c: false },
+      { t: "Erik av Pommern", c: false },
+      { t: "Kristian II", c: true },
+      { t: "Sten Sture den äldre", c: false }
+    ],
+    fb: "Det var den danske kungen Kristian II som bjöd in de svenska ledarna till fest i Stockholm slott i samband med sin kröning till kung."
+  },
+  {
+    q: "Vad hände när portarna till Stockholm slott slogs igen under festen?",
+    type: "single",
+    opts: [
+      { t: "Gästerna låstes in och bröllopsceremoni hölls i hemlighet", c: false },
+      { t: "Gästerna förvandlades från festdeltagare till fångar", c: true },
+      { t: "Kungen höll ett hemligt möte med riksrådet", c: false },
+      { t: "Inget ovanligt hände – portarna stängdes varje kväll", c: false }
+    ],
+    fb: "Fällan slogs igen – gästerna blev fångar. Det som framstod som en festlig kröning visade sig vara en dödsfälla."
+  },
+  {
+    q: "Hur motiverade Gustav Trolle de dödsdomar som utfärdades under Stockholms blodbad?",
+    type: "single",
+    opts: [
+      { t: "Han anklagade dem för att ha förrått Kalmarunionen och den danske kungen", c: false },
+      { t: "Han anklagade dem för att inte tro på den rätta kristna läran – kätteri – vars straff var döden", c: true },
+      { t: "Han hävdade att de hade mördat hans företrädare", c: false },
+      { t: "Han anklagade dem för skatteflykt och uppror mot riksrådet", c: false }
+    ],
+    fb: "Gustav Trolle (som nyligen avsatts av Sturepartiet) anklagade alla som deltagit i avsättningen för kätteri – att inte tro på rätt kristen lära. Straffet för detta var döden."
+  },
+  {
+    q: "Vilka påståenden om Stockholms blodbad stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Först halshöggs två biskopar på Stortorget", c: true },
+      { t: "Mördandet pågick under flera dagar", c: true },
+      { t: "Nästan 100 personer dödades totalt", c: true },
+      { t: "Blodoffer fördes ut ur staden och begrovs i hemlighet", c: false }
+    ],
+    fb: "Avrättningarna började med två biskopar och fortsatte med frälsemän och stadsrepresentanter. Mördandet pågick i flera dagar och nästan 100 personer dödades."
+  },
+  {
+    q: "Varför var Gustav Trolle så hatisk mot Sturepartiet?",
+    type: "single",
+    opts: [
+      { t: "Sturepartiet hade avsatt honom som ärkebiskop", c: true },
+      { t: "Sturepartiet hade lagt beslag på hans familjs ägor", c: false },
+      { t: "Sturepartiet hade hindrat honom från att bli kung", c: false },
+      { t: "Sturepartiet hade vägrat betala tionde till hans kyrka", c: false }
+    ],
+    fb: "Gustav Trolle hade blivit avsatt av Sturepartiet och var därför uppfylld av hämndbegär. Stockholms blodbad gav honom möjligheten att straffa alla som deltagit i avsättningen."
+  },
+  {
+    q: "I samband med vilken händelse bjöd Kristian II in de svenska ledarna till Stockholm slott?",
+    type: "single",
+    opts: [
+      { t: "En fredskonferens efter kriget mot Hansan", c: false },
+      { t: "Sin kröning till kung i Sverige", c: true },
+      { t: "Firandet av Kalmarunionens hundraårsjubileum", c: false },
+      { t: "Ett riksrådsmöte om nya skatteregler", c: false }
+    ],
+    fb: "Kristian II bjöd in i samband med sin kröning till kung, vilket gav tillfället ett sken av legitimitet och festlighet – tills fällan slogs igen."
+  },
+  // ── Blandfrågor och repetition ─────────────────────────────────────
+  {
+    q: "Koppla ihop – vilken stad och vilken organisation hör ihop?",
+    type: "single",
+    opts: [
+      { t: "Stockholm – Hansan", c: false },
+      { t: "Kalmar – Sturepartiet", c: false },
+      { t: "Lübeck – Hansan", c: true },
+      { t: "Visby – Kalmarunionen", c: false }
+    ],
+    fb: "Lübeck var Hansans viktigaste stad och centrum för hela handelsförbundet. Kalmar är förknippat med unionen som bildades där, och Visby med den nordiska handelsplatsen."
+  },
+  {
+    q: "Vilka ständer slapp att betala skatt till regenten?",
+    type: "multi",
+    opts: [
+      { t: "Adeln", c: true },
+      { t: "Prästerna", c: true },
+      { t: "Borgarna", c: false },
+      { t: "Bönderna", c: false }
+    ],
+    fb: "Adeln och prästerna betalade inte skatt till regenten. Adeln bidrog istället med militär styrka, och prästerna med bön och religiösa tjänster. Borgare och bönder var däremot skattskyldiga."
+  },
+  {
+    q: "Vilken politisk rörelse stod i opposition mot Kalmarunionen och kämpade för Sveriges självständighet?",
+    type: "single",
+    opts: [
+      { t: "Unionspartiet", c: false },
+      { t: "Hansaförbundet", c: false },
+      { t: "Sturepartiet", c: true },
+      { t: "Riksrådet", c: false }
+    ],
+    fb: "Sturepartiet, lett av Sten Sture den äldre, kämpade för att Sverige skulle bryta sig ur Kalmarunionen och styra sig självt."
+  },
+  {
+    q: "Vad var den direkta orsaken till att man i Sverige sökte hjälp hos Danmark mot Albrekt av Mecklenburg?",
+    type: "single",
+    opts: [
+      { t: "Albrekt vägrade betala tionde till kyrkan", c: false },
+      { t: "Albrekt var tysk och lät tyskar ta kontrollen över städer, krigsmakt och råd", c: true },
+      { t: "Albrekt försökte upplösa Hansan", c: false },
+      { t: "Albrekt avskaffade ståndssamhällets privilegier", c: false }
+    ],
+    fb: "Det faktum att Albrekt – som var tysk – lät tyskar besätta maktpositioner överallt i det svenska samhället provocerade stormännen och bönderna till uppror."
+  },
+  {
+    q: "Vilket av följande alternativ bäst beskriver Kalmarunionens syfte?",
+    type: "single",
+    opts: [
+      { t: "Att ena Norden till ett rike med gemensamma lagar och en gemensam kung", c: false },
+      { t: "Att de nordiska länderna skulle ha samma kung men egna lagar och samarbeta istället för att kriga", c: true },
+      { t: "Att bilda en militärallians mot Hansan och erövra Lübeck", c: false },
+      { t: "Att skapa en gemensam nordisk kyrka oberoende av Rom", c: false }
+    ],
+    fb: "Kalmarunionen innebar gemensam kung (Erik av Pommern), men egna lagar i respektive land. Syftet var samarbete och fred – inte fullständig statsunion."
+  },
+  {
+    q: "Vilka påståenden stämmer om frälsebönder?",
+    type: "multi",
+    opts: [
+      { t: "De arrenderade (hyrde) sin gård av en adelsman eller kyrkan", c: true },
+      { t: "De betalade inte skatt till regenten", c: true },
+      { t: "De var tvungna att arbeta ett antal dagar per år åt adelsmannen eller kyrkan", c: true },
+      { t: "De ägde sin gård fritt och fick sälja den till vem de ville", c: false }
+    ],
+    fb: "Frälsebönder hyrde sin mark, betalade inte direkt skatt till kungen, men var däremot skyldiga att arbeta åt sin hyresvärd. De ägde inte gården utan arrenderade den."
+  },
+  {
+    q: "Vad hände med blodet från de avrättade under Stockholms blodbad?",
+    type: "single",
+    opts: [
+      { t: "Blodet rann längs gatorna och ut i Mälaren", c: false },
+      { t: "Det regnade och blodet sköljdes från Stortorget ut längs gränderna", c: true },
+      { t: "Kroppen och blodet bars bort och begrovs i hemlighet utanför staden", c: false },
+      { t: "Invånarna tvingades städa upp torget under Kristian II:s bevakning", c: false }
+    ],
+    fb: "Enligt historiska skildringar regnade det under blodbadet och blodet från de avrättade sköljdes från Stortorget ut längs stadens gränder – en fruktansvärd syn."
+  },
+  {
+    q: "Vilka grupper stod på varsin sida i konflikten om Kalmarunionen i Sverige?",
+    type: "single",
+    opts: [
+      { t: "Hansan (pro-union) mot Sturepartiet (anti-union)", c: false },
+      { t: "Sturepartiet (pro-självständighet) mot Unionspartiet (pro-union)", c: true },
+      { t: "Adeln (pro-union) mot bönderna (anti-union)", c: false },
+      { t: "Kyrkan (pro-union) mot borgarna (anti-union)", c: false }
+    ],
+    fb: "Sturepartiet kämpade för svensk självständighet, medan Unionspartiet (med Gustav Trolle) ville behålla Kalmarunionen och stod på Danmarks sida."
+  },
+  {
+    q: "Vilka av dessa händelser skedde i kronologisk ordning från äldst till yngst?",
+    type: "single",
+    opts: [
+      { t: "Kalmarunionen → Stockholms blodbad → Albrekt av Mecklenburg avsätts", c: false },
+      { t: "Albrekt av Mecklenburg väljs → Kalmarunionen bildas → Stockholms blodbad", c: true },
+      { t: "Stockholms blodbad → Kalmarunionen bildas → Albrekt av Mecklenburg väljs", c: false },
+      { t: "Kalmarunionen bildas → Albrekt av Mecklenburg väljs → Stockholms blodbad", c: false }
+    ],
+    fb: "Albrekt av Mecklenburg valdes till kung (sent 1300-tal) → därefter bildades Kalmarunionen 1397 → och sist kom Stockholms blodbad 1520."
+  },
+  {
+    q: "Vilka påståenden om Hansan och Kalmarunionen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Kalmarunionen och Hansan var ofta i konflikt med varandra", c: true },
+      { t: "Erik av Pommern införde Öresundstullen för att begränsa Hansans makt", c: true },
+      { t: "Hansan var ett förbund av nordiska städer mot tyska köpmän", c: false },
+      { t: "Öresund var den viktigaste passagen in i och ut ur Östersjön", c: true }
+    ],
+    fb: "Unionen och Hansan var rivaler. Erik av Pommern använde Öresundstullen som ett ekonomiskt vapen mot Hansan. Öresund var strategiskt nyckeln till Östersjöhandeln. Hansan var ett tyskt – inte nordiskt – förbund."
+  },
+  {
+    q: "Vilken roll spelade kyrkan ekonomiskt i ståndssamhällets Sverige?",
+    type: "multi",
+    opts: [
+      { t: "Kyrkan fick tionde av alla bönder – en tiondel av allt de producerade", c: true },
+      { t: "Frälsebönder arrenderade mark av kyrkan och betalade arbete istället för skatt", c: true },
+      { t: "Biskoparna satt i riksrådet och hade politisk makt", c: true },
+      { t: "Kyrkan betalade skatt till kungen precis som borgarna", c: false }
+    ],
+    fb: "Kyrkan var en stor ekonomisk makt: den fick tionde av alla bönder, ägde mark som frälsebönder arrenderade, och biskoparna satt i riksrådet. Kyrkan betalade inte skatt till kungen."
+  }
+];
+
+let currentIndex = 0;
+let score = 0;
+let answered = false;
+
+function saveProgress() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentIndex, score }));
+}
+
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && typeof saved.currentIndex === 'number' && saved.currentIndex < quizData.length) {
+      return saved;
+    }
+  } catch(e) {}
+  return null;
+}
+
+function renderQuestion() {
+  const q = quizData[currentIndex];
+  answered = false;
+
+  document.getElementById('progressText').textContent = `Fråga ${currentIndex + 1} av ${quizData.length}`;
+  document.getElementById('progressBar').style.width = `${(currentIndex / quizData.length) * 100}%`;
+  document.getElementById('typeBadge').textContent = q.type === 'multi' ? 'Välj alla som stämmer' : 'Välj ett svar';
+  document.getElementById('questionText').textContent = q.q;
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const label = document.createElement('label');
+    label.className = 'option-label';
+    const input = document.createElement('input');
+    input.type = q.type === 'multi' ? 'checkbox' : 'radio';
+    input.name = 'option';
+    input.value = i;
+    input.className = 'option-input';
+    input.addEventListener('change', () => {
+      if (q.type === 'single') {
+        document.querySelectorAll('.option-label').forEach(l => l.classList.remove('selected'));
+      }
+      label.classList.toggle('selected', input.checked);
+    });
+    const text = document.createElement('span');
+    text.className = 'option-text';
+    text.textContent = opt.t;
+    label.appendChild(input);
+    label.appendChild(text);
+    list.appendChild(label);
+  });
+
+  const fb = document.getElementById('feedbackBox');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+
+  document.getElementById('checkBtn').style.display = 'inline-block';
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('nextBtn').style.display = 'none';
+}
+
+function checkAnswer() {
+  if (answered) return;
+  const q = quizData[currentIndex];
+  const inputs = document.querySelectorAll('.option-input');
+  const labels = document.querySelectorAll('.option-label');
+  const selected = [];
+  inputs.forEach((inp, i) => { if (inp.checked) selected.push(i); });
+  if (selected.length === 0) return;
+
+  answered = true;
+  inputs.forEach(inp => inp.disabled = true);
+  labels.forEach(l => l.classList.add('disabled'));
+
+  const correctIndices = q.opts.reduce((acc, opt, i) => { if (opt.c) acc.push(i); return acc; }, []);
+  const isFullyCorrect = selected.length === correctIndices.length && selected.every(i => correctIndices.includes(i));
+  const isPartial = !isFullyCorrect && selected.some(i => correctIndices.includes(i)) && !selected.some(i => !correctIndices.includes(i));
+
+  labels.forEach((label, i) => {
+    if (correctIndices.includes(i)) {
+      label.classList.add('correct');
+    } else if (selected.includes(i)) {
+      label.classList.add('incorrect');
+    }
+  });
+
+  const fb = document.getElementById('feedbackBox');
+  const verdict = document.getElementById('feedbackVerdict');
+  const ftxt = document.getElementById('feedbackText');
+
+  if (isFullyCorrect) {
+    score++;
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt!';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel';
+  }
+
+  ftxt.textContent = q.fb;
+  fb.style.display = 'block';
+
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+
+  saveProgress();
+}
+
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex >= quizData.length) {
+    showResults();
+  } else {
+    renderQuestion();
+    saveProgress();
+  }
+}
+
+function showResults() {
+  localStorage.removeItem(STORAGE_KEY);
+  const pct = Math.round((score / quizData.length) * 100);
+  document.getElementById('progressText').textContent = `Klar! ${quizData.length} av ${quizData.length}`;
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('questionCard').innerHTML = `
+    <div class="results-screen">
+      <div class="results-title">Quiz klart!</div>
+      <div class="results-score">${score}/${quizData.length}</div>
+      <div class="results-label">${pct}% rätt – ${pct >= 80 ? 'Utmärkt!' : pct >= 60 ? 'Bra jobbat!' : 'Fortsätt öva!'}</div>
+      <div class="btn-row" style="justify-content:center">
+        <button class="btn" onclick="restartQuiz()">Gör om quizet</button>
+      </div>
+    </div>`;
+}
+
+function restartQuiz() {
+  currentIndex = 0;
+  score = 0;
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('questionCard').innerHTML = `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>`;
+  renderQuestion();
+}
+
+// Init
+const saved = loadProgress();
+if (saved && saved.currentIndex > 0) {
+  const resume = document.getElementById('questionCard');
+  resume.innerHTML = `
+    <div class="resume-screen">
+      <div class="resume-title">Fortsätt där du slutade?</div>
+      <div class="resume-info">Du är på fråga ${saved.currentIndex + 1} av ${quizData.length}</div>
+      <div class="resume-score">Poäng hittills: ${saved.score} rätt</div>
+      <div class="btn-row" style="justify-content:center;gap:1rem">
+        <button class="btn" onclick="resumeQuiz(${saved.currentIndex}, ${saved.score})">Fortsätt</button>
+        <button class="btn btn-outline" onclick="restartQuiz()">Börja om</button>
+      </div>
+    </div>`;
+} else {
+  renderQuestion();
+}
+
+function resumeQuiz(idx, sc) {
+  currentIndex = idx;
+  score = sc;
+  document.getElementById('questionCard').innerHTML = `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>`;
+  renderQuestion();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resultat – 360° Samarbetstest</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>360° Samarbetstest – Finansgruppen</h1>
+      <p>Resultat</p>
+    </header>
+
+    <section class="card" id="not-ready-card">
+      <h2>Resultat är inte klara än</h2>
+      <p>
+        Resultaten visas här så snart alla fyra deltagare har fyllt i sin
+        enkät och sammanställningen har körts.
+      </p>
+    </section>
+
+    <section class="card" id="login-card">
+      <h2>Logga in med din e-postadress</h2>
+      <p>För att se dina personliga resultat, ange din e-postadress.</p>
+      <form class="email-form" id="email-form">
+        <label for="email">E-postadress</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="namn.efternamn@jernhusen.se"
+          autocomplete="email"
+          required
+        />
+        <div class="error-message" id="error-message">
+          Den e-postadressen är inte registrerad för denna övning.
+        </div>
+        <button type="submit">Visa mina resultat</button>
+      </form>
+    </section>
+
+    <section class="card" id="person-card" style="display: none">
+      <h2 id="person-title"></h2>
+      <p class="skip-note">
+        Skala 1&ndash;5. Gap = kollegors snitt minus din egen skattning.
+        Gap &gt; 0,5: kollegor skattar dig högre. Gap &lt; -0,5: du
+        skattar dig själv högre. Annars: liknande bild.
+      </p>
+      <table class="scale-table" id="person-table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Själv</th>
+            <th>Kollegor</th>
+            <th>Gap</th>
+            <th>Tolkning</th>
+          </tr>
+        </thead>
+        <tbody id="person-body"></tbody>
+      </table>
+      <div id="comments-section"></div>
+    </section>
+
+    <section class="card" id="group-card" style="display: none">
+      <h2>Teamöversikt</h2>
+      <p class="skip-note">
+        Skillnad = kollegeskattning snitt minus självskattning snitt, över
+        hela gruppen per dimension.
+      </p>
+      <table class="scale-table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Gruppsnitt</th>
+            <th>Självskattning</th>
+            <th>Kollegeskattning</th>
+            <th>Skillnad</th>
+          </tr>
+        </thead>
+        <tbody id="group-body"></tbody>
+      </table>
+      <p class="skip-note" id="generated-at"></p>
+    </section>
+
+    <footer>© 2026 Lukas Posolda &mdash; lukas.posolda@gmail.com</footer>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="config.js"></script>
+  <script src="results.js"></script>
+</body>
+</html>

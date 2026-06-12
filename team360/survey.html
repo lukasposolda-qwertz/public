@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enkät – 360° Samarbetstest</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>360° Samarbetstest – Finansgruppen</h1>
+      <p id="rater-label"></p>
+    </header>
+
+    <div class="progress" id="progress-label"></div>
+    <div class="progress-steps" id="progress-steps"></div>
+
+    <details class="scale-reference">
+      <summary>Visa skattningsskala (1&ndash;5)</summary>
+      <div class="card">
+        <table class="scale-table">
+          <thead>
+            <tr>
+              <th>Poäng</th>
+              <th>Betydelse</th>
+            </tr>
+          </thead>
+          <tbody id="scale-body"></tbody>
+        </table>
+        <p class="skip-note" id="skip-note"></p>
+      </div>
+    </details>
+
+    <section class="card person-block" id="person-block">
+      <span class="person-type" id="person-type"></span>
+      <h2 id="person-title"></h2>
+      <p id="person-context"></p>
+
+      <div id="questions"></div>
+    </section>
+
+    <div class="nav-buttons">
+      <button type="button" class="secondary" id="back-button">Tillbaka</button>
+      <button type="button" id="next-button">Nästa</button>
+    </div>
+
+    <section class="card done-card" id="done-card">
+      <h2>Tack, dina svar är klara!</h2>
+      <p>
+        Dina svar är skickade och sparade. När alla fyra har fyllt i sina
+        enkäter kommer resultat och teamöversikt att skickas ut via e-post.
+      </p>
+      <p><a href="results.html">Se teamöversikt</a></p>
+    </section>
+
+    <footer>© 2026 Lukas Posolda &mdash; lukas.posolda@gmail.com</footer>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="config.js"></script>
+  <script src="survey.js"></script>
+</body>
+</html>

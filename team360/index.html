@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>360° Samarbetstest – Finansgruppen</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>360° Samarbetstest – Finansgruppen</h1>
+      <p>Självskattning och kollegeskattning av samarbetet i gruppen</p>
+    </header>
+
+    <section class="card">
+      <h2>Om övningen</h2>
+      <p id="context-text"></p>
+      <p>
+        Du skattar först dig själv, sedan de tre övriga i gruppen. Dina svar om
+        kollegor visas aldrig enskilt &ndash; bara som ett snitt tillsammans med
+        de andras skattningar, så att ingen kan se vem som svarat vad om en
+        specifik person.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Skattningsskala (1&ndash;5)</h2>
+      <table class="scale-table">
+        <thead>
+          <tr>
+            <th>Poäng</th>
+            <th>Betydelse</th>
+          </tr>
+        </thead>
+        <tbody id="scale-body"></tbody>
+      </table>
+      <p class="skip-note" id="skip-note"></p>
+    </section>
+
+    <section class="card">
+      <h2>Logga in med din e-postadress</h2>
+      <form class="email-form" id="email-form">
+        <label for="email">E-postadress</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="namn.efternamn@jernhusen.se"
+          autocomplete="email"
+          required
+        />
+        <div class="error-message" id="error-message">
+          Den e-postadressen är inte registrerad för denna övning. Kontrollera
+          stavningen eller kontakta den som administrerar testet.
+        </div>
+        <button type="submit">Fortsätt</button>
+      </form>
+    </section>
+
+    <section class="card welcome-card" id="welcome-card">
+      <h2 id="welcome-title"></h2>
+      <p>Du kommer att skatta, i denna ordning:</p>
+      <ol class="order-list" id="order-list"></ol>
+      <button type="button" id="continue-button">Starta enkäten</button>
+    </section>
+
+    <footer>© 2026 Lukas Posolda &mdash; lukas.posolda@gmail.com</footer>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

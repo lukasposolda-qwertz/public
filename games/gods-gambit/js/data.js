@@ -182,7 +182,7 @@ const MONSTER_TEMPLATES = {
   },
   nemean_lion: {
     id: 'nemean_lion', name: 'The Nemean Lion', title: 'Hide of Stone', boss: true,
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/monster_nemean_lion.png',
     maxHp: 32, power: 6, speed: 3, tags: ['beast','boss'], row: 'front',
     basic: { name: 'Iron Claws', dmg: 6, tags: ['melee'] },
     damageModifier: (state, defender, dmg, dmgInfo) => {
@@ -193,7 +193,7 @@ const MONSTER_TEMPLATES = {
   },
   erinyes: {
     id: 'erinyes', name: 'Erinys', title: 'Fury of the Wronged', nemesis: true,
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/monster_erinyes.png',
     maxHp: 14, power: 4, speed: 4, tags: ['divine','nemesis'], row: 'front',
     basic: { name: 'Lash of Retribution', dmg: 4, tags: ['melee'] },
     introText: 'Your pride has not gone unnoticed. The Furies rise from Tartarus to balance the scales.'
@@ -207,35 +207,35 @@ function makeEnemy(templateId) {
 
 const RELICS = {
   talaria: { id: 'talaria', name: 'Talaria', title: "Hermes' Winged Sandals",
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/relic_talaria.png',
     desc: 'All heroes gain +1 Speed.',
     apply: (run) => { run.party.forEach(h => h.speed += 1); } },
   cap_of_hades: { id: 'cap_of_hades', name: 'Cap of Hades', title: 'Helm of Invisibility',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/relic_cap_of_hades.png',
     desc: 'The first enemy attack each battle automatically misses.',
     onCombatStart: (state) => { state.capOfHadesCharge = true; } },
   aegis: { id: 'aegis', name: 'Aegis', title: "Shield of Zeus and Athena",
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/relic_aegis.png',
     desc: 'Your party takes 1 less damage from every attack (minimum 1).',
     apply: (run) => {} },
   harpe: { id: 'harpe', name: 'Harpe', title: 'The Adamantine Sickle',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/relic_harpe.png',
     desc: 'Your heroes are immune to Petrification, even in melee against gorgons.',
     apply: (run) => {} },
   golden_fleece: { id: 'golden_fleece', name: 'Golden Fleece', title: '',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/relic_golden_fleece.png',
     desc: 'At the start of each battle, every hero heals 2 Health.',
     onCombatStart: (state) => { state.player.forEach(h => { h.hp = Math.min(h.maxHp, h.hp + 2); }); } },
   lyre_of_orpheus: { id: 'lyre_of_orpheus', name: 'Lyre of Orpheus', title: '',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/relic_lyre_of_orpheus.png',
     desc: 'On the first turn of each battle, all enemies are soothed (-1 Power).',
     onCombatStart: (state) => { state.enemies.forEach(e => { e.power = Math.max(0, e.power - 1); }); } },
   ariadnes_thread: { id: 'ariadnes_thread', name: "Ariadne's Thread", title: '',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/relic_ariadnes_thread.png',
     desc: 'The entire map is revealed to you from the start.',
     apply: (run) => { run.threadRevealed = true; } },
   cornucopia: { id: 'cornucopia', name: 'Cornucopia', title: '',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/relic_cornucopia.png',
     desc: 'At the start of each node, gain 1 Drachma and 1 Favor.',
     onNodeStart: (run) => { run.drachma += 1; run.favor = Math.min(run.maxFavor, run.favor + 1); } }
 };
@@ -243,7 +243,7 @@ const RELICS = {
 const EVENTS = {
   xenia: {
     id: 'xenia', title: 'The Ragged Stranger',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/event_xenia.png',
     text: 'A traveler in filthy rags sits by the road, hand outstretched. "A crust of bread, friend? A place by your fire?" His eyes seem to catch the torchlight strangely — too bright, too knowing.',
     choices: [
       { text: 'Share your food and fire (Xenia)', result: (run) => {
@@ -259,7 +259,7 @@ const EVENTS = {
   },
   pithos: {
     id: 'pithos', title: 'The Sealed Pithos',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/event_pithos.png',
     text: 'Half-buried in the ash of a dead hearth, a great clay jar sits sealed with wax and a faded sigil. Something inside shifts when the wind blows.',
     choices: [
       { text: 'Break the seal', result: (run) => {
@@ -276,7 +276,7 @@ const EVENTS = {
   },
   crossroads: {
     id: 'crossroads', title: 'The Crossroads of Hecate',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/event_crossroads.png',
     text: 'Three roads meet beneath a worn stone pillar with three faces. At its foot, travelers have left offerings for ages. You have one thing to give.',
     choices: [
       { text: 'Leave a black dog at the crossroads', result: (run) => {
@@ -297,7 +297,7 @@ const EVENTS = {
   },
   lotus: {
     id: 'lotus', title: 'The Lotus-Eaters\' Shore',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/event_lotus.png',
     text: 'A grove of strange fruit grows by a slow, warm river. The air smells sweet, and for the first time since this all began, you feel like you could simply... stop.',
     choices: [
       { text: 'Eat the lotus fruit', result: (run) => {
@@ -316,7 +316,7 @@ const EVENTS = {
   },
   sphinx: {
     id: 'sphinx', title: 'The Sphinx\'s Riddle',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/event_sphinx.png',
     text: 'A creature with a lion\'s body and a woman\'s face blocks the narrow pass, wings folded. "What walks on four legs in the morning, two legs at noon, and three legs in the evening? Answer, or be devoured."',
     choices: [
       { text: '"Man" — who crawls as a child, walks as an adult, and leans on a staff in old age', result: (run) => {
@@ -335,7 +335,7 @@ const EVENTS = {
   },
   charon: {
     id: 'charon', title: 'Charon\'s Toll',
-    portrait: 'images/placeholder.svg',
+    portrait: 'images/event_charon.png',
     text: 'A narrow, black river blocks the path. An old ferryman waits in a boat that should not float, palm open. "The toll, or the long way round — and the long way is not short."',
     choices: [
       { text: 'Pay the toll (2 Drachma)', result: (run) => {

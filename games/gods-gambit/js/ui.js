@@ -68,7 +68,7 @@ function renderTitle() {
   const hasRun = !!loadRun();
   return `
     <h1>Gods' Gambit</h1>
-    <img class="title-art" src="images/placeholder_title.svg" alt="">
+    <img class="title-art" src="images/title.png" alt="">
     <p class="center muted">A tragedy in three acts, for one mortal champion of Greece.</p>
     <div class="btn-row">
       <button class="btn gold" data-action="new-run">Begin a Run</button>
@@ -464,7 +464,7 @@ function renderVictory() {
   return `
     <h2 class="center">The Nemean Lion Falls</h2>
     <div class="event-card center">
-      <img src="images/placeholder.svg" alt="">
+      <img src="images/monster_nemean_lion.png" alt="">
       <p>The hide that no blade could pierce gives way at last &mdash; not to a sharper edge, but to a grip that refused to loosen. The Mortal Wilds fall silent behind you.</p>
       <p class="muted">Your champion's name will be sung tonight. Whether the gods are pleased... is a different question.</p>
     </div>

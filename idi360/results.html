@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resultat – IDI 360° Samarbetsbedömning</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+
+    <header class="hero">
+      <h1>IDI 360° – Samarbetsbedömning</h1>
+      <p>Gruppresultat &ndash; Finansgruppen</p>
+    </header>
+
+    <!-- Shown before results are available -->
+    <section class="card" id="not-ready-card">
+      <h2>Resultat är inte klara än</h2>
+      <p>
+        Resultaten visas här så snart alla fyra deltagare har fyllt i formuläret
+        och sammanställningen har körts. Dina personliga resultat (profil, gap-analys,
+        utvecklingsförslag) skickas till dig via e-post.
+      </p>
+    </section>
+
+    <!-- Group results (hidden until data is loaded) -->
+    <div id="group-results" style="display:none">
+
+      <!-- 1. Dimension averages -->
+      <section class="card">
+        <h2>Dimensionsöversikt – gruppnivå</h2>
+        <p class="skip-note">Baserat på kollegornas samlade bedömning. Självskattning = deltagarnas egen bild. Kollegeskattning = aggregerat snitt från de tre kollegorna.</p>
+        <table class="scale-table">
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th class="num">Gruppsnitt</th>
+              <th class="num">Självskattning</th>
+              <th class="num">Kollegeskattning</th>
+              <th class="num">Skillnad</th>
+            </tr>
+          </thead>
+          <tbody id="dim-body"></tbody>
+        </table>
+        <p class="skip-note">Skala 1–7. Skillnad = kollegeskattning minus självskattning (gruppsnitt per dimension).</p>
+      </section>
+
+      <!-- 2. Profile distribution -->
+      <section class="card">
+        <h2>Profilfördelning</h2>
+        <p class="skip-note">Baserat på kollegornas bedömning av varje person (Påverkan ≥ 4.0 och Relationer ≥ 4.0 → Motivator, osv.). Inga individuella poäng visas.</p>
+        <div class="profile-grid" id="profile-dist"></div>
+      </section>
+
+      <!-- 3. Profile map -->
+      <section class="card">
+        <h2>Profilkarta</h2>
+        <p class="skip-note">Varje punkt representerar en persons kollegorsbestämda position (Påverkan × Relationer). Punkterna är anonyma – inga namn visas.</p>
+        <div class="profile-map-wrap" id="profile-map"></div>
+      </section>
+
+      <!-- 4. Adaptation average -->
+      <section class="card">
+        <h2>Anpassningsförmåga</h2>
+        <p id="adaptation-text"></p>
+        <p class="skip-note">Anpassning mäter i vilken grad en person upplevs förändra sitt beteende för att möta andras behov. Hög anpassning ≥ 5.0 · Medel 3.0–4.9 · Låg &lt; 3.0.</p>
+      </section>
+
+      <!-- 5. Group insights -->
+      <section class="card">
+        <h2>Grupptolkning</h2>
+        <ul class="insight-list" id="insights-list"></ul>
+      </section>
+
+      <!-- 6. Discussion questions -->
+      <section class="card">
+        <h2>Diskussionsfrågor</h2>
+        <p class="skip-note">Använd dessa som underlag för ett gemensamt samtal om gruppens samarbetsstilar.</p>
+        <ol class="discussion-list" id="discussion-list"></ol>
+      </section>
+
+      <p class="skip-note" style="text-align:center;" id="generated-at"></p>
+    </div>
+
+    <footer>&copy; 2026 Lukas Posolda &mdash; lukas.posolda@gmail.com</footer>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="results.js"></script>
+</body>
+</html>

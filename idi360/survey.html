@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IDI 360° – Samarbetsbedömning</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+
+    <header class="hero">
+      <h1>IDI 360° – Samarbetsbedömning</h1>
+      <p>Finansgruppen &ndash; Jernhusen</p>
+    </header>
+
+    <!-- Step 0: Email identification -->
+    <div id="step-email">
+      <div class="card">
+        <h2>Identifiera dig</h2>
+        <p>Ange den e-postadress du är inbjuden med för att starta formuläret.</p>
+        <form id="email-form" autocomplete="off" novalidate>
+          <label for="email-input">E-postadress</label>
+          <input type="email" id="email-input" placeholder="namn@jernhusen.se" />
+          <div class="error-msg" id="email-error"></div>
+          <div style="margin-top:1rem;">
+            <button type="submit">Fortsätt</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Step 1: Introduction -->
+    <div id="step-intro" style="display:none">
+      <div class="card">
+        <h2>Välkommen, <span id="intro-name"></span>!</h2>
+
+        <p>Det här formuläret kartlägger hur vi uppfattas i vårt samarbete. Det handlar <strong>inte</strong> om personlighet utan om <strong>observerbart beteende i arbetsrollen</strong> – något som går att utveckla och förändra.</p>
+
+        <p><strong>Formuläret består av två delar:</strong></p>
+        <ul>
+          <li><strong>Del A – Självskattning (ca 5 min)</strong><br>
+          Du beskriver hur du tror att dina kollegor uppfattar dig. Det handlar alltså inte om hur du ser dig själv, utan om hur du tror att <em>andra</em> uppfattar dig.</li>
+          <li><strong>Del B – Kollegaskattning (ca 5 min per kollega)</strong><br>
+          Du beskriver hur du uppfattar var och en av dina tre kollegor i deras roll.</li>
+        </ul>
+
+        <p><strong>Så här fungerar skalan:</strong><br>
+        Varje fråga visar två motstående egenskapsord med 7 positioner däremellan. Placera ditt val på den position som bäst beskriver uppfattningen. Mittpositionen (4) innebär att ingen av sidorna dominerar.</p>
+
+        <p><strong>Om anonymitet:</strong><br>
+        Dina enskilda skattningar av kollegor är anonyma – de visas aldrig individuellt, utan ingår enbart i ett aggregerat snitt. Du får din individuella rapport via e-post.</p>
+
+        <ul>
+          <li>Det finns inga rätta eller felaktiga svar</li>
+          <li>Tänk på personens beteende <em>i arbetsrollen</em>, inte privat</li>
+          <li>Gå på magkänsla – fastna inte länge på enskilda par</li>
+          <li>Alla 40 ordpar måste besvaras per sektion</li>
+        </ul>
+
+        <p style="color:var(--color-muted);font-size:0.9rem;">Beräknad total tid: <strong>20–25 minuter</strong></p>
+
+        <button id="btn-start">Starta formuläret</button>
+      </div>
+    </div>
+
+    <!-- Steps 2–5: Rating sections (dynamically rendered) -->
+    <div id="step-section" style="display:none">
+      <div id="progress-bar" class="progress-bar"></div>
+      <div class="card" id="section-card">
+        <!-- Filled by survey.js -->
+      </div>
+      <div class="nav-buttons">
+        <button class="secondary" id="btn-back">← Tillbaka</button>
+        <button id="btn-next">Nästa</button>
+      </div>
+    </div>
+
+    <!-- Step 6: Confirmation -->
+    <div id="step-done" style="display:none">
+      <div class="card" style="text-align:center;">
+        <h2>Tack, <span id="done-name"></span>!</h2>
+        <p>Dina svar har sparats.</p>
+        <p>Din individuella rapport skickas till <strong id="done-email"></strong> när alla deltagare har fyllt i formuläret.</p>
+        <p>Gruppresultatet blir tillgängligt på <a href="results.html">resultatsidan</a> vid samma tidpunkt.</p>
+      </div>
+    </div>
+
+    <footer>&copy; 2026 Lukas Posolda &mdash; lukas.posolda@gmail.com</footer>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="config.js"></script>
+  <script src="survey.js"></script>
+</body>
+</html>

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Europas sista vildmark?</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-border: #d97706;
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --card-radius: 16px;
+    --container-max-width: 720px;
+    --card-padding: 2rem;
+    --option-gap: 0.75rem;
+    --section-gap: 1.5rem;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    padding: 2rem 1rem;
+  }
+  .container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+  }
+  header {
+    text-align: center;
+    margin-bottom: var(--section-gap);
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 0.75rem 0;
+  }
+  .progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+  .progress-track {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: var(--card-padding);
+  }
+  .instructions {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+  .type-indicator {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 1.25rem 0;
+    line-height: 1.4;
+  }
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--option-gap);
+    margin-bottom: 1.5rem;
+  }
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .option:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: #f8f9ff;
+  }
+  .option.selected {
+    border-color: var(--accent);
+    background: #eef2ff;
+  }
+  .option input {
+    accent-color: var(--accent);
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+    width: 1.05rem;
+    height: 1.05rem;
+    cursor: pointer;
+  }
+  .option.disabled { cursor: not-allowed; }
+  .option .option-text {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.45;
+  }
+  .option .mark {
+    font-weight: 700;
+    margin-right: 0.35rem;
+  }
+  .option.correct-answer {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+  }
+  .option.incorrect-answer {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+  }
+  button {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    padding: calc(0.75rem - 2px) calc(2rem - 2px);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: #eef2ff;
+  }
+  .feedback-box {
+    border-left: 4px solid var(--text-secondary);
+    background: rgba(100,116,139,0.05);
+    padding: 1rem 1.25rem;
+    border-radius: 0 10px 10px 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+  .feedback-box.correct {
+    border-left-color: var(--correct-border);
+    background: rgba(5,150,105,0.05);
+    color: var(--correct-text);
+  }
+  .feedback-box.incorrect {
+    border-left-color: var(--incorrect-border);
+    background: rgba(220,38,38,0.05);
+    color: var(--incorrect-text);
+  }
+  .feedback-box.partial {
+    border-left-color: var(--partial-border);
+    background: rgba(217,119,6,0.05);
+    color: #92400e;
+  }
+  .feedback-box strong { display: block; margin-bottom: 0.35rem; }
+  .center-text {
+    text-align: center;
+  }
+  .resume-info {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .resume-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .result-score {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 1.5rem 0 2rem 0;
+  }
+  h2 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 0 0 1rem 0;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Quiz: Europas sista vildmark?</h1>
+    <div id="progressArea">
+      <div class="progress-text" id="progressText"></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </header>
+
+  <div class="card" id="card">
+  </div>
+</div>
+
+<script>
+const quizData = [
+{question:"Vilken växtzon ligger högst upp på fjället?",type:"single",options:[
+  {text:"Fjällnära barrskog",correct:false},
+  {text:"Fjällbjörkskog",correct:false},
+  {text:"Kalfjället",correct:true},
+  {text:"Barrskogsbältet",correct:false}
+],feedback:"Kalfjället är den översta växtzonen, ovanför trädgränsen, där bara låga växter och lavar klarar sig. Fjällbjörkskog ligger mellan barrskogen och kalfjället. Fjällnära barrskog ligger längst ner, vid fjällets fot. Barrskogsbältet är inte en egen zon på själva fjället utan syftar på skogslandskapet långt nedanför fjällkedjan."},
+
+{question:"Vilka påståenden om den fjällnära barrskogen stämmer?",type:"multi",options:[
+  {text:"Träden där kan bli mycket gamla eftersom skogen på sina håll aldrig har avverkats",correct:true},
+  {text:"Döda och ihåliga träd kan vara viktiga boplatser och födokällor för insekter och fåglar",correct:true},
+  {text:"Skäggformade lavar som hänger i grenarna trivs bäst på gamla träd",correct:true},
+  {text:"Alla träd i den fjällnära barrskogen är lövträd",correct:false}
+],feedback:"A, B och C stämmer. Gamla, orörda barrskogar hyser ofta flera hundra år gamla granar, och döda träd samt hängande lavar är viktiga livsmiljöer för många arter. D är fel — den fjällnära barrskogen domineras av barrträd som gran, inte lövträd."},
+
+{question:"Vad förklarar varför granar inte klarar av att växa lika högt upp på fjället som fjällbjörkar?",type:"multi",options:[
+  {text:"Granen tål sämre kyla och kraftig vind än björken",correct:true},
+  {text:"Granen behöver en tjockare kostym av barr för att överleva",correct:false},
+  {text:"Granens rötter kräver ett tjockare jordlager än björkens",correct:true},
+  {text:"Granen växer generellt snabbare än björken",correct:false}
+],feedback:"A och C är korrekta — högre upp blir klimatet kallare och blåsigare samtidigt som jordlagret blir tunnare, vilket gran har svårare att klara än den mer anpassningsbara fjällbjörken. B är nonsens — barrmängd har inget med höjdgränsen att göra. D är fel, och dessutom irrelevant för frågan om höjdgräns."},
+
+{question:"Varför är fjällbjörkarna i fjällbjörkskogen ofta korta och krokiga i stället för höga och raka?",type:"single",options:[
+  {text:"De är unga träd som inte hunnit växa sig höga än",correct:false},
+  {text:"Krokig växtform gör dem mindre känsliga för att vindar ska välta dem",correct:true},
+  {text:"De får för lite solljus för att växa raka",correct:false},
+  {text:"Djur som betar på topparna hindrar dem från att växa raka",correct:false}
+],feedback:"B är rätt — den låga, krokiga formen är en anpassning som gör träden mer stabila i den hårda vinden. A stämmer inte, det handlar om en anpassning snarare än ålder. C är fel, ljustillgången är inte problemet på det öppna fjället. D är en rimlig gissning men inte den huvudsakliga förklaringen till formen."},
+
+{question:"Vilka egenskaper gör fjällbjörken bra anpassad för livet högt upp på fjället?",type:"multi",options:[
+  {text:"Stammen är böjlig och kan tåla att snödrivor trycker på",correct:true},
+  {text:"Om stammen går av kan nya skott växa upp igen",correct:true},
+  {text:"Trädet fäller alla sina blad redan i juni för att spara energi",correct:false},
+  {text:"Trädet klarar att stå tätt tillsammans med videbuskar utan att konkurrera om ljus",correct:false}
+],feedback:"A och B stämmer — böjlighet och förmåga att skjuta nya skott gör björken tålig mot både snötyngd och skador. C är felaktigt påhittat; björkar fäller löv på hösten som andra lövträd, inte redan i juni. D är fel — videbuskar och björkar konkurrerar visst om utrymme, vilket gör skogen svårframkomlig."},
+
+{question:"Vad kännetecknar klimatet på kalfjället?",type:"single",options:[
+  {text:"Det är mycket blåsigt, kallt och jordlagret är tunt",correct:true},
+  {text:"Det är skyddat från vind eftersom det ligger i en dalgång",correct:false},
+  {text:"Det är fuktigt och varmt större delen av året",correct:false},
+  {text:"Temperaturen är stabil året runt utan större variationer",correct:false}
+],feedback:"A är korrekt — kalfjället är öppet, högt beläget, vindutsatt och har ett tunt jordlager, vilket gör klimatet extremt. B, C och D beskriver alla motsatsen till hur det faktiskt är på kalfjället, som är känt för sitt hårda och varierande klimat."},
+
+{question:"Vilka av följande hjälper en växt att överleva vindpinade platser på kalfjället?",type:"multi",options:[
+  {text:"Att växa krypande och tätt intill marken",correct:true},
+  {text:"Att ha extra höga stjälkar som sticker upp över snötäcket",correct:false},
+  {text:"Att bilda tjocka, tuvformade mattor tillsammans med andra växter av samma art",correct:true},
+  {text:"Att söka skydd bakom stenar, i gropar eller bakom små kullar",correct:true}
+],feedback:"A, C och D är riktiga överlevnadsknep — låg växtform, tuvor och lä-platser skyddar mot den hårda vinden. B är fel och dessutom motsatsen till hur fjällväxter faktiskt beter sig: höga stjälkar skulle exponeras mer för vinden, inte skyddas."},
+
+{question:"Hur kan vissa lavar bidra till att ny mark bildas på berghällar och stenar?",type:"single",options:[
+  {text:"De släpper ifrån sig en syra som långsamt löser upp stenens yta",correct:true},
+  {text:"De drar till sig fukt som fryser och spränger sönder stenen",correct:false},
+  {text:"De lockar till sig insekter som gnager sönder stenytan",correct:false},
+  {text:"De växer så tungt att stenen sakta pressas sönder",correct:false}
+],feedback:"A stämmer — vissa lavar utsöndrar en syra som gör att de kan få fäste på annars kal sten och sakta bryta ner ytan. B, C och D beskriver mekanismer som inte har med lavars egen biologi att göra."},
+
+{question:"Vilka påståenden om glaciärer stämmer?",type:"multi",options:[
+  {text:"En glaciär bildas av snö som packats ihop till is under lång tid",correct:true},
+  {text:"Glaciäris rör sig och nöter sakta ner berget under sig",correct:true},
+  {text:"Glaciärer i Sverige finns bara på låglänta slätter",correct:false},
+  {text:"Glaciärers storlek kan förändras med klimatet",correct:true}
+],feedback:"A, B och D är korrekta beskrivningar av hur glaciärer bildas, rör sig och påverkas av klimatet. C är fel — glaciärer bildas där snö kan ligga kvar och packas år efter år, vilket kräver hög höjd och kyla, inte låglänta slätter."},
+
+{question:"Ungefär hur många glaciärer finns det på de svenska fjällens toppar?",type:"single",options:[
+  {text:"Omkring 30",correct:false},
+  {text:"Omkring 300",correct:true},
+  {text:"Omkring 3 000",correct:false},
+  {text:"Omkring 30 000",correct:false}
+],feedback:"B är korrekt — det finns omkring 300 glaciärer i de svenska fjällen. De övriga alternativen ligger alla för långt ifrån det faktiska antalet."},
+
+{question:"Varför byter fjällräven och skogsharen till vit päls på vintern?",type:"single",options:[
+  {text:"Den vita pälsen håller värmen bättre än den bruna",correct:false},
+  {text:"Den vita färgen gör dem svårare att upptäcka mot den snötäckta marken",correct:true},
+  {text:"Vit päls väger mindre än brun päls, vilket sparar energi",correct:false},
+  {text:"Det är ett sätt att locka till sig en partner inför parningssäsongen",correct:false}
+],feedback:"B är rätt — kamouflage mot snön gör det lättare för skogsharen att undgå att bli upptäckt och för fjällräven att smyga sig på byten. A, C och D är alla rimligt låtande men felaktiga förklaringar till pälsbytet."},
+
+{question:"Vilka djur byter päls- eller fjäderdräkt mellan sommar och vinter för att smälta in i omgivningen?",type:"multi",options:[
+  {text:"Skogsharen",correct:true},
+  {text:"Fjällräven",correct:true},
+  {text:"Fjälluggla",correct:true},
+  {text:"Lämmeln",correct:false}
+],feedback:"A, B och C byter alla färg mellan årstiderna — skogsharen och fjällräven blir vita på vintern, och fjällugglan har en ljus, snölik fjäderdräkt. D är fel — lämmeln behåller sin brungrå färg året runt och förlitar sig i stället på att gömma sig under snön för skydd."},
+
+{question:"Vilken status har fjällugglan i Sverige idag?",type:"single",options:[
+  {text:"Den är utrotningshotad",correct:true},
+  {text:"Den är en av de vanligaste fjällfåglarna",correct:false},
+  {text:"Den finns bara i Alperna, inte i Sverige",correct:false},
+  {text:"Den flyttar aldrig från fjällen",correct:false}
+],feedback:"A stämmer — fjällugglan räknas som en hotad art i Sverige. B är felaktigt, den är faktiskt ovanlig. C är fel, fjällugglan är en nordlig art som finns i de svenska fjällen, inte i Alperna. D är också fel, eftersom födotillgången styr om den stannar eller flyttar."},
+
+{question:"Vilka djur får sitt liv direkt eller indirekt påverkat av hur många lämlar det finns ett visst år?",type:"multi",options:[
+  {text:"Fjällräven, eftersom lämmel är viktig föda för dess ungar",correct:true},
+  {text:"Fjällugglan, som kan låta bli att lägga ägg om det är ont om lämmel",correct:true},
+  {text:"Renen, som är beroende av lämmel som huvudföda",correct:false},
+  {text:"Stenbocken i Alperna, som konkurrerar med lämmeln om föda",correct:false}
+],feedback:"A och B stämmer — lämmeln är en nyckelart i näringskedjan, och brist på lämmel kan göra att fjällrävsungar inte överlever och att fjällugglor avstår från att häcka. C är fel, renen lever huvudsakligen av lavar och andra växter. D är fel eftersom stenbocken lever i Alperna och aldrig delar livsmiljö med den svenska fjällämmeln."},
+
+{question:"Om lämmelstammen är ovanligt liten ett visst år, vad blir den mest sannolika konsekvensen för fjällräven?",type:"single",options:[
+  {text:"Fjällrävens ungar har svårare att överleva",correct:true},
+  {text:"Fjällräven byter till en helt annan diet baserad på fisk",correct:false},
+  {text:"Fjällräven vandrar permanent ner till Alperna",correct:false},
+  {text:"Fjällräven slutar byta päls inför vintern",correct:false}
+],feedback:"A är korrekt eftersom lämmel är en så viktig födokälla för fjällrävsungar att brist på lämmel direkt påverkar deras överlevnad. B, C och D beskriver orimliga eller påhittade beteenden som inte har någon grund i fjällrävens biologi."},
+
+{question:"Vilken fågel känns igen på sitt \"spökliga skratt\" i fjällbjörkskogen?",type:"single",options:[
+  {text:"Ljungpiparen",correct:false},
+  {text:"Dalripan",correct:true},
+  {text:"Fjällugglan",correct:false},
+  {text:"Lammgamen",correct:false}
+],feedback:"B är rätt — dalripan har ett läte som ofta beskrivs som ett skrattande eller kacklande ljud. Ljungpiparen har i stället en sorgsen, visslande läte och lever på kalfjället. Fjälluggla och lammgam är rovfåglar med helt andra läten."},
+
+{question:"Vilka påståenden om ljungpiparen stämmer?",type:"multi",options:[
+  {text:"Den bygger sitt bo direkt på marken",correct:true},
+  {text:"Den håller till främst på kalfjället",correct:true},
+  {text:"Den visslar starkare om något kommer nära boet",correct:true},
+  {text:"Den bygger sitt bo högt uppe i fjällbjörkarnas grenar",correct:false}
+],feedback:"A, B och C stämmer om ljungpiparen, en av kalfjällets vanligaste fåglar som varnar med kraftigare vissling när ungarna hotas. D är fel — eftersom ljungpiparen lägger sina ägg direkt på marken, inte i träd."},
+
+{question:"Vad är tätört för typ av växt?",type:"single",options:[
+  {text:"En köttätande växt som fångar insekter med klibbiga blad",correct:true},
+  {text:"En giftig svamp som växer på myrar",correct:false},
+  {text:"Ett träd som bara finns i fjällbjörkskogen",correct:false},
+  {text:"En lav som bara växer på is",correct:false}
+],feedback:"A är korrekt — tätört är en av få svenska köttätande växter och fångar små insekter på sina klibbiga blad för att kompensera för näringsfattig mark. B, C och D beskriver helt andra typer av organismer."},
+
+{question:"Vilka steg ingår i hur tätörten får i sig näring från insekter?",type:"multi",options:[
+  {text:"Insekten fastnar på det klibbiga bladet",correct:true},
+  {text:"Bladet rullar ihop sig runt insekten",correct:true},
+  {text:"Insekten löses upp och näringen sugs upp av bladet",correct:true},
+  {text:"Roten tar upp insekten och för den till blomman för nedbrytning",correct:false}
+],feedback:"A, B och C beskriver korrekt hur tätörten fångar och tar upp näring från insekter via bladen. D är felaktigt påhittat — processen sker i bladet, inte via roten, och blomman är inte inblandad i näringsupptaget."},
+
+{question:"Vilken typ av växter saknar blommor och sprids i stället med sporer, till exempel de som växer längs fjällbäckar?",type:"single",options:[
+  {text:"Ormbunkar",correct:true},
+  {text:"Rosor",correct:false},
+  {text:"Björkar",correct:false},
+  {text:"Tallar",correct:false}
+],feedback:"A är rätt — ormbunkar är sporväxter som saknar blommor och sprids via små sporer som sitter i klungor på undersidan av bladen. B, C och D är alla blomväxter eller barrträd som förökar sig med frön, inte sporer."},
+
+{question:"Vilka påståenden om fjällängen stämmer?",type:"multi",options:[
+  {text:"Jordlagret där är tjockare än på kalfjället, vilket gör att mer vatten kan hållas kvar",correct:true},
+  {text:"Mygg och andra insekter där är en viktig födokälla för flyttfåglar",correct:true},
+  {text:"Fjällängen har inga blommande växter alls",correct:false},
+  {text:"Fjällängen ligger alltid högre upp än kalfjället",correct:false}
+],feedback:"A och B stämmer — det tjockare jordlagret gör fjällängen grönskande, och de rikliga insekterna lockar flyttfåglar som behöver mycket mat till sina ungar. C är felaktigt, fjällängen är känd för sina blommor. D är fel — fjällängen ligger lägre än kalfjället, inte högre."},
+
+{question:"Vad kallas fenomenet när solen inte går ner alls under några sommarveckor längst upp i norr?",type:"single",options:[
+  {text:"Midnattssol",correct:true},
+  {text:"Polarnatt",correct:false},
+  {text:"Norrsken",correct:false},
+  {text:"Solförmörkelse",correct:false}
+],feedback:"A är korrekt — midnattssol innebär att solen är synlig dygnet runt under en period på sommaren i de nordligaste områdena. Polarnatt är motsatsen och sker på vintern. Norrsken och solförmörkelse är helt andra himlafenomen som inte har med ljusa nätter att göra."},
+
+{question:"Vilka påståenden om samerna stämmer?",type:"multi",options:[
+  {text:"De är en ursprungsbefolkning som levt i fjällen under lång tid",correct:true},
+  {text:"Området de traditionellt bott i kallas för Sápmi",correct:true},
+  {text:"Samerna har historiskt försörjt sig enbart genom gruvdrift",correct:false},
+  {text:"Renskötsel har varit och är fortfarande viktigt för samisk kultur",correct:true}
+],feedback:"A, B och D stämmer — samerna är urfolk med anknytning till Sápmi, och renskötseln har historiskt och fortfarande stor betydelse. C är fel, den traditionella försörjningen byggde på jakt, fiske och renskötsel, inte gruvdrift."},
+
+{question:"Vilka skillnader finns mellan hur renskötsel bedrevs förr och hur den bedrivs idag?",type:"multi",options:[
+  {text:"Förr fångade man in vilda renar, idag äger samerna tamrenar som föds upp",correct:true},
+  {text:"Idag används ofta fordon och helikoptrar för att samla in renar",correct:true},
+  {text:"Förr användes renar bara som sällskapsdjur, aldrig för mjölk eller kött",correct:false},
+  {text:"Idag är renhjordarna ofta större än de traditionellt var",correct:true}
+],feedback:"A, B och D beskriver verkliga förändringar i renskötseln över tid, från infångning av vilda djur till modern hantering av tamrenshjordar med hjälp av fordon. C är fel — renar har historiskt använts både som dragdjur och för mjölk och kött, inte bara som sällskapsdjur."},
+
+{question:"Vilken egenskap hos renens päls gör att den isolerar extra bra mot kyla?",type:"single",options:[
+  {text:"Hårstråna är ihåliga och luftfyllda",correct:true},
+  {text:"Pälsen är alltid svart, vilket absorberar mer värme",correct:false},
+  {text:"Pälsen fälls helt bort under vintern",correct:false},
+  {text:"Hårstråna är täckta av ett tjockt lager fett",correct:false}
+],feedback:"A är korrekt — de ihåliga, luftfyllda hårstråna fungerar som isolering, ungefär som luftbubblor i en dunjacka. B, C och D beskriver egenskaper som inte stämmer med hur renens päls faktiskt fungerar."},
+
+{question:"Vilka fyra rovdjur brukar räknas som Sveriges stora rovdjur och som alla finns i fjällen?",type:"single",options:[
+  {text:"Björn, varg, järv och lo",correct:true},
+  {text:"Björn, räv, mård och utter",correct:false},
+  {text:"Varg, lo, älg och hjort",correct:false},
+  {text:"Björn, varg, järv och gems",correct:false}
+],feedback:"A är rätt — björn, varg, järv och lo brukar räknas som Sveriges fyra stora rovdjur. Räv, mård, älg och hjort i de andra alternativen är inte rovdjur i den kategorin, och gemsen finns i Alperna, inte i de svenska fjällen."},
+
+{question:"Vilka av följande påståenden om jakt på rovdjur i Sverige stämmer INTE?",type:"multi",options:[
+  {text:"Rovdjuren har alltid varit fridlysta och aldrig fått jagas",correct:true},
+  {text:"Idag finns regler för hur många djur av varje rovdjursart som får skjutas per år",correct:false},
+  {text:"Rovdjursjakt var tidigare betydligt hårdare reglerad än den är idag",correct:true},
+  {text:"Beslut om jakt tas bland annat med hänsyn till hur många djur som finns kvar",correct:false}
+],feedback:"A och C är felaktiga påståenden och alltså de rätta svaren på denna fråga: rovdjur har historiskt jagats hårt utan dagens begränsningar, det vill säga precis tvärtom mot vad A och C säger. B och D beskriver korrekt hur jakt regleras idag utifrån bestämda kvoter och artens status, och är därför inte de rätta svaren här."},
+
+{question:"Vilka påståenden om björnungar stämmer?",type:"multi",options:[
+  {text:"De föds nakna och blinda mitt i vintern",correct:true},
+  {text:"En nyfödd björnunge väger ungefär lika mycket som en vuxen ekorre",correct:true},
+  {text:"Ungarna lämnar sin mamma redan efter någon vecka",correct:false},
+  {text:"Björnhonan föder oftast ungar bara vartannat eller vart tredje år",correct:true}
+],feedback:"A, B och D stämmer om björnens fortplantning — ungarna föds hjälplösa i idet och stannar sedan hos honan i flera år, vilket gör att hon inte föder varje år. C är fel, ungarna följer i själva verket honan i två till tre år innan de klarar sig själva."},
+
+{question:"Var föder järven vanligtvis sina ungar?",type:"single",options:[
+  {text:"I ett bo högt uppe i ett träd",correct:false},
+  {text:"I en lya, ofta under en snödriva",correct:true},
+  {text:"I ett hål i marken som grävts av en annan art",correct:false},
+  {text:"I öppen terräng utan skydd",correct:false}
+],feedback:"B är korrekt — järven föder sina ungar i en lya, ofta gömd under en snödriva som ger skydd och isolering. A, C och D stämmer inte med järvens faktiska beteende."},
+
+{question:"Vilket påstående om varghonans ungar stämmer?",type:"multi",options:[
+  {text:"En varghona får vanligen omkring sex ungar per kull",correct:true},
+  {text:"Lyan är ofta grävd i en sandbacke eller under en rotvälta",correct:true},
+  {text:"Ungarna föds fullt synliga och kan gå direkt efter födseln",correct:false},
+  {text:"Ungarna klarar sig helt själva redan efter en månad",correct:false}
+],feedback:"A och B stämmer — varghonan föder relativt stora kullar i skyddade lyor. C är fel, nyfödda vargungar är hjälplösa och beroende av sin mamma de första veckorna. D är också fel, ungarna följer i stället honan i ungefär två år."},
+
+{question:"Vad är typiskt för lodjurets ungar när de föds?",type:"single",options:[
+  {text:"De är blinda, ungefär som kattungar",correct:true},
+  {text:"De kan springa och jaga redan samma dag de föds",correct:false},
+  {text:"De föds med full vinterpäls och klarar extrem kyla direkt",correct:false},
+  {text:"De lämnar sin mamma efter bara någon vecka",correct:false}
+],feedback:"A är korrekt — lodjursungar föds blinda, precis som kattungar, och är helt beroende av sin mamma i början. B, C och D överdriver hur självständiga nyfödda lodjursungar faktiskt är."},
+
+{question:"Vilka faktorer bidrar till att fjällräven idag räknas som ett hotat rovdjur i Sverige?",type:"multi",options:[
+  {text:"Att tillgången på lämmel, en viktig födokälla, har minskat",correct:true},
+  {text:"Att rödräven, som konkurrerar om samma livsmiljö, har blivit vanligare",correct:true},
+  {text:"Att fjällräven inte längre klarar av att byta päls inför vintern",correct:false},
+  {text:"Att fjällräven historiskt jagats hårt för sitt skinn",correct:true}
+],feedback:"A, B och D är verkliga orsaker bakom fjällrävens utsatta situation i Sverige. C är felaktigt påhittat — fjällrävens förmåga att byta päls är opåverkad, problemet ligger i födotillgång, konkurrens och tidigare jakttryck."},
+
+{question:"Vad är det huvudsakliga syftet med att skapa naturreservat och nationalparker i fjällen?",type:"single",options:[
+  {text:"Att skydda naturen och begränsa vad som är tillåtet att göra på ett område",correct:true},
+  {text:"Att göra det enklare att bygga vindkraftverk",correct:false},
+  {text:"Att öka gruvdriften i området",correct:false},
+  {text:"Att flytta ursprungsbefolkningen till andra platser",correct:false}
+],feedback:"A är rätt — naturreservat och nationalparker inrättas för att bevara natur genom att reglera vilka ingrepp som får göras. B, C och D beskriver motsatsen till eller något orelaterat till syftet med skyddad natur."},
+
+{question:"Vilket påstående om urskog i fjällbjörkskogen stämmer?",type:"multi",options:[
+  {text:"Urskog är skog som aldrig har avverkats",correct:true},
+  {text:"En del av fjällbjörkskogen är skyddad som naturreservat",correct:true},
+  {text:"Urskog innehåller bara unga träd som planterats nyligen",correct:false},
+  {text:"Urskog finns enbart i Alperna, inte i de svenska fjällen",correct:false}
+],feedback:"A och B stämmer — orörd, gammal skog kan skyddas som naturreservat för att bevara den unika naturen. C är motsägelsefullt, urskog kännetecknas just av att den fått växa fritt under lång tid utan avverkning eller plantering. D är fel, urskog i fjällbjörkskog finns i de svenska fjällen."},
+
+{question:"Vilka mänskliga aktiviteter kan påverka fjällens natur negativt?",type:"multi",options:[
+  {text:"Anläggning av gruvor för att utvinna mineraler och malm",correct:true},
+  {text:"Byggande av vatten- och vindkraftverk på stora, öppna fjällområden",correct:true},
+  {text:"Ökad turism med fler vägar, husbyggen och trafik",correct:true},
+  {text:"Att låta gammal skog stå orörd i naturreservat",correct:false}
+],feedback:"A, B och C är alla exempel på hur mänsklig exploatering kan påverka och splittra fjällmarken. D är fel — att låta skog stå orörd i naturreservat är precis motsatsen till en negativ påverkan, det är en åtgärd för att skydda naturen."},
+
+{question:"Vad är en trolig konsekvens av ökad turism i fjällen?",type:"single",options:[
+  {text:"Fler vägar, husbyggen och mer trafik som delar upp fjällmarken",correct:true},
+  {text:"Att alla rovdjur automatiskt flyttar till Alperna",correct:false},
+  {text:"Att kalfjället automatiskt blir större",correct:false},
+  {text:"Att renskötseln helt upphör",correct:false}
+],feedback:"A är korrekt — ökad turism leder ofta till mer infrastruktur som påverkar och delar upp naturen. B, C och D är orimliga och saknar grund i hur turism faktiskt påverkar fjällmiljön."},
+
+{question:"Om klimatet blir varmare, vilka effekter skulle det troligen få på fjällens natur?",type:"multi",options:[
+  {text:"Trädgränsen skulle flyttas nedåt mot lägre höjder",correct:false},
+  {text:"Träd skulle kunna klara sig på högre höjder än idag",correct:true},
+  {text:"Kalfjället skulle kunna krympa",correct:true},
+  {text:"Arter som är beroende av kalfjället skulle riskera att försvinna",correct:true}
+],feedback:"B, C och D beskriver rimliga konsekvenser av ett varmare klimat — trädgränsen flyttas uppåt, kalfjället minskar och de arter som är beroende av den miljön hotas. A är fel — ett varmare klimat skulle flytta trädgränsen uppåt mot högre höjder, inte nedåt."},
+
+{question:"Ungefär hur höga är de högsta topparna i de svenska fjällen jämfört med Alpernas högsta toppar?",type:"single",options:[
+  {text:"Svenska fjäll drygt 2 000 meter, Alperna drygt 4 000 meter",correct:true},
+  {text:"Svenska fjäll drygt 4 000 meter, Alperna drygt 2 000 meter",correct:false},
+  {text:"Både svenska fjäll och Alperna når drygt 2 000 meter",correct:false},
+  {text:"Både svenska fjäll och Alperna når drygt 4 000 meter",correct:false}
+],feedback:"A stämmer — de högsta svenska fjälltopparna når drygt 2 000 meter, medan Alpernas högsta toppar är drygt 4 000 meter. De andra alternativen blandar ihop eller förvränger dessa siffror."},
+
+{question:"Vilka förklaringar till varför Alpernas bergstoppar är högre och spetsigare än de svenska fjällens stämmer?",type:"multi",options:[
+  {text:"Alperna är en yngre bergskedja som inte hunnit nötas ner lika mycket",correct:true},
+  {text:"De svenska fjällen har slitits ner av inlandsisar under lång tid",correct:true},
+  {text:"Alperna innehåller ett helt annat grundämne än de svenska fjällen",correct:false},
+  {text:"De svenska fjällen har aldrig varit lika höga som Alperna är idag",correct:false}
+],feedback:"A och B stämmer — Alpernas yngre ålder och de svenska fjällens långa nötning av inlandsisar förklarar höjdskillnaden. C är rent påhittat, det handlar om ålder och erosion, inte olika grundämnen. D är fel — de svenska fjällen tros ha varit lika höga och spetsiga som Alperna när de var unga."},
+
+{question:"Vad är den ungefärliga trädgränsen i Alperna jämfört med i de svenska fjällen?",type:"single",options:[
+  {text:"Alperna cirka 2 000 meter, svenska fjällen cirka 900 meter",correct:true},
+  {text:"Alperna cirka 900 meter, svenska fjällen cirka 2 000 meter",correct:false},
+  {text:"Båda ligger på ungefär 2 000 meter",correct:false},
+  {text:"Båda ligger på ungefär 900 meter",correct:false}
+],feedback:"A är korrekt — i Alperna kan träd växa ända upp till omkring 2 000 meters höjd, medan trädgränsen i de svenska fjällen ligger vid omkring 900 meter, eftersom de svenska fjällen ligger så mycket längre norrut."},
+
+{question:"Vilka påståenden om Alperna som bergskedja stämmer?",type:"multi",options:[
+  {text:"Alperna räknas som en av de mest exploaterade bergskedjorna i Europa",correct:true},
+  {text:"Det finns gott om hotell, skidliftar och slalompister i stora delar av Alperna",correct:true},
+  {text:"Alperna saknar helt jordbruksmark på grund av det höga läget",correct:false},
+  {text:"Stora delar av de ursprungliga skogarna i Alperna har huggits ner",correct:true}
+],feedback:"A, B och D stämmer — Alperna är hårt exploaterade med omfattande turistanläggningar och avskogning. C är fel, jorden i Alpernas dalgångar är faktiskt bördig och används bland annat för odling av potatis, säd, vindruvor och frukt."},
+
+{question:"Vad skiljer lärkträdet från gran och tall?",type:"single",options:[
+  {text:"Lärkträdet fäller sina barr på vintern, till skillnad från gran och tall",correct:true},
+  {text:"Lärkträdet är det enda av de tre som är ett barrträd",correct:false},
+  {text:"Lärkträdet klarar inte alls kalla vintrar",correct:false},
+  {text:"Lärkträdet blir aldrig äldre än några år",correct:false}
+],feedback:"A är korrekt — till skillnad från gran och tall fäller lärkträdet sina mjuka barr inför vintern. B är fel, alla tre är barrträd. C är fel, lärkträdet tål tvärtom mycket kalla vintrar väl. D är fel, lärkträd kan bli flera hundra år gamla."},
+
+{question:"Vilka anpassningar gör att edelweiss klarar sig i kyla och kall blåst högt uppe på alpsluttningarna?",type:"multi",options:[
+  {text:"Håriga blad som skyddar mot kyla",correct:true},
+  {text:"En låg växtform",correct:true},
+  {text:"Blad täckta med ett tjockt vaxlager som stänger ute allt vatten",correct:false},
+  {text:"En djup pålrot som når flera meter ner i berget",correct:false}
+],feedback:"A och B stämmer — de håriga bladen fungerar som en isolerande päls och den låga formen minskar vindexponeringen. C och D är påhittade detaljer som inte är kända egenskaper hos edelweiss."},
+
+{question:"Vilka stora rovdjur kan man hitta både i de svenska fjällen och i Alperna?",type:"single",options:[
+  {text:"Björn, varg och lodjur",correct:true},
+  {text:"Järv och gems",correct:false},
+  {text:"Fjällräv och stenbock",correct:false},
+  {text:"Murmeldjur och lämmel",correct:false}
+],feedback:"A är korrekt — björn, varg och lodjur finns i bergsmiljöer i både Sverige och Alperna. B, C och D blandar ihop arter som bara finns på den ena platsen, till exempel är järv en nordlig art och gems, stenbock och murmeldjur bara finns i Alperna, medan lämmel bara finns i de svenska fjällen."},
+
+{question:"Vilka påståenden om lammgamen stämmer?",type:"multi",options:[
+  {text:"Den kan ha ett vingspann på uppemot tre meter",correct:true},
+  {text:"Den äter huvudsakligen levande småvilt som den jagar aktivt",correct:false},
+  {text:"Den kan släppa ner ett kadaver mot klipporna för att komma åt märgen i benen",correct:true},
+  {text:"Arten har tidigare varit utrotad i Alperna men har återinförts",correct:true}
+],feedback:"A, C och D beskriver verkliga egenskaper hos lammgamen, som är en imponerande asätande rovfågel med en ovanlig teknik för att komma åt benmärg. B är fel — lammgamen äter mest döda djur, den är inte känd för att aktivt jaga levande byten."},
+
+{question:"Vad gör murmeldjuret typiskt under vintern?",type:"single",options:[
+  {text:"Det går i dvala",correct:true},
+  {text:"Det flyttar till lägre höjder i dalgångarna",correct:false},
+  {text:"Det byter till en vit vinterpäls",correct:false},
+  {text:"Det gräver nya tunnlar för att hitta föda",correct:false}
+],feedback:"A är rätt — murmeldjuret går i dvala under vintern, precis som flera andra smågnagare som behöver spara energi när föda är svår att hitta. B, C och D beskriver beteenden som inte stämmer in på murmeldjurets vinterstrategi."},
+
+{question:"Vad gör att stenbocken kan klättra så säkert på minsta lilla klippavsats?",type:"multi",options:[
+  {text:"Den kan spärra ut och dra ihop sina klövar för bättre grepp",correct:true},
+  {text:"Den har extremt vassa klor på alla fyra fötter",correct:false},
+  {text:"Den väger nästan ingenting, vilket gör den lätt att balansera",correct:false},
+  {text:"Den kan hoppa flera meter i luften för att undvika svåra klippavsatser",correct:false}
+],feedback:"A är den korrekta förklaringen — stenbockens förmåga att spärra ut och dra ihop klövarna ger den ett extra säkert grepp på klippan. B, C och D är alla felaktiga eller överdrivna påståenden om hur stenbocken egentligen klättrar."},
+
+{question:"Vad är sant om gemsen jämfört med stenbocken?",type:"single",options:[
+  {text:"Gemsen är mindre och närmare släkt med antiloper än med getter",correct:true},
+  {text:"Gemsen är betydligt större än stenbocken",correct:false},
+  {text:"Gemsen kan inte klättra i branta klippor",correct:false},
+  {text:"Gemsen och stenbocken är exakt samma art",correct:false}
+],feedback:"A är korrekt — gemsen, eller bergsgeten, är mindre än stenbocken och räknas faktiskt som närmare släkt med antiloper. B, C och D är alla felaktiga: gemsen är mindre, en skicklig klättrare och en helt egen art."},
+
+{question:"Vilka av följande stämmer INTE som förklaring till varför de svenska fjällen ibland kallas \"Europas sista vildmark\"?",type:"multi",options:[
+  {text:"De innehåller några av de största kvarvarande områdena med orörd natur i Europa",correct:false},
+  {text:"De är den mest exploaterade bergskedjan i Europa med tät bebyggelse",correct:true},
+  {text:"Stora delar saknar den omfattande infrastruktur som finns i till exempel Alperna",correct:false},
+  {text:"De har aldrig påverkats av människan på något sätt",correct:true}
+],feedback:"B och D är felaktiga och därmed de rätta svaren på denna fråga: det är Alperna, inte de svenska fjällen, som är starkt exploaterade, och de svenska fjällen har visst påverkats av människan genom till exempel renskötsel, gruvor och turism — det är omfattningen som skiljer dem åt. A och C beskriver korrekt varför de svenska fjällen ses som ovanligt orörda i europeiskt perspektiv, och är därför inte de rätta svaren här."},
+
+{question:"Vilket begrepp beskriver hur näring förs vidare från en växt till ett djur som äter den, och sedan vidare till ett rovdjur som äter det djuret?",type:"single",options:[
+  {text:"Näringskedja",correct:true},
+  {text:"Växtzon",correct:false},
+  {text:"Trädgräns",correct:false},
+  {text:"Anpassning",correct:false}
+],feedback:"A är korrekt — en näringskedja beskriver hur energi och näring flyttas mellan organismer, till exempel från lämmel till fjällräv. Växtzon syftar på ett höjdband med en viss typ av vegetation, trädgräns på höjden där träd slutar växa, och anpassning på en egenskap som hjälper en art att överleva i sin miljö."}
+];
+
+const STORAGE_KEY = 'quiz-progress-quiz-europas-sista-vildmark';
+const letters = ['A','B','C','D'];
+let current = 0;
+let score = 0;
+let answers = [];
+let checked = false;
+
+const cardEl = document.getElementById('card');
+const progressArea = document.getElementById('progressArea');
+const progressText = document.getElementById('progressText');
+const progressFill = document.getElementById('progressFill');
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (typeof data.currentQuestion === 'number' && data.currentQuestion < quizData.length) {
+      return data;
+    }
+    return null;
+  } catch (e) { return null; }
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentQuestion: current,
+      score: score,
+      answers: answers
+    }));
+  } catch (e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+}
+
+function updateProgressBar() {
+  progressText.textContent = 'Fråga ' + (current + 1) + ' av ' + quizData.length;
+  progressFill.style.width = ((current) / quizData.length * 100) + '%';
+}
+
+function hideProgressBar() {
+  progressArea.style.display = 'none';
+}
+function showProgressBar() {
+  progressArea.style.display = 'block';
+}
+
+function renderResume(data) {
+  hideProgressBar();
+  cardEl.innerHTML = '';
+  const h2 = document.createElement('h2');
+  h2.textContent = 'Välkommen tillbaka';
+  const info = document.createElement('div');
+  info.className = 'resume-info';
+  info.textContent = 'Du har kommit till fråga ' + (data.currentQuestion + 1) + ' av ' + quizData.length + ' (' + data.score + ' rätt hittills).';
+  const btnRow = document.createElement('div');
+  btnRow.className = 'resume-buttons';
+  const continueBtn = document.createElement('button');
+  continueBtn.textContent = 'Fortsätt';
+  continueBtn.onclick = function() {
+    current = data.currentQuestion;
+    score = data.score;
+    answers = data.answers || [];
+    showProgressBar();
+    renderQuestion();
+  };
+  const restartBtn = document.createElement('button');
+  restartBtn.textContent = 'Börja om';
+  restartBtn.className = 'btn-outline';
+  restartBtn.onclick = function() {
+    clearProgress();
+    current = 0; score = 0; answers = [];
+    showProgressBar();
+    renderQuestion();
+  };
+  btnRow.appendChild(continueBtn);
+  btnRow.appendChild(restartBtn);
+  cardEl.appendChild(h2);
+  cardEl.appendChild(info);
+  cardEl.appendChild(btnRow);
+}
+
+function renderQuestion() {
+  checked = false;
+  updateProgressBar();
+  const q = quizData[current];
+  cardEl.innerHTML = '';
+
+  if (current === 0) {
+    const instr = document.createElement('div');
+    instr.className = 'instructions';
+    instr.textContent = 'Det här quizet blandar flervalsfrågor och envalsfrågor. Vid flervalsfrågor kan noll till alla alternativ vara rätta. Vid envalsfrågor är exakt ett alternativ rätt. Frågetypen visas vid varje fråga.';
+    cardEl.appendChild(instr);
+  }
+
+  const typeIndicator = document.createElement('div');
+  typeIndicator.className = 'type-indicator';
+  typeIndicator.textContent = q.type === 'multi'
+    ? 'Flerval – ett eller flera alternativ kan vara rätta'
+    : 'Enval – välj ett alternativ';
+  cardEl.appendChild(typeIndicator);
+
+  const qText = document.createElement('div');
+  qText.className = 'question-text';
+  qText.textContent = q.question;
+  cardEl.appendChild(qText);
+
+  const optionsEl = document.createElement('div');
+  optionsEl.className = 'options';
+  optionsEl.id = 'optionsEl';
+
+  q.options.forEach(function(opt, idx) {
+    const label = document.createElement('label');
+    label.className = 'option';
+    label.dataset.idx = idx;
+
+    const input = document.createElement('input');
+    input.type = q.type === 'multi' ? 'checkbox' : 'radio';
+    input.name = 'q' + current;
+    input.value = idx;
+    input.addEventListener('change', function() {
+      if (q.type === 'single') {
+        Array.from(optionsEl.children).forEach(function(el) { el.classList.remove('selected'); });
+        label.classList.add('selected');
+      } else {
+        label.classList.toggle('selected', input.checked);
+      }
+    });
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'option-text';
+    const mark = document.createElement('span');
+    mark.className = 'mark';
+    mark.textContent = letters[idx] + ')';
+    textSpan.appendChild(mark);
+    textSpan.appendChild(document.createTextNode(opt.text));
+
+    label.appendChild(input);
+    label.appendChild(textSpan);
+    optionsEl.appendChild(label);
+  });
+
+  cardEl.appendChild(optionsEl);
+
+  const btnRow = document.createElement('div');
+  btnRow.className = 'btn-row';
+  const checkBtn = document.createElement('button');
+  checkBtn.textContent = 'Kontrollera';
+  checkBtn.id = 'actionBtn';
+  checkBtn.onclick = handleCheck;
+  btnRow.appendChild(checkBtn);
+  cardEl.appendChild(btnRow);
+}
+
+function handleCheck() {
+  if (checked) return;
+  const q = quizData[current];
+  const optionsEl = document.getElementById('optionsEl');
+  const labels = Array.from(optionsEl.children);
+  const selectedIdx = [];
+  labels.forEach(function(label, idx) {
+    const input = label.querySelector('input');
+    if (input.checked) selectedIdx.push(idx);
+    input.disabled = true;
+    label.classList.add('disabled');
+  });
+
+  const correctIdx = [];
+  q.options.forEach(function(opt, idx) { if (opt.correct) correctIdx.push(idx); });
+
+  let isCorrect = false;
+  let isPartial = false;
+
+  if (q.type === 'single') {
+    isCorrect = selectedIdx.length === 1 && q.options[selectedIdx[0]].correct;
+  } else {
+    const selSet = new Set(selectedIdx);
+    const corSet = new Set(correctIdx);
+    isCorrect = selSet.size === corSet.size && [...selSet].every(function(i) { return corSet.has(i); });
+    if (!isCorrect) {
+      const overlap = selectedIdx.some(function(i) { return corSet.has(i); });
+      isPartial = overlap && selectedIdx.length > 0;
+    }
+  }
+
+  labels.forEach(function(label, idx) {
+    const opt = q.options[idx];
+    const wasSelected = selectedIdx.indexOf(idx) !== -1;
+    if (opt.correct) {
+      label.classList.add('correct-answer');
+      const mark = label.querySelector('.mark');
+      mark.textContent = '✓ ' + letters[idx] + ')';
+    } else if (wasSelected) {
+      label.classList.add('incorrect-answer');
+      const mark = label.querySelector('.mark');
+      mark.textContent = '✗ ' + letters[idx] + ')';
+    }
+  });
+
+  const feedbackBox = document.createElement('div');
+  feedbackBox.className = 'feedback-box ' + (isCorrect ? 'correct' : (isPartial ? 'partial' : 'incorrect'));
+  const strong = document.createElement('strong');
+  strong.textContent = isCorrect ? 'Rätt!' : (isPartial ? 'Delvis rätt.' : 'Fel.');
+  const p = document.createElement('div');
+  p.textContent = q.feedback;
+  feedbackBox.appendChild(strong);
+  feedbackBox.appendChild(p);
+  cardEl.insertBefore(feedbackBox, document.querySelector('.btn-row'));
+
+  answers[current] = isCorrect ? 1 : 0;
+  if (isCorrect) score++;
+  current++;
+  saveProgress();
+  current--;
+
+  const actionBtn = document.getElementById('actionBtn');
+  actionBtn.textContent = 'Nästa fråga →';
+  actionBtn.onclick = advance;
+  checked = true;
+}
+
+function advance() {
+  current++;
+  if (current >= quizData.length) {
+    renderResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function renderResults() {
+  hideProgressBar();
+  clearProgress();
+  cardEl.innerHTML = '';
+  const h2 = document.createElement('h2');
+  h2.textContent = 'Resultat';
+  const scoreEl = document.createElement('div');
+  scoreEl.className = 'result-score';
+  scoreEl.textContent = 'Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor';
+  const btnRow = document.createElement('div');
+  btnRow.className = 'btn-row';
+  const restartBtn = document.createElement('button');
+  restartBtn.textContent = 'Starta om';
+  restartBtn.onclick = function() {
+    current = 0; score = 0; answers = [];
+    clearProgress();
+    showProgressBar();
+    renderQuestion();
+  };
+  btnRow.appendChild(restartBtn);
+  cardEl.appendChild(h2);
+  cardEl.appendChild(scoreEl);
+  cardEl.appendChild(btnRow);
+}
+
+(function init() {
+  const saved = loadProgress();
+  if (saved) {
+    renderResume(saved);
+  } else {
+    renderQuestion();
+  }
+})();
+</script>
+</body>
+</html>

@@ -33,5 +33,6 @@ simple geometric shapes, educational school app icon, 1024x1024
 | icon_no_kemi.png        | NO      | Kemi & Metaller        |
 | icon_no_vatten.png      | NO      | Vatten & Luft          |
 | icon_no_sjoar.png       | NO      | Sjöar & Ekosystem      |
+| icon_no_vildmark.png    | NO      | Europas sista vildmark?|
 | icon_ma_matte.png       | MA      | Matteproblem           |
 | icon_spel_folkets_vag.png| SPEL   | Folkets Väg            |

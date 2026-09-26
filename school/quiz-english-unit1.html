@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Unit 1 – Time, Be, Prepositions</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-border: #d97706;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+    --line: #e2e8f0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 1.5rem; }
+  h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.25rem; }
+  .subtitle { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.9rem; }
+  .progress-text { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem; }
+  .progress-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; width: 0%; }
+  .card { background: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: 2rem; }
+  .topic { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: #eef2ff; padding: 0.2rem 0.6rem; border-radius: 999px; margin-bottom: 0.75rem; }
+  .type-indicator { font-size: 0.8rem; font-style: italic; color: var(--text-secondary); margin-bottom: 0.75rem; }
+  .question-text { font-size: 1.1rem; font-weight: 600; margin: 0 0 1.25rem; line-height: 1.45; }
+  .media { display: flex; justify-content: center; margin: 0 0 1.25rem; }
+  .media img { max-width: 100%; border-radius: 12px; border: 1px solid var(--line); }
+  .media svg { max-width: 100%; height: auto; }
+  .passage { background: #f8fafc; border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; padding: 1rem 1.25rem; margin: 0 0 1.25rem; line-height: 1.6; font-size: 1rem; }
+
+  .options { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+  .options.grid2 { display: grid; grid-template-columns: 1fr 1fr; }
+  .option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.875rem 1rem; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; transition: border-color .15s, background-color .15s; }
+  .option:hover:not(.disabled) { border-color: var(--accent); background: #f8f9ff; }
+  .option.selected { border-color: var(--accent); background: #eef2ff; }
+  .option input { accent-color: var(--accent); margin-top: 0.2rem; flex-shrink: 0; width: 1.05rem; height: 1.05rem; cursor: pointer; }
+  .option.disabled { cursor: default; }
+  .option-body { flex: 1; min-width: 0; }
+  .option-text { font-size: 1rem; line-height: 1.45; }
+  .option-text svg { display: block; margin: 0.25rem 0; }
+  .option .mark { font-weight: 700; margin-right: 0.35rem; }
+  .option.is-correct { border-color: var(--correct-border); background: var(--correct-bg); }
+  .option.is-wrong { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+  .option.is-correct .mark { color: var(--correct-border); }
+  .option.is-wrong .mark { color: var(--incorrect-border); }
+  .why { display: none; font-size: 0.88rem; color: #334155; margin-top: 0.35rem; line-height: 1.45; }
+  .revealed .why { display: block; }
+
+  /* word tiles */
+  .build { min-height: 3.2rem; border: 2px dashed #c7d2fe; border-radius: 12px; padding: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; background: #fafaff; }
+  .build.empty::before { content: "Tap the words below to build your answer"; color: var(--text-secondary); font-size: 0.85rem; font-style: italic; padding: 0 0.4rem; }
+  .build.ok { border-color: var(--correct-border); border-style: solid; background: var(--correct-bg); }
+  .build.bad { border-color: var(--incorrect-border); border-style: solid; background: var(--incorrect-bg); }
+  .bank { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .tile { font: inherit; font-size: 1rem; padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #c7d2fe; background: white; color: var(--text-primary); cursor: pointer; }
+  .tile:hover:not(:disabled) { border-color: var(--accent); background: #eef2ff; }
+  .tile.used { visibility: hidden; }
+  .tile:disabled { cursor: default; }
+
+  /* tap the word */
+  .tapline { font-size: 1.15rem; line-height: 2.4; margin-bottom: 1.5rem; }
+  .tok { font: inherit; border: 1px solid transparent; background: #f1f5f9; border-radius: 6px; padding: 0.15rem 0.45rem; margin: 0 0.12rem; cursor: pointer; color: var(--text-primary); }
+  .tok:hover:not(:disabled) { border-color: var(--accent); }
+  .tok.sel { background: #eef2ff; border-color: var(--accent); }
+  .tok.ok { background: var(--correct-bg); border-color: var(--correct-border); }
+  .tok.bad { background: var(--incorrect-bg); border-color: var(--incorrect-border); }
+  .tok:disabled { cursor: default; }
+
+  /* gaps */
+  .gaptext { font-size: 1.05rem; line-height: 2.5; margin-bottom: 1.5rem; }
+  .gaptext select, .match select { font: inherit; font-size: 1rem; padding: 0.25rem 0.4rem; border: 2px solid #c7d2fe; border-radius: 8px; background: white; color: var(--text-primary); }
+  select.ok { border-color: var(--correct-border); background: var(--correct-bg); }
+  select.bad { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+  .fix { color: var(--correct-text); font-weight: 700; font-size: 0.9rem; margin-left: 0.2rem; }
+
+  /* match */
+  .match { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.9rem; margin-bottom: 1.5rem; }
+  .match-item { border: 1px solid var(--line); border-radius: 12px; padding: 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: center; text-align: center; }
+  .match-item img { width: 100%; border-radius: 8px; }
+  .match-item svg { width: 100%; height: auto; }
+  .match-item .mlabel { font-weight: 600; font-size: 1.05rem; padding: 0.6rem 0; }
+  .match-item select { width: 100%; }
+
+  /* type */
+  .typebox { width: 100%; font: inherit; font-size: 1.1rem; padding: 0.75rem 1rem; border: 2px solid #c7d2fe; border-radius: 10px; margin-bottom: 1.5rem; }
+  .typebox.ok { border-color: var(--correct-border); background: var(--correct-bg); }
+  .typebox.bad { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+
+  /* chat, id card, timetable */
+  .chat { display: flex; flex-direction: column; gap: 0.6rem; }
+  .bubble { max-width: 85%; padding: 0.4rem 0.9rem; border-radius: 16px; line-height: 2.3; }
+  .bubble.l { background: #f1f5f9; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .bubble.r { background: #e0e7ff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .bubble b { font-size: 0.78rem; color: var(--text-secondary); display: block; line-height: 1.4; margin-top: 0.3rem; }
+  .idcard { width: 300px; max-width: 100%; border: 2px solid var(--text-primary); border-radius: 14px; overflow: hidden; background: #fffdf7; }
+  .idcard .idhead { background: var(--text-primary); color: white; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.12em; padding: 0.4rem 0.9rem; }
+  .idcard .idbody { display: flex; gap: 0.9rem; padding: 0.9rem; align-items: center; }
+  .idcard dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.7rem; font-size: 0.95rem; }
+  .idcard dt { color: var(--text-secondary); font-size: 0.8rem; align-self: center; }
+  .idcard dd { margin: 0; font-weight: 700; }
+  table.tt { border-collapse: collapse; font-size: 0.95rem; width: 100%; max-width: 420px; }
+  table.tt th, table.tt td { border: 1px solid #cbd5e1; padding: 0.45rem 0.6rem; text-align: left; }
+  table.tt th { background: #eef2ff; }
+  table.tt td:first-child { font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+
+  /* buttons, feedback */
+  .actions { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+  .btn { background: var(--accent); color: white; border: 2px solid var(--accent); padding: 0.75rem 2rem; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; font-family: inherit; }
+  .btn:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.outline { background: transparent; color: var(--accent); }
+  .btn.outline:hover { background: #eef2ff; }
+  .feedback { margin: 1.5rem 0; padding: 1rem 1.25rem; border-left: 4px solid; border-radius: 0 10px 10px 0; font-size: 0.95rem; line-height: 1.55; }
+  .feedback.correct { border-color: var(--correct-border); background: rgba(5,150,105,0.05); }
+  .feedback.incorrect { border-color: var(--incorrect-border); background: rgba(220,38,38,0.05); }
+  .feedback.partial { border-color: var(--partial-border); background: rgba(217,119,6,0.05); }
+  .feedback .head { font-weight: 700; display: block; margin-bottom: 0.3rem; }
+  .feedback .answer { display: block; margin-bottom: 0.4rem; }
+  .center { text-align: center; }
+  .result-big { font-size: 1.25rem; font-weight: 700; margin: 1rem 0 1.25rem; }
+  .breakdown { max-width: 360px; margin: 0 auto 1.5rem; text-align: left; font-size: 0.95rem; }
+  .breakdown div { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid var(--line); }
+  @media (max-width: 520px) {
+    .card { padding: 1.25rem; }
+    .options.grid2 { grid-template-columns: 1fr; }
+    .match { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>English – Unit 1</h1>
+    <div class="subtitle">Time · the verb <i>be</i> · prepositions · days &amp; seasons · school subjects · presenting yourself</div>
+    <div class="progress-text" id="progressText"></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </header>
+  <div class="card" id="app"></div>
+</div>
+
+<script>
+/* ============================================================
+   Drawing helpers (SVG / HTML media)
+   ============================================================ */
+const INK = '#1a1a2e';
+
+function clock(h, m, size) {
+  size = size || 190;
+  const ha = ((h % 12) + m / 60) * 30, ma = m * 6;
+  let ticks = '';
+  for (let i = 0; i < 60; i++) {
+    const a = i * 6 * Math.PI / 180, big = i % 5 === 0;
+    const r1 = big ? 80 : 84, r2 = 89;
+    ticks += `<line x1="${100 + r1 * Math.sin(a)}" y1="${100 - r1 * Math.cos(a)}" x2="${100 + r2 * Math.sin(a)}" y2="${100 - r2 * Math.cos(a)}" stroke="${INK}" stroke-width="${big ? 3 : 1}"/>`;
+  }
+  let nums = '';
+  for (let n = 1; n <= 12; n++) {
+    const a = n * 30 * Math.PI / 180;
+    nums += `<text x="${100 + 67 * Math.sin(a)}" y="${100 - 67 * Math.cos(a) + 6}" text-anchor="middle" font-size="17" font-weight="700" font-family="Segoe UI, sans-serif" fill="${INK}">${n}</text>`;
+  }
+  const hand = (ang, len, w, col) => {
+    const a = ang * Math.PI / 180;
+    return `<line x1="100" y1="100" x2="${100 + len * Math.sin(a)}" y2="${100 - len * Math.cos(a)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+  };
+  return `<svg viewBox="0 0 200 200" width="${size}" height="${size}" role="img" aria-label="clock">
+    <circle cx="100" cy="100" r="94" fill="white" stroke="${INK}" stroke-width="5"/>${ticks}${nums}
+    ${hand(ha, 44, 8, INK)}${hand(ma, 72, 4, '#6366f1')}
+    <circle cx="100" cy="100" r="6" fill="${INK}"/></svg>`;
+}
+
+function digital(t, size) {
+  size = size || 220;
+  return `<svg viewBox="0 0 220 100" width="${size}" role="img" aria-label="digital clock">
+    <rect x="4" y="4" width="212" height="92" rx="18" fill="${INK}"/>
+    <rect x="16" y="16" width="188" height="68" rx="10" fill="#0f172a" stroke="#334155"/>
+    <text x="110" y="70" text-anchor="middle" font-size="50" font-weight="700" font-family="Consolas, 'Courier New', monospace" fill="#4ade80">${t}</text></svg>`;
+}
+
+function img(name) { return `<img src="images/en_unit1/${name}.jpg" alt="">`; }
+
+const P = { box: '#f4c77b', side: '#d9a55a', top: '#fbe0a8', inside: '#8b5e2b', mouse: '#9ca3af', ear: '#f9a8d4' };
+function mouse(x, y, s) {
+  s = s || 1;
+  return `<g transform="translate(${x},${y}) scale(${s})">
+    <path d="M-21,3 C-34,6 -40,-8 -48,-3" stroke="${INK}" stroke-width="2" fill="none"/>
+    <ellipse cx="0" cy="0" rx="22" ry="14" fill="${P.mouse}" stroke="${INK}" stroke-width="2"/>
+    <circle cx="15" cy="-14" r="7" fill="${P.ear}" stroke="${INK}" stroke-width="2"/>
+    <circle cx="22" cy="-4" r="11" fill="${P.mouse}" stroke="${INK}" stroke-width="2"/>
+    <circle cx="26" cy="-7" r="1.8" fill="${INK}"/><circle cx="33" cy="-2" r="2.3" fill="${INK}"/></g>`;
+}
+function boxParts(x, y, w, h, open) {
+  const d = 18;
+  const top = `<polygon points="${x},${y} ${x + d},${y - d} ${x + w + d},${y - d} ${x + w},${y}" fill="${open ? P.inside : P.top}" stroke="${INK}" stroke-width="2"/>`;
+  const front = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${P.box}" stroke="${INK}" stroke-width="2"/>
+    <polygon points="${x + w},${y} ${x + w + d},${y - d} ${x + w + d},${y + h - d} ${x + w},${y + h}" fill="${P.side}" stroke="${INK}" stroke-width="2"/>`;
+  return { top, front };
+}
+function box(x, y, w, h) { const b = boxParts(x, y, w, h); return b.top + b.front; }
+function scene(kind) {
+  let s = `<line x1="0" y1="140" x2="240" y2="140" stroke="#cbd5e1" stroke-width="3"/>`;
+  if (kind === 'on') s += box(70, 80, 100, 60) + mouse(122, 58);
+  if (kind === 'in') { const b = boxParts(70, 80, 100, 60, true); s += b.top + mouse(116, 70) + b.front; }
+  if (kind === 'behind') s += mouse(172, 118) + box(50, 70, 110, 70);
+  if (kind === 'next') s += box(40, 80, 100, 60) + mouse(192, 126);
+  if (kind === 'front') s += box(70, 64, 100, 60) + mouse(114, 132);
+  if (kind === 'over') s += box(70, 92, 100, 48) + `<path d="M30,138 Q120,-20 210,138" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 6"/>` + mouse(112, 50);
+  if (kind === 'under') s += `<rect x="40" y="68" width="160" height="12" rx="3" fill="${P.side}" stroke="${INK}" stroke-width="2"/>
+      <rect x="52" y="80" width="10" height="60" fill="${P.side}" stroke="${INK}" stroke-width="2"/><rect x="178" y="80" width="10" height="60" fill="${P.side}" stroke="${INK}" stroke-width="2"/>` + mouse(118, 126);
+  if (kind === 'between') s += box(8, 95, 58, 45) + box(162, 95, 58, 45) + mouse(122, 126, 0.9);
+  return `<svg viewBox="0 0 240 160" width="300" role="img" aria-label="picture">${s}</svg>`;
+}
+
+function lineUp() {
+  const kids = [['Ann', '#f472b6'], ['Ben', '#60a5fa'], ['Cat', '#facc15'], ['Dan', '#4ade80']];
+  let s = '';
+  kids.forEach((k, i) => {
+    const x = 45 + i * 60;
+    s += `<circle cx="${x}" cy="48" r="16" fill="#fde2c8" stroke="${INK}" stroke-width="2"/>
+      <path d="M${x - 20},110 L${x - 16},72 Q${x},62 ${x + 16},72 L${x + 20},110 Z" fill="${k[1]}" stroke="${INK}" stroke-width="2"/>
+      <text x="${x}" y="134" text-anchor="middle" font-size="16" font-weight="700" font-family="Segoe UI, sans-serif" fill="${INK}">${k[0]}</text>`;
+  });
+  s += `<text x="10" y="160" font-size="12" font-family="Segoe UI, sans-serif" fill="#64748b">← left</text>
+        <text x="270" y="160" text-anchor="end" font-size="12" font-family="Segoe UI, sans-serif" fill="#64748b">right →</text>`;
+  return `<svg viewBox="0 0 280 168" width="320" role="img" aria-label="four children in a line">${s}</svg>`;
+}
+
+function face(hair) {
+  return `<svg viewBox="0 0 80 90" width="80" aria-hidden="true"><rect width="80" height="90" rx="8" fill="#e2e8f0"/>
+    <path d="M14,90 Q14,62 40,62 Q66,62 66,90 Z" fill="#94a3b8"/>
+    <circle cx="40" cy="38" r="18" fill="#fde2c8" stroke="${INK}" stroke-width="1.5"/>
+    <path d="${hair}" fill="${INK}"/>
+    <circle cx="34" cy="38" r="1.8" fill="${INK}"/><circle cx="46" cy="38" r="1.8" fill="${INK}"/>
+    <path d="M34,46 Q40,51 46,46" stroke="${INK}" stroke-width="1.5" fill="none"/></svg>`;
+}
+function idCard(name, age, country, likes, hair) {
+  return `<div class="idcard"><div class="idhead">STUDENT CARD</div><div class="idbody">${face(hair)}
+    <dl><dt>Name</dt><dd>${name}</dd><dt>Age</dt><dd>${age}</dd><dt>Country</dt><dd>${country}</dd><dt>Likes</dt><dd>${likes}</dd></dl></div></div>`;
+}
+const HAIR_SHORT = 'M22,36 Q22,16 40,16 Q58,16 58,36 Q52,26 40,26 Q28,26 22,36 Z';
+const HAIR_LONG = 'M20,58 Q16,16 40,16 Q64,16 60,58 L56,58 Q58,30 40,27 Q24,30 24,58 Z';
+
+const TIMETABLE = `<table class="tt"><tr><th></th><th>Monday</th><th>Tuesday</th></tr>
+  <tr><td>8:30</td><td>Maths</td><td>English</td></tr>
+  <tr><td>9:30</td><td>History</td><td>Art</td></tr>
+  <tr><td>10:15</td><td>PE</td><td>Maths</td></tr>
+  <tr><td>1:45</td><td>Music</td><td>Needlework</td></tr></table>`;
+
+/* ============================================================
+   Questions
+   types: single | multi | order | tap | gaps | match | type
+   ============================================================ */
+const quizData = [
+/* 1 */ { type: 'single', topic: 'Telling the time', media: clock(3, 40),
+  q: 'What time is it?',
+  options: [
+    { t: "It's twenty past eight.", c: false, why: 'This reads the hands the wrong way round. The long hand shows the minutes and the short hand shows the hour.' },
+    { t: "It's twenty to four.", c: true, why: 'The long hand is on 8, which is 40 minutes. After half past we count what is left until the next hour: 20 minutes to four.' },
+    { t: "It's forty to four.", c: false, why: 'We only use "to" for 1–30 minutes. Nobody says "forty to".' },
+    { t: "It's twenty to three.", c: false, why: 'The short hand is almost at 4, so the next hour is four, not three.' } ] },
+
+/* 2 */ { type: 'multi', topic: 'Prepositions', media: img('prep_room'),
+  q: 'Look at the picture. Which sentences are true?',
+  options: [
+    { t: 'The cat is on the bed.', c: true, why: 'The cat is lying on top of the bed: <b>on</b>.' },
+    { t: 'The ball is in the shoes.', c: false, why: '<b>In</b> means inside something. The ball is on the floor with one shoe on each side: it is <b>between</b> the shoes.' },
+    { t: 'The dog is under the table.', c: true, why: 'The table top is above the dog: <b>under</b>.' },
+    { t: 'The plant is under the table.', c: false, why: 'The plant stands on top of the table, so it is <b>on</b> the table.' } ] },
+
+/* 3 */ { type: 'tap', topic: 'The verb be',
+  q: 'One word in this sentence is wrong. Tap it.',
+  tokens: ['My', 'sister', 'and', 'I', 'is', 'in', 'the', 'same', 'class.'], correct: [4], fix: 'are',
+  feedback: '"My sister and I" is two people – the same as <i>we</i>. We say <i>we <b>are</b></i>, so: "My sister and I <b>are</b> in the same class." The word "I" is fine here because it is part of the subject.' },
+
+/* 4 */ { type: 'single', topic: 'Days of the week',
+  q: 'Tom has swimming two days after Monday. He has piano the day before Sunday. When are his lessons?',
+  options: [
+    { t: 'Swimming on Tuesday, piano on Saturday', c: false, why: 'Tuesday is only one day after Monday.' },
+    { t: 'Swimming on Thursday, piano on Friday', c: false, why: 'Both days are wrong: Thursday is three days after Monday, and Friday is two days before Sunday.' },
+    { t: 'Swimming on Wednesday, piano on Monday', c: false, why: 'Monday is the day <i>after</i> Sunday. <i>Before</i> means earlier.' },
+    { t: 'Swimming on Wednesday, piano on Saturday', c: true, why: 'Monday → Tuesday (1) → Wednesday (2). The day before Sunday is Saturday.' } ] },
+
+/* 5 */ { type: 'match', topic: 'School subjects',
+  q: 'Which lesson is it? Choose the right subject for each picture.',
+  items: [ { media: img('subj_pe'), a: 'PE' }, { media: img('subj_needlework'), a: 'Needlework' }, { media: img('subj_homeec'), a: 'Home economics' }, { media: img('subj_science'), a: 'Science' } ],
+  labels: ['Science', 'History', 'PE', 'Needlework', 'Maths', 'Home economics'],
+  feedback: '<b>PE</b> (Physical Education) is sport and games. <b>Needlework</b> is sewing and knitting. <b>Home economics</b> is cooking and baking. <b>Science</b> is experiments – for example with a microscope.' },
+
+/* 6 */ { type: 'order', topic: 'Telling the time', media: digital('10:45'),
+  q: 'Build the sentence that tells the time. You do not need all the words.',
+  tiles: ['half', "It's", 'eleven', 'quarter', 'past', 'a', 'to', 'ten'],
+  answers: [["It's", 'a', 'quarter', 'to', 'eleven']],
+  feedback: '45 minutes is a quarter of an hour <i>before</i> the next hour. The next hour is eleven: "It\'s a quarter to eleven." ("A quarter past ten" would be 10:15.)' },
+
+/* 7 */ { type: 'multi', topic: 'Reading',
+  passage: "Hi! I'm Ruby. I come from New York – people call it the Big Apple. My mom is a vet, so she helps sick animals every day. My dad stays at home and looks after me and my little brother, Sam.",
+  q: 'Read the text. Which sentences are true?',
+  options: [
+    { t: "Ruby's mother helps animals that are ill.", c: true, why: 'A <i>vet</i> is an animal doctor, and <i>sick</i> means the same as <i>ill</i>.' },
+    { t: "Ruby's father goes to work every day.", c: false, why: 'He <i>stays at home</i>. It is her mom who goes to work.' },
+    { t: "Ruby's city has a nickname.", c: true, why: '"The Big Apple" is a nickname for New York.' },
+    { t: 'Ruby has an older brother.', c: false, why: 'A <i>little</i> brother is younger, not older.' } ] },
+
+/* 8 */ { type: 'single', topic: 'The verb be',
+  q: '— Is your mom a vet?<br>— Yes, ______',
+  options: [
+    { t: "she's.", c: false, why: 'A short answer with "yes" must end with the full verb: "Yes, she <b>is</b>." You cannot end with "she\'s".' },
+    { t: 'he is.', c: false, why: 'Mom is a woman, so we use <i>she</i>.' },
+    { t: 'she is.', c: true, why: 'Question with <i>Is</i> → short answer with <i>is</i>: "Yes, she is."' },
+    { t: 'it is.', c: false, why: 'We use <i>it</i> for things and animals, not for a person.' } ] },
+
+/* 9 */ { type: 'match', topic: 'Prepositions',
+  q: 'Where is the mouse? Choose the right word for each picture.',
+  items: [ { media: scene('on'), a: 'on' }, { media: scene('in'), a: 'in' }, { media: scene('behind'), a: 'behind' }, { media: scene('next'), a: 'next to' }, { media: scene('over'), a: 'over' } ],
+  labels: ['in', 'on', 'under', 'behind', 'next to', 'over', 'in front of'],
+  feedback: '<b>On</b> = on top of it. <b>In</b> = inside it. <b>Behind</b> = at the back, partly hidden. <b>Next to</b> = at the side of it. <b>Over</b> = above it, in the air, without touching.' },
+
+/* 10 */ { type: 'single', topic: 'Presenting yourself', media: idCard('Leo', '11', 'Canada', 'chess', HAIR_SHORT),
+  q: 'Leo wrote four presentations. Which one has <b>NO</b> mistakes?',
+  options: [
+    { t: 'Hello! My name are Leo. I am eleven years old. I live in Canada and I like to play chess.', c: false, why: '"My name" is one thing, so it takes <i>is</i>: "My name <b>is</b> Leo."' },
+    { t: 'Hello! My name is Leo. I am eleven years. I live in Canada, and I really like to play chess very much.', c: false, why: 'The age needs "years <b>old</b>" – or just "I am eleven."' },
+    { t: 'Hello! My name is Leo and I am eleven years old. I live on Canada and I like to play chess.', c: false, why: 'You live <b>in</b> a country or a city. <i>On</i> is for surfaces, like a table.' },
+    { t: 'Hello! My name is Leo. I am eleven years old. I live in Canada. I like to play chess.', c: true, why: 'Name, age, country and hobby – all correct.' } ] },
+
+/* 11 */ { type: 'multi', topic: 'Telling the time', grid: true,
+  q: 'Which clocks show <b>twenty-five past seven</b>?',
+  options: [
+    { t: clock(7, 25, 130), c: true, why: 'Long hand on 5 = 25 minutes past. The short hand is just after 7.' },
+    { t: clock(5, 35, 130), c: false, why: 'This is 5:35 – twenty-five to six. The hands are the other way round.' },
+    { t: clock(6, 35, 130), c: false, why: 'This is 6:35 – twenty-five <i>to</i> seven, not past.' },
+    { t: digital('7:25', 150), c: true, why: '7:25 is twenty-five minutes past seven.' } ] },
+
+/* 12 */ { type: 'match', topic: 'Seasons',
+  q: 'Which season is it? Match each picture with a season.',
+  items: [ { media: img('season_autumn'), a: 'Autumn' }, { media: img('season_winter'), a: 'Winter' }, { media: img('season_spring'), a: 'Spring' }, { media: img('season_summer'), a: 'Summer' } ],
+  labels: ['Spring', 'Summer', 'Autumn', 'Winter'],
+  feedback: 'Leaves fall in <b>autumn</b> (American English: <i>fall</i>). Snow and snowmen = <b>winter</b>. Flowers and baby birds = <b>spring</b>. Beach and ice cream = <b>summer</b>.' },
+
+/* 13 */ { type: 'single', topic: 'The verb be',
+  q: 'Melissa and Chris ______ in a good mood.',
+  options: [
+    { t: 'is', c: false, why: 'Melissa and Chris are two people, so we need the plural form.' },
+    { t: 'they are', c: false, why: 'The sentence already has a subject: "Melissa and Chris". Adding "they" says the subject twice.' },
+    { t: 'are', c: true, why: 'Two people = <i>they</i> → <b>are</b>. "Melissa and Chris are in a good mood."' },
+    { t: 'am', c: false, why: '<i>Am</i> is only used with <i>I</i>.' } ] },
+
+/* 14 */ { type: 'multi', topic: 'School subjects', media: TIMETABLE,
+  q: "Look at Sam's timetable. Which sentences are true?",
+  options: [
+    { t: 'On Tuesday, Art starts at half past nine.', c: true, why: '9:30 is half past nine, and Art is on Tuesday.' },
+    { t: 'PE is on Monday at a quarter past ten.', c: true, why: '10:15 is a quarter past ten.' },
+    { t: 'Needlework starts at a quarter to one.', c: false, why: '1:45 is a quarter to <b>two</b> – fifteen minutes before two o\'clock.' },
+    { t: 'On Monday, Maths starts at half past nine.', c: false, why: 'Monday Maths is at 8:30 – half past <b>eight</b>.' } ] },
+
+/* 15 */ { type: 'multi', topic: 'Prepositions', media: img('prep_park'),
+  q: 'Look at the picture. Which sentences are true?',
+  options: [
+    { t: 'The boy is on the bench.', c: true, why: 'He is sitting on the bench.' },
+    { t: 'The dog is under the bench.', c: false, why: 'The dog is lying on the grass beside the bench, not under it.' },
+    { t: 'The girl is behind the tree.', c: true, why: 'The tree hides most of her body – she is <b>behind</b> it.' },
+    { t: 'The ball is between the bench and the tree.', c: true, why: 'The bench is on one side of the ball and the tree is on the other side.' } ] },
+
+/* 16 */ { type: 'tap', topic: 'Telling the time', media: clock(6, 15),
+  q: 'The sentence does not match the clock. Tap the wrong word.',
+  tokens: ["It's", 'a', 'quarter', 'to', 'six.'], correct: [3], fix: 'past',
+  feedback: 'The long hand is on 3: fifteen minutes <b>after</b> six. "It\'s a quarter <b>past</b> six." A quarter <i>to</i> six would be 5:45.' },
+
+/* 17 */ { type: 'type', topic: 'Days of the week',
+  q: 'The letters are mixed up. Which day of the week is it? Write the word.<br><span style="font-size:1.4rem;letter-spacing:0.35em">D N E S Y W D A E</span>',
+  accept: ['wednesday'], answer: 'Wednesday',
+  feedback: 'Wednesday – spelled W-E-D-N-E-S-D-A-Y. The first "d" is silent: we say "WENZ-day". Days of the week always start with a capital letter in English.' },
+
+/* 18 */ { type: 'order', topic: 'Reading',
+  q: 'Mary wants to talk about her dog. Put the words in the right order. One word is extra.',
+  tiles: ['about', 'I', 'my', 'tell', 'has', 'you', 'dog', 'have', 'to'],
+  answers: [['I', 'have', 'to', 'tell', 'you', 'about', 'my', 'dog']],
+  feedback: '"I have to tell you about my dog." With <i>I</i> we use <b>have</b>; <i>has</i> is for he, she and it. <i>Have to</i> means that you must do something.' },
+
+/* 19 */ { type: 'gaps', topic: 'The verb be',
+  q: 'Complete the chat with <i>am</i>, <i>is</i> or <i>are</i>.',
+  html: `<div class="chat">
+    <div class="bubble l"><b>Leo</b>Hi! [[0]] you the new girl from New York?</div>
+    <div class="bubble r"><b>Mary</b>Yes, I [[1]]!</div>
+    <div class="bubble l"><b>Leo</b>Cool. [[2]] your dog with you?</div>
+    <div class="bubble r"><b>Mary</b>Yes, he [[3]]. His name is Oscar.</div></div>`,
+  gaps: [ { opts: ['Am', 'Is', 'Are'], a: 'Are' }, { opts: ['am', 'is', 'are'], a: 'am' }, { opts: ['Am', 'Is', 'Are'], a: 'Is' }, { opts: ['am', 'is', 'are'], a: 'is' } ],
+  feedback: 'In a question the verb comes first: <i>Are you…? Is your dog…?</i> A short answer ends with the verb: <i>Yes, I am. Yes, he is.</i>' },
+
+/* 20 */ { type: 'multi', topic: 'Telling the time', media: clock(9, 45),
+  q: 'Which sentences are correct for this clock?',
+  options: [
+    { t: "It's a quarter past nine.", c: false, why: 'A quarter past nine is 9:15 – long hand on 3.' },
+    { t: "It's nine forty-five o'clock.", c: false, why: '<i>O\'clock</i> is only for whole hours: "nine o\'clock". Here you can say "nine forty-five" – without o\'clock.' },
+    { t: "It's a quarter to nine.", c: false, why: 'The short hand is almost at 10. It is a quarter to <b>ten</b>.' },
+    { t: "It's half past nine.", c: false, why: 'Half past nine is 9:30 – long hand on 6.' } ] },
+
+/* 21 */ { type: 'single', topic: 'School subjects',
+  q: 'In this lesson you learn about countries, maps, mountains and rivers. Which lesson is it?',
+  options: [
+    { t: 'Geography', c: true, why: 'Geography is about the world: countries, maps, mountains and rivers.' },
+    { t: 'History', c: false, why: 'History is about the past – kings, Vikings, old times.' },
+    { t: 'Science', c: false, why: 'Science is about experiments, plants, animals and how things work.' },
+    { t: 'Religious education', c: false, why: 'This lesson is about religions and what people believe.' } ] },
+
+/* 22 */ { type: 'tap', topic: 'Presenting yourself',
+  q: 'Kim wrote a short presentation. Tap the one word that is wrong.',
+  tokens: ['Hello!', 'My', 'name', 'is', 'Kim.', 'I', 'am', 'twelve', 'years', 'old.', 'I', 'live', 'on', 'London.'], correct: [12], fix: 'in',
+  feedback: 'We live <b>in</b> a city or a country: "I live <b>in</b> London." We use <i>on</i> for surfaces – "on the table", "on the bed".' },
+
+/* 23 */ { type: 'multi', topic: 'Prepositions', media: lineUp(),
+  q: 'Four children stand in a line. Which sentences are true?',
+  options: [
+    { t: 'Ben is between Ann and Cat.', c: true, why: 'Ann is on one side of Ben and Cat is on the other side.' },
+    { t: 'Dan is next to Cat.', c: true, why: 'Dan and Cat stand side by side.' },
+    { t: 'Ann is next to Cat.', c: false, why: 'Ben stands between them, so Ann is not next to Cat.' },
+    { t: 'Cat is between Ben and Dan.', c: true, why: 'Ben is on her left and Dan is on her right.' } ] },
+
+/* 24 */ { type: 'single', topic: 'Days of the week',
+  q: 'Yesterday was Saturday. What day is it the day after tomorrow?',
+  options: [
+    { t: 'Tuesday', c: true, why: 'Yesterday Saturday → today Sunday → tomorrow Monday → the day after tomorrow Tuesday.' },
+    { t: 'Monday', c: false, why: 'Monday is <i>tomorrow</i>. The day after tomorrow is one more day.' },
+    { t: 'Wednesday', c: false, why: 'That is one day too many.' },
+    { t: 'Sunday', c: false, why: 'Sunday is <i>today</i>, because yesterday was Saturday.' } ] },
+
+/* 25 */ { type: 'multi', topic: 'The verb be',
+  q: 'Which sentences are correct?',
+  options: [
+    { t: 'The dog are under the table.', c: false, why: 'One dog = <i>it</i> → "The dog <b>is</b> under the table."' },
+    { t: 'Is you and Leo brothers?', c: false, why: '"You and Leo" is two people → "<b>Are</b> you and Leo brothers?"' },
+    { t: 'Oscar and his friends are in the park.', c: true, why: 'Oscar and his friends = <i>they</i> → <b>are</b>.' },
+    { t: 'It are Tuesday today.', c: false, why: '<i>It</i> always takes <b>is</b>: "It is Tuesday today."' } ] },
+
+/* 26 */ { type: 'single', topic: 'Telling the time', media: digital('13:50'),
+  q: 'Mary looks at the train timetable. Her train leaves at 13:50. What does she say?',
+  options: [
+    { t: 'My train leaves at ten past one.', c: false, why: 'Ten past one is 1:10. 50 minutes is more than half past, so we count <i>to</i> the next hour.' },
+    { t: 'My train leaves at ten to two.', c: true, why: '13:50 is 1:50 in the afternoon. Ten minutes are left until two: ten to two.' },
+    { t: 'My train leaves at ten to one.', c: false, why: 'That would be 12:50. At 13:50 the next hour is two.' },
+    { t: 'My train leaves at fifty past one.', c: false, why: 'We never say "fifty past". After half past we use <i>to</i>.' } ] },
+
+/* 27 */ { type: 'single', topic: 'Reading',
+  q: 'Mary wants to present her family to you. Which sentence is correct?',
+  options: [
+    { t: 'Let me introduce you my family.', c: false, why: 'A small word is missing: introduce you <b>to</b> my family.' },
+    { t: 'Let me introducing you to my family.', c: false, why: 'After <i>let me</i> we use the basic verb: <i>introduce</i>, not <i>introducing</i>.' },
+    { t: 'Let me introduce my family you.', c: false, why: 'The word order is wrong and <i>to</i> is missing.' },
+    { t: 'Let me introduce you to my family.', c: true, why: 'Introduce <b>someone to</b> someone: "Let me introduce you to my family."' } ] },
+
+/* 28 */ { type: 'single', topic: 'School subjects',
+  q: 'Which word is <b>NOT</b> a school subject?',
+  options: [
+    { t: 'Needlework', c: false, why: 'Needlework is a school subject – sewing and knitting.' },
+    { t: 'History', c: false, why: 'History is a school subject – about the past.' },
+    { t: 'Homework', c: true, why: 'Homework is work you do at home for many subjects. It is not a lesson.' },
+    { t: 'Maths', c: false, why: 'Maths is a school subject – numbers and counting. (American English says <i>math</i>.)' } ] },
+
+/* 29 */ { type: 'gaps', topic: 'Presenting yourself', media: idCard('Aisha', '12', 'Ireland', 'windsurfing', HAIR_LONG),
+  q: 'Present Aisha to a friend. Choose the right words.',
+  html: '[[0]] Aisha. [[1]] is twelve years old. She [[2]] [[3]] Ireland. She [[4]] windsurfing.',
+  gaps: [ { opts: ['This am', 'This is', 'This are'], a: 'This is' }, { opts: ['He', 'She', 'It'], a: 'She' }, { opts: ['live', 'lives', 'living'], a: 'lives' }, { opts: ['in', 'on', 'at'], a: 'in' }, { opts: ['like', 'likes', 'liking'], a: 'likes' } ],
+  feedback: 'When you talk <i>about</i> someone (he, she), the verb gets an <b>-s</b>: she lives, she likes. You live <b>in</b> a country. Aisha is a girl → <b>she</b>.' },
+
+/* 30 */ { type: 'single', topic: 'Prepositions', media: img('prep_room'),
+  q: 'Where is the red ball?',
+  options: [
+    { t: 'It is behind the shoes.', c: false, why: 'Behind would mean that the shoes hide the ball. You can see the whole ball.' },
+    { t: 'It is on the shoes.', c: false, why: 'The ball does not lie on top of the shoes.' },
+    { t: 'It is between the shoes.', c: true, why: 'There is one shoe on each side of the ball: <b>between</b>.' },
+    { t: 'It is under the bed.', c: false, why: 'The ball lies on the floor in front of the bed, not under it.' } ] },
+
+/* 31 */ { type: 'gaps', topic: 'Telling the time',
+  q: "Nora's morning. Choose the right words.",
+  html: '<b>7:30</b> – Breakfast. It\'s half [[0]] [[1]].<br><b>7:50</b> – The bus comes. It\'s ten [[2]] [[3]].',
+  gaps: [ { opts: ['past', 'to'], a: 'past' }, { opts: ['seven', 'eight'], a: 'seven' }, { opts: ['past', 'to'], a: 'to' }, { opts: ['seven', 'eight'], a: 'eight' } ],
+  feedback: '7:30 = half <b>past seven</b> (30 minutes after seven). 7:50 = ten <b>to eight</b> (10 minutes before eight). After half past, we always name the <i>next</i> hour.' },
+
+/* 32 */ { type: 'order', topic: 'The verb be',
+  q: 'Make a question. You do not need all the words.',
+  tiles: ['class', 'in', 'Is', 'they', 'your', 'Are', '?'],
+  answers: [['Are', 'they', 'in', 'your', 'class', '?']],
+  feedback: 'In a question the verb comes first: "<b>Are</b> they in your class?" With <i>they</i> we use <b>are</b>, never <i>is</i>.' },
+
+/* 33 */ { type: 'single', topic: 'Days of the week',
+  q: 'Which sentence is written correctly?',
+  options: [
+    { t: 'On Monday I have PE.', c: true, why: 'Capital M for the day, capital I, and PE in capitals.' },
+    { t: 'On Monday i have PE.', c: false, why: 'The word <i>I</i> is always a capital letter in English.' },
+    { t: 'On monday I have PE.', c: false, why: 'Days of the week always start with a capital letter in English: <b>M</b>onday.' },
+    { t: 'On Monday I have pe.', c: false, why: 'PE is short for Physical Education, so both letters are capitals.' } ] },
+
+/* 34 */ { type: 'multi', topic: 'Reading',
+  passage: "Hi, I'm Tom. I'm fourteen and I live in Australia. I have two sisters, but no brothers. My sisters are older than me. On Saturdays we play badminton together.",
+  q: 'Read the text. Which sentences are true?',
+  options: [
+    { t: 'Tom is the youngest child in his family.', c: true, why: 'Both of his sisters are older than him, so Tom is the youngest.' },
+    { t: 'Tom has a brother.', c: false, why: 'He says: "no brothers".' },
+    { t: 'Tom plays badminton at the weekend.', c: true, why: 'Saturday is part of the weekend.' },
+    { t: 'Tom comes from Austria.', c: false, why: '<i>Australia</i> and <i>Austria</i> are two different countries. Read carefully!' } ] },
+
+/* 35 */ { type: 'single', topic: 'Telling the time',
+  q: 'The film starts at a quarter to seven. It is thirty minutes long. When does it end?',
+  options: [
+    { t: "At seven o'clock.", c: false, why: 'From a quarter to seven to seven o\'clock is only 15 minutes.' },
+    { t: 'At a quarter to eight.', c: false, why: 'That is one hour later, not thirty minutes.' },
+    { t: 'At half past seven.', c: false, why: 'That is 45 minutes after a quarter to seven.' },
+    { t: 'At a quarter past seven.', c: true, why: '6:45 + 30 minutes = 7:15, a quarter past seven.' } ] },
+
+/* 36 */ { type: 'multi', topic: 'School subjects', media: img('subj_art'),
+  q: 'Look at the picture. Which sentences are true?',
+  options: [
+    { t: 'The child is in an Art lesson.', c: true, why: 'Painting with a brush on an easel is Art.' },
+    { t: 'The child is painting a boat.', c: false, why: 'Look again – it is a house with a sun.' },
+    { t: 'The child is in a Maths lesson.', c: false, why: 'There are no numbers here. Painting is Art.' },
+    { t: 'The paint brushes are under the table.', c: false, why: 'The brushes are in a jar <b>on</b> the table.' } ] },
+
+/* 37 */ { type: 'match', topic: 'The verb be',
+  q: 'Which form of <i>be</i> goes with each subject?',
+  items: [ { label: 'I', a: 'am' }, { label: 'Oscar', a: 'is' }, { label: 'Mary and I', a: 'are' }, { label: 'The Big Apple', a: 'is' }, { label: 'You and your brother', a: 'are' }, { label: 'My friends', a: 'are' } ],
+  labels: ['am', 'is', 'are'],
+  feedback: '<b>I am.</b> One person or thing (he, she, it) → <b>is</b>: Oscar is, the Big Apple is. More than one (we, you, they) → <b>are</b>: Mary and I (= we) are, you and your brother (= you) are, my friends (= they) are.' },
+
+/* 38 */ { type: 'tap', topic: 'Prepositions', media: scene('under'),
+  q: 'The sentence does not match the picture. Tap the wrong word.',
+  tokens: ['The', 'mouse', 'is', 'on', 'the', 'table.'], correct: [3], fix: 'under',
+  feedback: 'The table top is above the mouse. "The mouse is <b>under</b> the table."' },
+
+/* 39 */ { type: 'multi', topic: 'Days of the week',
+  q: 'Which days are spelled correctly?',
+  options: [
+    { t: 'Thursday', c: true, why: 'T-H-U-R-S-D-A-Y – correct.' },
+    { t: 'Wednesday', c: true, why: 'W-E-D-N-E-S-D-A-Y – correct, even if the first d is silent.' },
+    { t: 'Saturday', c: true, why: 'S-A-T-U-R-D-A-Y – correct.' },
+    { t: 'Tuesday', c: true, why: 'T-U-E-S-D-A-Y – correct.' } ] },
+
+/* 40 */ { type: 'single', topic: 'Telling the time', media: clock(12, 0),
+  q: 'Oscar is asleep in his basket. Outside it is dark, and everybody is in bed. What time is it?',
+  options: [
+    { t: "It's noon.", c: false, why: '<i>Noon</i> is 12 o\'clock in the <b>day</b>, when it is light and people eat lunch.' },
+    { t: "It's midnight.", c: true, why: '12 o\'clock at <b>night</b> is <i>midnight</i>.' },
+    { t: "It's twelve past.", c: false, why: '"Twelve past" is not a time. It needs an hour: "twelve past ten".' },
+    { t: "It's half past twelve.", c: false, why: 'Half past twelve is 12:30. The long hand would be on 6.' } ] },
+
+/* 41 */ { type: 'order', topic: 'Presenting yourself',
+  q: 'Isabella tells you about her hobby. Build the sentence. One word is extra.',
+  tiles: ['piano', 'like', 'likes', 'I', 'the', 'to', 'play'],
+  answers: [['I', 'like', 'to', 'play', 'the', 'piano']],
+  feedback: '"I like to play the piano." With <i>I</i> the verb has no -s: I <b>like</b>. (She <i>likes</i>.) We say <i>play <b>the</b> piano</i>, but <i>play</i> football – no "the" with sports.' },
+
+/* 42 */ { type: 'multi', topic: 'The verb be',
+  q: 'Which sentences are correct?',
+  options: [
+    { t: 'My parents is teachers.', c: false, why: 'My parents = they → "My parents <b>are</b> teachers."' },
+    { t: 'Is you ready for the test?', c: false, why: 'With <i>you</i> it is always <b>are</b>: "Are you ready?"' },
+    { t: 'The cats is hungry.', c: false, why: 'Cat<b>s</b> = more than one → "The cats <b>are</b> hungry."' },
+    { t: 'Sam and me am friends.', c: false, why: 'Two people → <b>are</b>. And we say "Sam and <b>I</b> are friends."' } ] },
+
+/* 43 */ { type: 'single', topic: 'School subjects', media: TIMETABLE,
+  q: 'Sam says: "It\'s Tuesday and it\'s a quarter to two. This is my favourite lesson!" What is his favourite lesson?',
+  options: [
+    { t: 'Music', c: false, why: 'Music is at 1:45, but on <b>Monday</b>.' },
+    { t: 'Needlework', c: true, why: 'A quarter to two = 1:45. On Tuesday at 1:45 Sam has Needlework.' },
+    { t: 'Maths', c: false, why: 'Tuesday Maths is at 10:15, a quarter past ten.' },
+    { t: 'Art', c: false, why: 'Art is at 9:30, half past nine.' } ] },
+
+/* 44 */ { type: 'type', topic: 'Telling the time', media: clock(4, 20),
+  q: 'Write the time in words.<br><span style="font-weight:400">It\'s ___________ .</span>',
+  accept: ['twenty past four', 'twenty minutes past four', 'four twenty'], answer: 'twenty past four',
+  feedback: 'The long hand is on 4 = 20 minutes after the hour. The short hand is just after 4. "It\'s <b>twenty past four</b>." ("Four twenty" is also correct.)' },
+
+/* 45 */ { type: 'gaps', topic: 'Seasons',
+  q: 'Choose the right season.',
+  html: 'Leaves fall from the trees in [[0]].<br>We build snowmen in [[1]].<br>The warmest season is [[2]].<br>Flowers start to grow again in [[3]].',
+  gaps: [ { opts: ['spring', 'summer', 'autumn', 'winter'], a: 'autumn' }, { opts: ['spring', 'summer', 'autumn', 'winter'], a: 'winter' }, { opts: ['spring', 'summer', 'autumn', 'winter'], a: 'summer' }, { opts: ['spring', 'summer', 'autumn', 'winter'], a: 'spring' } ],
+  feedback: 'The order of the seasons: spring → summer → autumn → winter. Unlike the days of the week, seasons do <b>not</b> need a capital letter in a sentence.' },
+
+/* 46 */ { type: 'single', topic: 'Prepositions', media: scene('between'),
+  q: 'Where is the mouse?',
+  options: [
+    { t: 'The mouse is in the boxes.', c: false, why: '<i>In</i> would mean inside a box. The mouse is on the floor.' },
+    { t: 'The mouse is between the boxes.', c: true, why: 'There is one box on each side of the mouse: <b>between</b>.' },
+    { t: 'The mouse is behind the boxes.', c: false, why: 'Nothing hides the mouse – you can see all of it.' },
+    { t: 'The mouse is on the boxes.', c: false, why: '<i>On</i> would mean on top of the boxes.' } ] },
+
+/* 47 */ { type: 'single', topic: 'Reading',
+  q: 'Mary says: "My dad stays at home and <b>looks after</b> us." What does <i>looks after</i> mean here?',
+  options: [
+    { t: 'takes care of', c: true, why: 'To <i>look after</i> someone means to take care of them: cook, help, make sure they are OK.' },
+    { t: 'looks behind', c: false, why: 'Here <i>after</i> is not about a place. <i>Look after</i> is one expression.' },
+    { t: 'looks for', c: false, why: '<i>Look for</i> means to try to find something you have lost.' },
+    { t: 'looks at later', c: false, why: '<i>Look after</i> has nothing to do with time.' } ] },
+
+/* 48 */ { type: 'multi', topic: 'Telling the time', media: digital('5:30'),
+  q: 'Which sentences tell this time?',
+  options: [
+    { t: "It's half past five.", c: true, why: '30 minutes after five = half past five.' },
+    { t: "It's five thirty.", c: true, why: 'You can also say the numbers: five thirty.' },
+    { t: "It's thirty minutes past five.", c: true, why: 'Correct, but most people say "half past five".' },
+    { t: "It's half an hour after five o'clock.", c: true, why: 'Half an hour = 30 minutes. A long way to say it, but correct.' } ] },
+
+/* 49 */ { type: 'single', topic: 'The verb be',
+  q: 'Which word fits in <b>both</b> sentences?<br>"______ your dad at home?"<br>"The weather ______ nice today."',
+  options: [
+    { t: 'Are / are', c: false, why: '"Your dad" is one person and "the weather" is one thing – they both need the singular form.' },
+    { t: 'Be / be', c: false, why: '<i>Be</i> is the basic form (to be). In these sentences you need <i>is</i>.' },
+    { t: 'Am / am', c: false, why: '<i>Am</i> only goes with <i>I</i>.' },
+    { t: 'Is / is', c: true, why: 'He (your dad) → is. It (the weather) → is.' } ] },
+
+/* 50 */ { type: 'single', topic: 'Presenting yourself',
+  q: 'Your new friend answers: "I am from Canada." What was the question?',
+  options: [
+    { t: 'Where is you from?', c: false, why: 'With <i>you</i> we use <b>are</b>: "Where are you from?"' },
+    { t: 'Where you are from?', c: false, why: 'In a question, the verb comes before <i>you</i>: "Where <b>are you</b> from?"' },
+    { t: 'Where are you from?', c: true, why: 'Question word + are + you + from.' },
+    { t: 'What country are you living?', c: false, why: 'This is missing a word: "What country are you living <b>in</b>?" – and the answer would be "I live in Canada."' } ] },
+];
+
+/* ============================================================
+   Engine
+   ============================================================ */
+const STORAGE_KEY = 'quiz-progress-quiz-english-unit1';
+const TYPE_LABEL = {
+  single: 'Choose one answer',
+  multi: 'Tick all correct answers – none, one, several or all can be correct',
+  order: 'Tap the words to build the answer',
+  tap: 'Tap the wrong word',
+  gaps: 'Choose the right word for each gap',
+  match: 'Match each item',
+  type: 'Type your answer'
+};
+let current = 0, score = 0, answers = [], topicsLog = [], state = null;
+const app = document.getElementById('app');
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentQuestion: current, score, answers, topicsLog })); } catch (e) {}
+}
+function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { return null; } }
+function clearSave() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function norm(s) {
+  return s.toLowerCase().replace(/[’']/g, "'").replace(/^\s*(it's|it is)\s+/, '').replace(/[-.,!?]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function setProgress() {
+  document.getElementById('progressText').textContent = `Question ${Math.min(current + 1, quizData.length)} of ${quizData.length}`;
+  document.getElementById('progressFill').style.width = `${(current / quizData.length) * 100}%`;
+}
+
+function render() {
+  if (current >= quizData.length) return showResults();
+  setProgress();
+  const d = quizData[current];
+  state = { checked: false };
+  let h = `<div class="topic">${d.topic}</div>`;
+  if (d.passage) h += `<div class="passage">${d.passage}</div>`;
+  if (d.media) h += `<div class="media">${d.media}</div>`;
+  h += `<div class="type-indicator">${TYPE_LABEL[d.type]}</div><p class="question-text">${d.q}</p>`;
+
+  if (d.type === 'single' || d.type === 'multi') {
+    h += `<div class="options${d.grid ? ' grid2' : ''}" id="opts">`;
+    d.options.forEach((o, i) => {
+      h += `<label class="option" data-i="${i}"><input type="${d.type === 'single' ? 'radio' : 'checkbox'}" name="q" value="${i}">
+        <div class="option-body"><div class="option-text"><span class="mark"></span>${o.t}</div><div class="why">${o.why}</div></div></label>`;
+    });
+    h += `</div>`;
+  } else if (d.type === 'order') {
+    state.built = [];
+    h += `<div class="build empty" id="build"></div><div class="bank" id="bank">` +
+      d.tiles.map((t, i) => `<button class="tile" data-i="${i}">${esc(t)}</button>`).join('') + `</div>`;
+  } else if (d.type === 'tap') {
+    state.sel = null;
+    h += `<div class="tapline">` + d.tokens.map((t, i) => `<button class="tok" data-i="${i}">${esc(t)}</button>`).join(' ') + `</div>`;
+  } else if (d.type === 'gaps') {
+    const body = d.html.replace(/\[\[(\d+)\]\]/g, (m, n) => {
+      const g = d.gaps[+n];
+      return `<select data-g="${n}"><option value="">…</option>${g.opts.map(o => `<option>${esc(o)}</option>`).join('')}</select>`;
+    });
+    h += `<div class="gaptext">${body}</div>`;
+  } else if (d.type === 'match') {
+    h += `<div class="match">` + d.items.map((it, i) => `<div class="match-item">${it.media || `<div class="mlabel">${it.label}</div>`}
+      <select data-m="${i}"><option value="">Choose…</option>${d.labels.map(l => `<option>${esc(l)}</option>`).join('')}</select></div>`).join('') + `</div>`;
+  } else if (d.type === 'type') {
+    h += `<input class="typebox" id="typebox" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Write here">`;
+  }
+  h += `<div class="actions"><button class="btn" id="checkBtn">Check</button></div><div id="fb"></div>`;
+  app.innerHTML = h;
+  wire(d);
+  updateCheck(d);
+  window.scrollTo({ top: 0 });
+}
+
+function ready(d) {
+  if (d.type === 'single') return !!app.querySelector('input:checked');
+  if (d.type === 'multi') return true;
+  if (d.type === 'order') return state.built.length > 0;
+  if (d.type === 'tap') return state.sel !== null;
+  if (d.type === 'gaps' || d.type === 'match') return [...app.querySelectorAll('select')].every(s => s.value);
+  if (d.type === 'type') return document.getElementById('typebox').value.trim().length > 0;
+}
+function updateCheck(d) { const b = document.getElementById('checkBtn'); if (b && !state.checked) b.disabled = !ready(d); }
+
+function wire(d) {
+  document.getElementById('checkBtn').onclick = () => check(d);
+  if (d.type === 'single' || d.type === 'multi') {
+    app.querySelectorAll('.option input').forEach(inp => inp.onchange = () => {
+      app.querySelectorAll('.option').forEach(l => l.classList.toggle('selected', l.querySelector('input').checked));
+      updateCheck(d);
+    });
+  }
+  if (d.type === 'order') {
+    const build = document.getElementById('build');
+    const redraw = () => {
+      build.innerHTML = state.built.map((ti, pos) => `<button class="tile" data-pos="${pos}">${esc(d.tiles[ti])}</button>`).join('');
+      build.classList.toggle('empty', state.built.length === 0);
+      app.querySelectorAll('#bank .tile').forEach(b => b.classList.toggle('used', state.built.includes(+b.dataset.i)));
+      build.querySelectorAll('.tile').forEach(b => b.onclick = () => { if (state.checked) return; state.built.splice(+b.dataset.pos, 1); redraw(); });
+      updateCheck(d);
+    };
+    app.querySelectorAll('#bank .tile').forEach(b => b.onclick = () => { if (state.checked) return; state.built.push(+b.dataset.i); redraw(); });
+  }
+  if (d.type === 'tap') {
+    app.querySelectorAll('.tok').forEach(b => b.onclick = () => {
+      if (state.checked) return;
+      state.sel = +b.dataset.i;
+      app.querySelectorAll('.tok').forEach(x => x.classList.toggle('sel', +x.dataset.i === state.sel));
+      updateCheck(d);
+    });
+  }
+  if (d.type === 'gaps' || d.type === 'match') app.querySelectorAll('select').forEach(s => s.onchange = () => updateCheck(d));
+  if (d.type === 'type') {
+    const tb = document.getElementById('typebox');
+    tb.oninput = () => updateCheck(d);
+    tb.onkeydown = e => { if (e.key === 'Enter' && !state.checked && ready(d)) check(d); };
+    tb.focus();
+  }
+}
+
+function check(d) {
+  if (state.checked) return;
+  state.checked = true;
+  let result, answerLine = '';
+
+  if (d.type === 'single' || d.type === 'multi') {
+    const labels = [...app.querySelectorAll('.option')];
+    let right = 0, wrongSel = 0, totalCorrect = 0;
+    labels.forEach((l, i) => {
+      const o = d.options[i], sel = l.querySelector('input').checked;
+      l.querySelector('input').disabled = true; l.classList.add('disabled', 'revealed'); l.classList.remove('selected');
+      if (o.c) totalCorrect++;
+      if (o.c && sel) right++;
+      if (!o.c && sel) wrongSel++;
+      if (o.c) { l.classList.add('is-correct'); l.querySelector('.mark').textContent = '✓'; }
+      else if (sel) { l.classList.add('is-wrong'); l.querySelector('.mark').textContent = '✗'; }
+    });
+    if (right === totalCorrect && wrongSel === 0) result = 'correct';
+    else if (d.type === 'multi' && right > 0) result = 'partial';
+    else result = 'incorrect';
+    if (d.type === 'multi' && totalCorrect === 0) answerLine = 'None of the sentences is correct.';
+  }
+
+  if (d.type === 'order') {
+    const built = state.built.map(i => d.tiles[i]);
+    const ok = d.answers.some(a => a.join(' ') === built.join(' '));
+    result = ok ? 'correct' : 'incorrect';
+    document.getElementById('build').classList.add(ok ? 'ok' : 'bad');
+    app.querySelectorAll('.tile').forEach(b => b.disabled = true);
+    answerLine = 'Answer: <b>' + esc(d.answers[0].join(' ').replace(' ?', '?')) + '</b>';
+  }
+
+  if (d.type === 'tap') {
+    const ok = d.correct.includes(state.sel);
+    result = ok ? 'correct' : 'incorrect';
+    app.querySelectorAll('.tok').forEach(b => {
+      const i = +b.dataset.i; b.disabled = true; b.classList.remove('sel');
+      if (d.correct.includes(i)) b.classList.add('ok'); else if (i === state.sel) b.classList.add('bad');
+    });
+    answerLine = `Wrong word: <b>${esc(d.tokens[d.correct[0]].replace(/[.!?,]/g, ''))}</b> → should be <b>${esc(d.fix)}</b>`;
+  }
+
+  if (d.type === 'gaps' || d.type === 'match') {
+    const sels = [...app.querySelectorAll('select')];
+    let n = 0;
+    sels.forEach((s, i) => {
+      const a = d.type === 'gaps' ? d.gaps[i].a : d.items[i].a;
+      s.disabled = true;
+      if (s.value === a) { n++; s.classList.add('ok'); }
+      else { s.classList.add('bad'); s.insertAdjacentHTML('afterend', `<span class="fix">→ ${esc(a)}</span>`); }
+    });
+    result = n === sels.length ? 'correct' : n > 0 ? 'partial' : 'incorrect';
+    if (result !== 'correct') answerLine = `${n} of ${sels.length} right. The right answers are shown in green.`;
+  }
+
+  if (d.type === 'type') {
+    const tb = document.getElementById('typebox');
+    const ok = d.accept.includes(norm(tb.value));
+    result = ok ? 'correct' : 'incorrect';
+    tb.disabled = true; tb.classList.add(ok ? 'ok' : 'bad');
+    answerLine = 'Answer: <b>' + esc(d.answer) + '</b>';
+  }
+
+  if (result === 'correct') score++;
+  answers[current] = result === 'correct' ? 1 : 0;
+  topicsLog[current] = d.topic;
+
+  const head = { correct: 'Correct.', incorrect: 'Wrong.', partial: 'Partly correct.' }[result];
+  let fb = `<div class="feedback ${result}"><span class="head">${head}</span>`;
+  if (answerLine && result !== 'correct') fb += `<span class="answer">${answerLine}</span>`;
+  if (d.feedback) fb += d.feedback;
+  else if (d.type === 'single' || d.type === 'multi') fb += 'Read the explanation under each option.';
+  fb += `</div>`;
+  document.getElementById('fb').innerHTML = fb;
+
+  current++;
+  save();
+  const btn = document.getElementById('checkBtn');
+  btn.disabled = false;
+  btn.textContent = current >= quizData.length ? 'See results →' : 'Next question →';
+  btn.onclick = render;
+}
+
+function showResults() {
+  clearSave();
+  document.getElementById('progressText').textContent = `Question ${quizData.length} of ${quizData.length}`;
+  document.getElementById('progressFill').style.width = '100%';
+  const per = {};
+  quizData.forEach((q, i) => {
+    per[q.topic] = per[q.topic] || [0, 0];
+    per[q.topic][1]++;
+    if (answers[i] === 1) per[q.topic][0]++;
+  });
+  app.innerHTML = `<div class="center"><h2 style="margin:0">Results</h2>
+    <p class="result-big">You got ${score} of ${quizData.length} questions right.</p></div>
+    <div class="breakdown">${Object.keys(per).map(t => `<div><span>${t}</span><span>${per[t][0]} of ${per[t][1]}</span></div>`).join('')}</div>
+    <div class="actions"><button class="btn" id="restart">Start again</button></div>`;
+  document.getElementById('restart').onclick = () => { clearSave(); current = 0; score = 0; answers = []; topicsLog = []; render(); };
+}
+
+function start() {
+  const s = load();
+  if (s && s.currentQuestion > 0 && s.currentQuestion < quizData.length) {
+    document.getElementById('progressText').textContent = `Question ${s.currentQuestion + 1} of ${quizData.length}`;
+    document.getElementById('progressFill').style.width = `${(s.currentQuestion / quizData.length) * 100}%`;
+    app.innerHTML = `<div class="center"><h2 style="margin-top:0">Welcome back</h2>
+      <p>You have reached question ${s.currentQuestion + 1} of ${quizData.length} (${s.score} right so far).</p>
+      <div class="actions"><button class="btn" id="cont">Continue</button><button class="btn outline" id="over">Start again</button></div></div>`;
+    document.getElementById('cont').onclick = () => { current = s.currentQuestion; score = s.score; answers = s.answers || []; topicsLog = s.topicsLog || []; render(); };
+    document.getElementById('over').onclick = () => { clearSave(); render(); };
+  } else render();
+}
+start();
+</script>
+</body>
+</html>

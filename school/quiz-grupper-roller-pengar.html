@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Grupper, roller &amp; pengar</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-bg: #fffbeb;
+    --partial-border: #d97706;
+    --partial-text: #92400e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .quiz-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .quiz-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .quiz-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .question-type-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 1rem;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .option-label:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: #f8f9ff;
+  }
+
+  .option-label.selected:not(.checked) {
+    border-color: var(--accent);
+    background: #eef2ff;
+  }
+
+  .option-label.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .option-label.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .option-label.disabled {
+    cursor: default;
+  }
+
+  .option-input {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .option-indicator {
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 18px;
+    margin-top: 1px;
+    font-size: 1rem;
+  }
+
+  .option-text {
+    flex: 1;
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: #eef2ff;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .feedback-box {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0 10px 10px 0;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-box.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .feedback-box.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .feedback-box.partial {
+    border-color: var(--partial-border);
+    background: var(--partial-bg);
+    color: var(--partial-text);
+  }
+
+  .feedback-verdict {
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-screen {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .resume-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .resume-info {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-score {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .work-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
+    line-height: 1.7;
+    font-size: 0.95rem;
+  }
+
+  .part-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+  }
+
+  .part-label { flex: 1 1 220px; line-height: 1.4; }
+
+  .part-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .num-input, .sel-input {
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: white;
+    color: var(--text-primary);
+  }
+
+  .num-input { width: 8rem; }
+  .sel-input { min-width: 11rem; max-width: 100%; }
+
+  .num-input:focus, .sel-input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .part-row.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .part-row.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+
+  .correct-note {
+    flex-basis: 100%;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .order-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem 0.625rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+  }
+
+  .order-item.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .order-item.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+
+  .order-pos { font-weight: 700; color: var(--text-secondary); width: 1.25rem; }
+  .order-text { flex: 1; }
+
+  .order-btn {
+    font-family: inherit;
+    font-size: 0.9rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: white;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  .order-btn:hover:not(:disabled) { border-color: var(--accent); background: #eef2ff; }
+  .order-btn:disabled { opacity: 0.35; cursor: default; }
+
+  @media (max-width: 480px) {
+    .card { padding: 1.25rem; }
+    .quiz-title { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-title">Grupper, roller &amp; pengar</div>
+    <div class="quiz-subtitle">SO – Grupper och roller · Arbete och pengar | 50 frågor</div>
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">Fråga 1 av 50</span>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionCard">
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz-progress-quiz-grupper-roller-pengar';
+
+const quizData = [
+  // 1
+  {
+    q: "Vilket exempel beskriver bäst en grupp?",
+    type: "single",
+    opts: [
+      { t: "Personer som väntar vid samma busshållplats men inte känner varandra", c: false },
+      { t: "Ett fotbollslag som tränar tillsammans varje vecka", c: true },
+      { t: "Alla som har köpt samma sorts mobiltelefon", c: false },
+      { t: "Människor som tittar på samma tv-program samma kväll", c: false }
+    ],
+    fb: "En grupp är ett antal människor som känner samhörighet med varandra på något sätt. Ett fotbollslag träffas, samarbetar och känner gemenskap. De som väntar vid samma hållplats, har samma mobil eller tittar på samma program har något gemensamt, men de känner inte varandra och har ingen samhörighet – därför är de inte en grupp i den meningen."
+  },
+  // 2
+  {
+    q: "Är det en lag eller en norm? Välj för varje rad.",
+    type: "match",
+    badge: "Sortera – skriven lag eller oskriven norm?",
+    choices: ["Lag", "Norm"],
+    rows: [
+      { t: "Att hälsa när man träffar någon man känner", ans: "Norm" },
+      { t: "Att man måste ha körkort för att köra bil", ans: "Lag" },
+      { t: "Att ställa sig i kö i affären", ans: "Norm" },
+      { t: "Att barn i Sverige måste gå i skolan", ans: "Lag" },
+      { t: "Att säga tack när man fått hjälp", ans: "Norm" },
+      { t: "Att man inte får ta saker som tillhör någon annan", ans: "Lag" },
+      { t: "Att inte prata högt i telefon på bussen", ans: "Norm" }
+    ],
+    fb: "Lagar är skrivna regler som riksdagen har bestämt och som gäller alla i Sverige – den som bryter mot dem kan straffas. Körkortskrav, skolplikt och förbud mot stöld är lagar. Normer är oskrivna regler som vi 'bara vet': att hälsa, köa, säga tack och inte prata högt på bussen. Ingen kan dömas för att strunta i en norm, men andra människor kan reagera. Vissa saker är både lag och norm – att inte stjäla är till exempel en stark norm, men eftersom det också står i lagen räknas det som lag."
+  },
+  // 3
+  {
+    q: "Vilka påståenden om roller i grupper stämmer?",
+    type: "multi",
+    opts: [
+      { t: "En person kan ha olika roller i olika grupper", c: true },
+      { t: "Alla i en grupp har samma roll", c: false },
+      { t: "Vissa roller blir tydliga först när gruppen har varit tillsammans en tid", c: true },
+      { t: "Den som är ledare i en grupp blir ledare i alla grupper", c: false }
+    ],
+    fb: "A och C stämmer. Man kan vara den pratglada bland kompisarna men den tystlåtna i en ny klass – rollen beror på gruppen. Roller växer ofta fram efter hand när deltagarna lär känna varandra. B är fel: i en grupp har deltagarna olika roller, till exempel ledaren, den roliga och den tystlåtna. D är fel: att man är ledare i en grupp betyder inte att man får samma roll någon annanstans."
+  },
+  // 4
+  {
+    q: "Lisa är tre år. När hon säger tack ler pappa och berömmer henne. När hon river ner sin brors bygge säger mamma ifrån. Vad är detta ett exempel på?",
+    type: "single",
+    opts: [
+      { t: "Socialisation", c: true },
+      { t: "En lag", c: false },
+      { t: "En budget", c: false },
+      { t: "En roll", c: false }
+    ],
+    fb: "Socialisation är när man lär sig hur man förväntas bete sig. Det börjar redan när man är liten: vuxna ler och berömmer när barnet gör 'rätt' och visar när det gör 'fel'. Så lär sig barnet normerna. Det är inte en lag (ingen skriven regel bryts), inte en budget (som handlar om pengar) och inte en roll (en plats eller ett beteende i en grupp)."
+  },
+  // 5
+  {
+    q: "Ett hushåll har följande inkomster varje månad: lön efter skatt 45 000 kr och barnbidrag 2 650 kr. Hur stora är hushållets inkomster sammanlagt?",
+    type: "numeric",
+    parts: [{ label: "Inkomster totalt", ans: 47650, unit: "kr" }],
+    fb: "45 000 + 2 650 = 47 650 kr. I en budget börjar man ofta med att räkna ihop alla inkomster, alltså allt som kommer in. Sedan räknar man ihop utgifterna och ser hur mycket som blir över."
+  },
+  // 6
+  {
+    q: "Vilka av följande betalas till stor del med skattepengar i Sverige?",
+    type: "multi",
+    opts: [
+      { t: "Polis och räddningstjänst", c: true },
+      { t: "Lönen till en anställd på ett privat café", c: false },
+      { t: "Förskolor och skolor", c: true },
+      { t: "Bibliotek", c: true }
+    ],
+    fb: "A, C och D stämmer. Skattepengarna används bland annat till samhällsskydd (polis, räddningstjänst, domstolar, militär), utbildning (förskolor, skolor, universitet) och kultur (museer, bibliotek). B är fel: ett privat café är ett företag. Det betalar sina anställda med pengar som kunderna betalar för kaffe och bullar, inte med skattepengar."
+  },
+  // 7
+  {
+    q: "Varför behövs normer?",
+    type: "single",
+    opts: [
+      { t: "För att polisen ska kunna ge böter", c: false },
+      { t: "För att ersätta lagarna", c: false },
+      { t: "För att människor ska veta vad som förväntas och kunna fungera tillsammans", c: true },
+      { t: "För att staten ska kunna bestämma exakt hur varje person ska bete sig i alla situationer hemma och i skolan", c: false }
+    ],
+    fb: "Normer gör det lättare att leva tillsammans. När alla vet att man köar, hälsar eller väntar på sin tur blir det mindre bråk och mer ordning. Polisen kan inte ge böter för normbrott – det gäller bara lagbrott. Normer ersätter inte lagar, utan finns vid sidan av dem. Och normer är inte något staten bestämmer; de växer fram mellan människor i grupper och i samhället."
+  },
+  // 8
+  {
+    q: "Följ pengarna! Ordna stegen så att de visar hur pengar kan röra sig runt i samhället.",
+    type: "order",
+    items: [
+      "Kommunen betalar lärarnas löner med skattepengarna.",
+      "En lärare köper mat i en affär.",
+      "Mamma arbetar på ett företag och får lön.",
+      "Affären betalar lön till sina anställda.",
+      "En del av mammas lön går till skatt."
+    ],
+    answer: [
+      "Mamma arbetar på ett företag och får lön.",
+      "En del av mammas lön går till skatt.",
+      "Kommunen betalar lärarnas löner med skattepengarna.",
+      "En lärare köper mat i en affär.",
+      "Affären betalar lön till sina anställda."
+    ],
+    fb: "Det här är det ekonomiska kretsloppet: pengar flyttar hela tiden mellan hushåll, företag och stat/kommun. Mamma arbetar och får lön (företag → hushåll). En del av lönen blir skatt (hushåll → kommun/stat). Kommunen betalar lärarnas löner (kommun → hushåll). Läraren handlar mat (hushåll → företag). Affären betalar sina anställda (företag → hushåll). Pengarna försvinner inte – de går runt, runt."
+  },
+  // 9
+  {
+    q: "Vilka påståenden om regler i familjer stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Olika familjer kan ha olika regler om vad som är rätt och fel", c: true },
+      { t: "Regler i familjen bestäms av kommunen", c: false },
+      { t: "Familjens regler står skrivna i lagen", c: false },
+      { t: "Om en familj tillåter mat i soffan måste andra familjer också göra det", c: false }
+    ],
+    fb: "Bara A stämmer. Varje familj har egna idéer och regler – i en familj får man äta smörgås i soffan, i en annan äter man bara vid köksbordet. Det är familjens egna normer. Kommunen bestämmer inte sådana regler (B), de står inte i lagen (C), och det som gäller i en familj behöver inte gälla i en annan (D)."
+  },
+  // 10
+  {
+    q: "Hur uppstår roller oftast i en grupp, till exempel i ett kompisgäng?",
+    type: "single",
+    opts: [
+      { t: "Gruppen röstar om vem som ska ha vilken roll", c: false },
+      { t: "Rollerna växer fram av sig själva, utan att någon bestämt dem", c: true },
+      { t: "En vuxen delar ut rollerna", c: false },
+      { t: "Man får samma roll som sina föräldrar", c: false }
+    ],
+    fb: "I de flesta grupper bestämmer man inte rollerna tillsammans – de blir bara så. Någon tar ofta initiativ och blir ledaren, någon skämtar och blir den roliga. Ibland kan en vuxen eller gruppen utse någon till exempel lagkapten, men det gäller bara vissa formella roller. Roller ärvs inte från föräldrarna."
+  },
+  // 11
+  {
+    q: "Är det en inkomst eller en utgift för hushållet?",
+    type: "match",
+    badge: "Sortera – pengar in eller pengar ut?",
+    choices: ["Inkomst", "Utgift"],
+    rows: [
+      { t: "Lön", ans: "Inkomst" },
+      { t: "Hyra för bostaden", ans: "Utgift" },
+      { t: "Barnbidrag", ans: "Inkomst" },
+      { t: "Skatt", ans: "Utgift" },
+      { t: "Ränta på ett lån", ans: "Utgift" },
+      { t: "Pension", ans: "Inkomst" },
+      { t: "Matinköp", ans: "Utgift" },
+      { t: "Ett lån från banken", ans: "Inkomst" }
+    ],
+    fb: "Inkomster är pengar som kommer in till hushållet: lön, barnbidrag, pension – och ett lån, eftersom pengarna kommer in på kontot (men lånet måste betalas tillbaka senare). Utgifter är pengar som går ut: hyra, skatt, mat och ränta. Ränta är det man betalar till banken för att få låna pengar, och den gör att ett lån kostar mer än det man lånade."
+  },
+  // 12
+  {
+    q: "Vilka påståenden om normer stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Normer kan skapa ordning, till exempel när man köar i en affär", c: true },
+      { t: "Normer kan se olika ut i olika grupper", c: true },
+      { t: "Normer kan göra att den som sticker ut blir illa behandlad", c: true },
+      { t: "Normer kan ge en vi-känsla i en grupp", c: true }
+    ],
+    fb: "Alla fyra stämmer. Normer kan vara positiva: de skapar ordning (kön i affären), förenklar vardagen och ger en vi-känsla. Normer skiljer sig mellan grupper – det som är normalt i ett lag kan vara konstigt i en annan grupp. Normer kan också vara negativa: den som inte följer gruppens normer kan bli utfryst eller retad, och om normerna blir för hårda kan det vara svårt att få vara sig själv."
+  },
+  // 13
+  {
+    q: "Ungefär hur stor del av sin lön betalar en person som arbetar i Sverige vanligtvis i skatt?",
+    type: "single",
+    opts: [
+      { t: "En tiondel", c: false },
+      { t: "Hälften", c: false },
+      { t: "Tre fjärdedelar", c: false },
+      { t: "En tredjedel", c: true }
+    ],
+    fb: "Det vanliga är att man betalar ungefär en tredjedel av lönen i skatt – alltså ungefär 1 krona av 3. Den som tjänar mer betalar mer skatt, och den som tjänar lite betalar mindre. Skatten dras oftast direkt från lönen innan den kommer in på kontot."
+  },
+  // 14
+  {
+    q: "Emil tjänar 30 000 kr i månaden före skatt. Han betalar en tredjedel av lönen i skatt.",
+    type: "numeric",
+    parts: [
+      { label: "a) Hur mycket betalar Emil i skatt?", ans: 10000, unit: "kr" },
+      { label: "b) Hur mycket får Emil kvar efter skatt?", ans: 20000, unit: "kr" }
+    ],
+    fb: "a) En tredjedel av 30 000 kr = 30 000 / 3 = 10 000 kr i skatt. b) 30 000 − 10 000 = 20 000 kr kvar. Lönen före skatt kallas bruttolön och det man får ut kallas nettolön. I en budget räknar man med lönen efter skatt, eftersom det är de pengarna man faktiskt kan använda."
+  },
+  // 15
+  {
+    q: "Vilka påståenden om budget stämmer?",
+    type: "multi",
+    opts: [
+      { t: "En budget görs efter att pengarna redan har tagit slut", c: false },
+      { t: "En budget handlar bara om sparande, inte om vardagsutgifter", c: false },
+      { t: "En budget innehåller bara utgifter", c: false },
+      { t: "En budget visar hur mycket pengar man har på banken", c: false }
+    ],
+    fb: "Inget av påståendena stämmer. En budget görs i förväg – det är en plan för en bestämd tid, till exempel en månad (A är fel). Den tar med vardagsutgifter som mat, hyra och kläder (B är fel). Den innehåller både inkomster och utgifter, annars kan man inte se vad som blir över (C är fel). Den visar inte saldot på banken, utan hur man planerar att få in och använda pengar (D är fel)."
+  },
+  // 16
+  {
+    q: "Elias blev tidigt 'klassens clown'. Nu vill han bli tagen på allvar, men klasskamraterna skrattar så fort han säger något. Vad visar exemplet?",
+    type: "single",
+    opts: [
+      { t: "Att en roll kan vara svår att ändra när andra har vant sig vid den", c: true },
+      { t: "Att roller bestäms av läraren", c: false },
+      { t: "Att man bara kan ha en roll i hela livet", c: false },
+      { t: "Att roller bara finns i skolklasser", c: false }
+    ],
+    fb: "När en grupp har vant sig vid att någon har en viss roll kan det vara svårt att ta sig ur den – man kan bli fast i en roll man inte trivs med. Det betyder inte att rollen är för evigt: i en annan grupp, som fotbollslaget, kan Elias ha en helt annan roll. Roller delas inte ut av läraren, och de finns i alla grupper, även i familjen och bland kompisar."
+  },
+  // 17
+  {
+    q: "Skattepengar används inom många områden. Vilket område hör varje exempel till?",
+    type: "match",
+    badge: "Sortera – välj område för varje exempel",
+    choices: ["Utbildning", "Vård och omsorg", "Infrastruktur", "Samhällsskydd", "Kultur"],
+    rows: [
+      { t: "Universitet", ans: "Utbildning" },
+      { t: "Hemtjänst för äldre", ans: "Vård och omsorg" },
+      { t: "Vatten och avlopp", ans: "Infrastruktur" },
+      { t: "Domstolar", ans: "Samhällsskydd" },
+      { t: "Museer", ans: "Kultur" },
+      { t: "Järnvägar", ans: "Infrastruktur" },
+      { t: "Räddningstjänst", ans: "Samhällsskydd" },
+      { t: "Sjukhus", ans: "Vård och omsorg" }
+    ],
+    fb: "Utbildning: förskolor, skolor, universitet. Vård och omsorg: sjukvård, hemtjänst. Infrastruktur är det 'grundsystem' som samhället behöver för att fungera: gator, vägar, järnvägar, vatten och avlopp. Samhällsskydd skyddar oss: polis, domstolar, militär och räddningstjänst. Kultur: museer och bibliotek. Andra områden är stöd och försäkringar (pension, barnbidrag), kollektivtrafik och idrott."
+  },
+  // 18
+  {
+    q: "Vilka av följande är exempel på socialisation?",
+    type: "multi",
+    opts: [
+      { t: "Ett barn lär sig bordsskick av sina föräldrar", c: true },
+      { t: "En ny elev lär sig hur man ställer undan disken i matsalen", c: true },
+      { t: "En tonåring börjar klä sig som sina kompisar för att passa in", c: true },
+      { t: "Ett barn växer flera centimeter under ett år", c: false }
+    ],
+    fb: "A, B och C är socialisation – i alla tre lär sig någon hur man förväntas bete sig i en grupp eller i samhället. Socialisation sker i familjen (bordsskick), i skolan (rutiner i matsalen) och bland kompisar (klädstil, språk). D är fel: att växa på längden är en kroppslig förändring, inte något man lär sig av andra."
+  },
+  // 19
+  {
+    q: "Vad får hushållen från företagen i det ekonomiska kretsloppet?",
+    type: "single",
+    opts: [
+      { t: "Skatt", c: false },
+      { t: "Barnbidrag", c: false },
+      { t: "Lön för sitt arbete", c: true },
+      { t: "Allmän pension", c: false }
+    ],
+    fb: "Hushållen arbetar på företagen och får lön. Sedan använder hushållen lönen för att köpa varor och tjänster från företagen – så går pengarna tillbaka. Skatt betalar hushållen till staten och kommunen; de får den inte. Barnbidrag och allmän pension betalas ut av staten, inte av företag."
+  },
+  // 20
+  {
+    q: "Sant eller falskt? Välj för varje påstående.",
+    type: "match",
+    badge: "Sant eller falskt",
+    choices: ["Sant", "Falskt"],
+    rows: [
+      { t: "Människan är ett flockdjur som behöver andra människor.", ans: "Sant" },
+      { t: "Det är bara barn som påverkas av normer.", ans: "Falskt" },
+      { t: "Pengar i samhället rör sig runt mellan hushåll, företag och stat/kommun.", ans: "Sant" },
+      { t: "Kollektivtrafik som bussar och tåg betalas delvis med skattepengar.", ans: "Sant" },
+      { t: "Ett hushåll som gör en budget får automatiskt mer pengar.", ans: "Falskt" },
+      { t: "Ett företag kan få pengar både från sina kunder och genom lån från en bank.", ans: "Sant" }
+    ],
+    fb: "Människan behöver precis som lejon och elefanter leva tillsammans med andra – ingen klarar sig helt ensam. Normer påverkar alla, även vuxna (till exempel på jobbet). I det ekonomiska kretsloppet går pengar runt mellan hushåll, företag, banker och stat/kommun. Kollektivtrafik betalas delvis med biljetter och delvis med skatt. En budget ger inte mer pengar – den hjälper bara till att planera dem. Företag får pengar från kunder och kan också låna av banken."
+  },
+  // 21
+  {
+    q: "Vilka påståenden om roller i familjen stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Samma person kan vara både storasyskon och lillasyskon i samma familj", c: true },
+      { t: "Ett äldre syskon förväntas ofta vara ansvarsfullt mot sina småsyskon", c: true },
+      { t: "I familjen har alla samma roll eftersom man bor tillsammans", c: false },
+      { t: "Man kan inte få en roll man inte trivs med i sin egen familj", c: false }
+    ],
+    fb: "A och B stämmer. Har man både äldre och yngre syskon har man olika roller beroende på vem man är med – ansvarsfull mot de små, kanske 'den lilla' mot de stora. C är fel: familjemedlemmar har olika roller, precis som i andra grupper. D är fel: även i familjen kan man få en roll man inte gillar, till exempel den som alltid får skäll eller alltid börjar bråken."
+  },
+  // 22
+  {
+    q: "Vad är en budget?",
+    type: "single",
+    opts: [
+      { t: "Ett lån från banken", c: false },
+      { t: "Ett kvitto på det man har köpt", c: false },
+      { t: "En avgift till kommunen", c: false },
+      { t: "En plan över vilka inkomster och utgifter man har under en viss tid", c: true }
+    ],
+    fb: "En budget är en plan där man i förväg skriver ner inkomster och utgifter för en bestämd tid, till exempel en månad. Då ser man hur mycket som blir över till sådant som inte är nödvändigt, eller om man måste dra ner. Ett kvitto visar vad man redan har köpt – en budget handlar om framtiden. Hushåll, företag, kommuner och staten gör alla budgetar."
+  },
+  // 23
+  {
+    q: "Ett hushåll har 38 000 kr i inkomster efter skatt. Utgifterna är: hyra 12 000 kr, mat 9 000 kr, försäkringar och el 3 500 kr, kläder 2 000 kr, fritidsaktiviteter 1 500 kr och hygien 650 kr.",
+    type: "numeric",
+    parts: [
+      { label: "a) Hur mycket är utgifterna sammanlagt?", ans: 28650, unit: "kr" },
+      { label: "b) Hur mycket blir kvar varje månad?", ans: 9350, unit: "kr" }
+    ],
+    fb: "a) 12 000 + 9 000 + 3 500 + 2 000 + 1 500 + 650 = 28 650 kr. b) 38 000 − 28 650 = 9 350 kr. De pengar som blir kvar kan hushållet spara eller använda till saker som inte är lika nödvändiga, till exempel en resa eller en ny cykel. Utan budget är det lätt att inte märka vart pengarna tar vägen."
+  },
+  // 24
+  {
+    q: "Ett hushåll märker att utgifterna är större än inkomsterna. Vilka av följande skulle kunna lösa problemet?",
+    type: "multi",
+    opts: [
+      { t: "Byta till ett billigare mobilabonnemang", c: true },
+      { t: "Ta extra arbetspass och tjäna mer", c: true },
+      { t: "Handla fler saker och betala dem nästa månad i stället, så att det märks mindre just nu", c: false },
+      { t: "Göra en budget för att se var pengarna tar vägen", c: true }
+    ],
+    fb: "A, B och D. När utgifterna är större än inkomsterna tar pengarna slut, och då måste man antingen minska utgifterna (A) eller öka inkomsterna (B). En budget (D) hjälper till att hitta var man kan spara. C är fel: att skjuta upp betalningen löser ingenting – utgiften finns kvar, och att betala senare kostar ofta extra i form av avgifter eller ränta."
+  },
+  // 25
+  {
+    q: "Vad är skillnaden mellan en lag och en norm?",
+    type: "single",
+    opts: [
+      { t: "Lagar gäller bara vuxna, normer gäller bara barn", c: false },
+      { t: "Lagar är skrivna regler för alla i landet, normer är oskrivna regler", c: true },
+      { t: "Lagar bestäms av varje familj, normer bestäms av riksdagen", c: false },
+      { t: "Det är ingen skillnad, orden betyder samma sak", c: false }
+    ],
+    fb: "Lagar är nedskrivna, beslutas av riksdagen och gäller alla i Sverige. Bryter man mot en lag kan man straffas, till exempel med böter. Normer är oskrivna regler om hur man förväntas bete sig – ofta något man 'bara vet'. Både lagar och normer gäller vuxna och barn. Det är riksdagen, inte familjer, som stiftar lagar."
+  },
+  // 26
+  {
+    q: "Ella har gjort en budget för månaden. Vilket steg innehåller det första felet?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: [
+      "Steg 1: Inkomster: lön 20 000 kr + barnbidrag 1 250 kr = 21 250 kr",
+      "Steg 2: Utgifter: hyra 8 000 kr + mat 5 000 kr + övrigt 3 000 kr = 16 000 kr",
+      "Steg 3: Kvar: 21 250 kr − 16 000 kr = 4 250 kr"
+    ],
+    opts: [
+      { t: "Steg 1", c: false },
+      { t: "Steg 2", c: false },
+      { t: "Steg 3", c: true },
+      { t: "Det finns inget fel", c: false }
+    ],
+    fb: "Steg 1 och 2 stämmer: 20 000 + 1 250 = 21 250 och 8 000 + 5 000 + 3 000 = 16 000. I steg 3 är det fel: 21 250 − 16 000 = 5 250 kr, inte 4 250 kr. Ett räknefel i en budget gör att man tror att man har mer eller mindre pengar än man har – därför är det bra att kontrollräkna."
+  },
+  // 27
+  {
+    q: "Vilka påståenden om skatt stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Den som tjänar mer pengar betalar mer i skatt", c: true },
+      { t: "Alla betalar exakt samma summa i kronor", c: false },
+      { t: "Skatten går bara till kommunen", c: false },
+      { t: "Barn som får veckopeng betalar skatt på den", c: false }
+    ],
+    fb: "Bara A stämmer. Skatten beror på hur mycket man tjänar: den som tjänar lite betalar mindre och den som tjänar mycket betalar mer. B är fel av samma anledning. C är fel: skattepengarna går till staten, regionerna och kommunerna. D är fel: skatt betalas på inkomst från arbete, inte på veckopeng man får av sina föräldrar."
+  },
+  // 28
+  {
+    q: "Varför kan det vara bra att göra en budget?",
+    type: "single",
+    opts: [
+      { t: "För att i förväg veta hur mycket pengar som blir över", c: true },
+      { t: "För att slippa betala skatt", c: false },
+      { t: "För att få högre lön", c: false },
+      { t: "För att banken kräver att alla familjer lämnar in en budget varje månad", c: false }
+    ],
+    fb: "Med en budget vet man i förväg vad som kommer in och vad som går ut, och därmed hur mycket som blir över till sådant som inte är nödvändigt. Den kan också visa i tid om pengarna inte kommer att räcka. En budget påverkar varken skatten eller lönen, och banken kräver inte att familjer lämnar in budgetar."
+  },
+  // 29
+  {
+    q: "Varifrån kommer pengarna, och vart går de? Välj för varje rad.",
+    type: "match",
+    badge: "Para ihop – det ekonomiska kretsloppet",
+    choices: ["Arbetsplatsen", "Banken", "Staten och kommunen", "Affären"],
+    rows: [
+      { t: "Lön kommer från …", ans: "Arbetsplatsen" },
+      { t: "Barnbidrag kommer från …", ans: "Staten och kommunen" },
+      { t: "Ett lån kommer från …", ans: "Banken" },
+      { t: "Pengar för köp av varor går till …", ans: "Affären" },
+      { t: "Skatt går till …", ans: "Staten och kommunen" },
+      { t: "Ränta på ett lån går till …", ans: "Banken" }
+    ],
+    fb: "Hushållets inkomster: lön från arbetsplatsen, bidrag (som barnbidrag) från det offentliga och lån från banken. Hushållets utgifter: varor köps i affären, skatt betalas till staten och kommunen, och räntan på lånet betalas till banken. Barnbidraget betalas egentligen ut av staten (Försäkringskassan) – men det är våra gemensamma skattepengar som finansierar det."
+  },
+  // 30
+  {
+    q: "Vilka påståenden om det ekonomiska kretsloppet stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Hushållen arbetar i företag och får lön", c: true },
+      { t: "Staten och kommunerna får pengar genom skatter", c: true },
+      { t: "Pengar kan bara användas en gång och försvinner sedan ur samhället", c: false },
+      { t: "Företagen får sina pengar från staten, inte från kunder", c: false }
+    ],
+    fb: "A och B stämmer. Hushållen säljer sitt arbete till företagen och får lön; staten och kommunerna får in skatt från hushåll och företag. C är fel: hela poängen med kretsloppet är att samma pengar går vidare – från lön till affär till nya löner. D är fel: de flesta företag får sina pengar från kunder som köper varor och tjänster."
+  },
+  // 31
+  {
+    q: "Varför kallas människan för ett flockdjur?",
+    type: "single",
+    opts: [
+      { t: "För att människor bor i stora städer", c: false },
+      { t: "För att människor helst vill klara sig själva", c: false },
+      { t: "För att människor föds många åt gången", c: false },
+      { t: "För att människor behöver leva tillsammans med andra för att klara sig", c: true }
+    ],
+    fb: "Precis som lejon och elefanter behöver människor varandra. Under hela historien har vi levt i grupper: små barn klarar sig inte utan någon som ger dem mat, kläder, skydd och kärlek, och även vuxna behöver gemenskap och hjälp av andra. Att bo i stad eller föda många barn har inget med begreppet att göra."
+  },
+  // 32
+  {
+    q: "Familjen Berg har 4 000 kr över varje månad när alla utgifter är betalda. De sparar allt.",
+    type: "numeric",
+    parts: [
+      { label: "a) Hur mycket har de sparat efter ett halvår?", ans: 24000, unit: "kr" },
+      { label: "b) Hur mycket har de sparat efter ett år?", ans: 48000, unit: "kr" }
+    ],
+    fb: "a) Ett halvår är 6 månader: 6 · 4 000 = 24 000 kr. b) Ett år är 12 månader: 12 · 4 000 = 48 000 kr. Om pengarna sätts in på ett sparkonto kan banken dessutom betala ränta till familjen – då växer sparandet lite extra."
+  },
+  // 33
+  {
+    q: "Vilka påståenden om normer stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Normerna i Sverige är desamma som i alla andra länder", c: false },
+      { t: "Ett barn har lärt sig samhällets alla normer innan det börjar förskolan", c: false },
+      { t: "Normer gör det omöjligt att vara sig själv i en grupp", c: false },
+      { t: "Det är normerna som bestämmer vilket straff man får i domstol", c: false }
+    ],
+    fb: "Inget stämmer. A: normer skiljer sig mellan länder, och även mellan grupper i samma land. B: socialisationen tar lång tid och fortsätter hela livet – i skolan, med kompisar och på jobbet. C: normer kan ibland bli för hårda, men i en trygg grupp vågar man vara sig själv. D: domstolar dömer efter lagar, inte efter normer."
+  },
+  // 34
+  {
+    q: "Hur betalas sjukvården i Sverige till största delen?",
+    type: "single",
+    opts: [
+      { t: "Patienterna betalar hela kostnaden själva", c: false },
+      { t: "Bankerna betalar den", c: false },
+      { t: "Med skattepengar via regionerna", c: true },
+      { t: "Med pengar från företagens försäljning", c: false }
+    ],
+    fb: "Sjukvården betalas till största delen med skatt. I Sverige är det regionerna som ansvarar för sjukvården, och de får sina pengar från regionskatten. Patienten betalar oftast bara en mindre avgift vid besöket, och barn under 18 år får vård gratis. Därför kan alla få vård oavsett hur mycket de tjänar."
+  },
+  // 35
+  {
+    q: "Fyll i luckorna med rätt begrepp.",
+    type: "match",
+    badge: "Lucktext – välj rätt ord för varje mening",
+    choices: ["grupp", "norm", "roll", "socialisation", "lag", "budget"],
+    rows: [
+      { t: "Klassen, fotbollslaget och släkten är exempel på en ___.", ans: "grupp" },
+      { t: "Att man brukar ta av sig skorna hemma hos andra är en ___.", ans: "norm" },
+      { t: "Att alltid vara den pratglada i kompisgänget är en ___.", ans: "roll" },
+      { t: "När ett barn lär sig vänta på sin tur kallas det ___.", ans: "socialisation" },
+      { t: "Att man måste vara 18 år för att få rösta i riksdagsvalet är en ___.", ans: "lag" }
+    ],
+    fb: "Grupp: människor som känner samhörighet, som en klass, ett lag eller en släkt. Norm: en oskriven regel, som att ta av sig skorna. Roll: hur man brukar vara och vad andra förväntar sig av en i en grupp. Socialisation: hur man lär sig att bete sig. Lag: en skriven regel som gäller alla, som rösträttsåldern. Budget passade inte in i någon mening – den handlar om pengar."
+  },
+  // 36
+  {
+    q: "Vilka av följande kan påverka ett barns socialisation?",
+    type: "multi",
+    opts: [
+      { t: "Föräldrar och syskon", c: true },
+      { t: "Kompisar", c: true },
+      { t: "Skolan", c: true },
+      { t: "Lagkamrater och tränare i en idrottsförening", c: true }
+    ],
+    fb: "Alla fyra. Socialisationen börjar i familjen, men när man växer upp påverkas man allt mer av andra grupper: kompisar, skolan, fritidsaktiviteter och samhället i stort. I varje grupp lär man sig vilka normer som gäller där – på fotbollsträningen lär man sig till exempel att lyssna på tränaren och peppa sina lagkamrater."
+  },
+  // 37
+  {
+    q: "I Lovas kompisgäng tycker alla att en viss sorts musik är töntig. Lova, som gillar den musiken, slutar berätta det för sina kompisar. Vad visar exemplet?",
+    type: "single",
+    opts: [
+      { t: "Att normer i en grupp kan påverka vad vi säger och visar att vi tycker", c: true },
+      { t: "Att lagar bestämmer vilken musik man får lyssna på", c: false },
+      { t: "Att socialisation bara sker i familjen", c: false },
+      { t: "Att roller alltid bestäms av den äldsta i gruppen", c: false }
+    ],
+    fb: "Normer och socialisation formar vad vi gillar, tycker och tänker – och vad vi vågar visa. Många anstränger sig för att inte bli osams med sin grupp. Det kan vara negativt om man inte får vara sig själv. Det finns inga lagar om musiksmak, socialisation sker i alla grupper och roller bestäms inte av ålder."
+  },
+  // 38
+  {
+    q: "Ordna stegen så att de visar hur banken får pengarna att röra sig.",
+    type: "order",
+    items: [
+      "Företaget köper en ny maskin.",
+      "Ett hushåll sätter in sina sparpengar på banken.",
+      "Företaget betalar tillbaka lånet med ränta.",
+      "Banken lånar ut pengar till ett företag."
+    ],
+    answer: [
+      "Ett hushåll sätter in sina sparpengar på banken.",
+      "Banken lånar ut pengar till ett företag.",
+      "Företaget köper en ny maskin.",
+      "Företaget betalar tillbaka lånet med ränta."
+    ],
+    fb: "Banken är en viktig del av kretsloppet. Sparpengar från hushåll ligger inte stilla – banken lånar ut dem till företag eller andra hushåll. Företaget kan då köpa till exempel en maskin och tjäna mer pengar. Lånet betalas tillbaka med ränta, och en del av räntan får sparhushållet tillbaka som ränta på sitt sparande."
+  },
+  // 39
+  {
+    q: "Vilka av följande är **INTE** något som staten, regionen eller kommunen betalar med skattepengar?",
+    type: "multi",
+    opts: [
+      { t: "Barnbidrag", c: false },
+      { t: "Lön till lärare i kommunala skolor", c: false },
+      { t: "En familjs matinköp", c: true },
+      { t: "Sporthallar och simhallar", c: false }
+    ],
+    fb: "Bara C – en familjs matinköp betalar familjen själv med sina egna pengar. Barnbidrag är ett stöd som betalas med skattepengar. Lärare i kommunala skolor får lön av kommunen. Sporthallar och simhallar byggs och drivs ofta av kommunen, som en del av satsningen på idrott."
+  },
+  // 40
+  {
+    q: "Varför anstränger sig många människor för att inte bli osams med sin grupp?",
+    type: "single",
+    opts: [
+      { t: "Det står i lagen att man måste hålla med sin grupp", c: false },
+      { t: "Grupper vi tillhör betyder mycket för oss", c: true },
+      { t: "Man får betalt för att hålla sams", c: false },
+      { t: "Gruppen bestämmer vilken skola man får gå i", c: false }
+    ],
+    fb: "Vi människor behöver gemenskap, och grupperna vi tillhör – familj, kompisar, laget – betyder mycket för hur vi mår. Därför är många beredda att anpassa sig för att inte hamna utanför. Det finns ingen lag om att hålla med sin grupp, man får inte betalt för det, och gruppen bestämmer inte vilken skola man går i."
+  },
+  // 41
+  {
+    q: "Ett hushåll vill köpa en cykel som kostar 6 000 kr. De kan spara 750 kr i månaden. Hur många månader måste de spara?",
+    type: "numeric",
+    parts: [{ label: "Antal månader", ans: 8, unit: "månader" }],
+    fb: "6 000 / 750 = 8 månader. Kontroll: 8 · 750 = 6 000. Det här är ett exempel på hur en budget hjälper: när man vet hur mycket som blir över varje månad kan man planera större köp i stället för att låna och betala ränta."
+  },
+  // 42
+  {
+    q: "Vilka påståenden om grupper stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Grannarna på en gata kan vara en grupp", c: true },
+      { t: "Man kan bara tillhöra en grupp åt gången", c: false },
+      { t: "Alla människor behöver tillhöra någon grupp", c: true },
+      { t: "För att räknas som en grupp måste man vara minst tio personer", c: false }
+    ],
+    fb: "A och C stämmer. Grannar som känner samhörighet med varandra är en grupp, precis som en klass, ett lag, släkten och familjen. Ingen människa klarar sig helt ensam – alla behöver gemenskap. B är fel: man tillhör många grupper samtidigt, till exempel familjen, klassen och fritidsaktiviteten. D är fel: en grupp kan vara liten, till exempel tre kompisar."
+  },
+  // 43
+  {
+    q: "Skatten går till staten, regionerna och kommunerna. Vem ansvarar för vad? Välj för varje rad.",
+    type: "match",
+    badge: "Para ihop – vem ansvarar?",
+    choices: ["Staten", "Regionen", "Kommunen"],
+    rows: [
+      { t: "Sjukhus och vårdcentraler", ans: "Regionen" },
+      { t: "Grundskolan", ans: "Kommunen" },
+      { t: "Polisen", ans: "Staten" },
+      { t: "Folkbiblioteket", ans: "Kommunen" },
+      { t: "Militären (försvaret)", ans: "Staten" },
+      { t: "Hemtjänst för äldre", ans: "Kommunen" }
+    ],
+    fb: "Staten ansvarar för det som gäller hela landet: polis, militär, domstolar och till exempel pensioner och barnbidrag. Regionerna ansvarar framför allt för sjukvården (och ofta kollektivtrafiken). Kommunerna ansvarar för det som ligger nära invånarna i vardagen: förskola, grundskola, äldreomsorg som hemtjänst, bibliotek, räddningstjänst samt vatten och avlopp."
+  },
+  // 44
+  {
+    q: "Sant eller falskt? Om familjer.",
+    type: "match",
+    badge: "Sant eller falskt",
+    choices: ["Sant", "Falskt"],
+    rows: [
+      { t: "Barn i olika familjer kan ha olika många föräldrar och syskon.", ans: "Sant" },
+      { t: "Ett barn kan ingå i två familjer som bor i olika hem.", ans: "Sant" },
+      { t: "En familj måste bo på samma ställe för att räknas som familj.", ans: "Falskt" },
+      { t: "Familjen är oftast den grupp man har allra närmast sig.", ans: "Sant" },
+      { t: "Alla familjer har en mamma, en pappa och två barn.", ans: "Falskt" }
+    ],
+    fb: "Familjer kan se ut på många sätt: en eller flera föräldrar, inga eller många syskon. Om föräldrarna är skilda kan barnet bo varannan vecka hos var och en – och då ingå i två familjer i olika hem. Familjen är oftast den grupp vi har närmast, eftersom det är där vi får mat, kläder, skydd och kärlek när vi är små."
+  },
+  // 45
+  {
+    q: "Vilka påståenden om när socialisation sker stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Socialisationen börjar redan när man är ett litet barn", c: true },
+      { t: "Socialisationen sker bara i familjen", c: false },
+      { t: "Socialisationen slutar när man börjar skolan", c: false },
+      { t: "Socialisationen sker bara när en vuxen säger till", c: false }
+    ],
+    fb: "Bara A stämmer. Socialisationen börjar när man är liten och föräldrar ler, berömmer och säger ifrån. Den fortsätter sedan hela livet – i skolan, bland kompisar, på fritiden och i arbetslivet (B och C är fel). Mycket socialisation sker utan att någon säger något alls: man ser hur andra gör och härmar dem (D är fel)."
+  },
+  // 46
+  {
+    q: "Noa förklarar normer för sin lillasyster. Vilket påstående är fel?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: [
+      "Påstående 1: En norm är en oskriven regel för hur man ska bete sig.",
+      "Påstående 2: Normer kan vara olika i olika grupper.",
+      "Påstående 3: Den som bryter mot en norm kan dömas till böter i domstol.",
+      "Påstående 4: Vi lär oss normer genom socialisation."
+    ],
+    opts: [
+      { t: "Påstående 1", c: false },
+      { t: "Påstående 2", c: false },
+      { t: "Påstående 3", c: true },
+      { t: "Påstående 4", c: false }
+    ],
+    fb: "Påstående 3 är fel. Man kan bara dömas i domstol för att ha brutit mot en lag. Bryter man mot en norm kan andra reagera – titta konstigt, bli irriterade eller säga till – men det är inget straff från samhället. Påstående 1, 2 och 4 stämmer: normer är oskrivna, skiljer sig mellan grupper och lärs in genom socialisation."
+  },
+  // 47
+  {
+    q: "Familjen Ali har 25 000 kr i inkomster en månad men utgifter på 27 500 kr.",
+    type: "numeric",
+    parts: [{ label: "Hur mycket pengar fattas?", ans: 2500, unit: "kr" }],
+    fb: "27 500 − 25 000 = 2 500 kr fattas. När utgifterna är större än inkomsterna tar pengarna slut. Familjen behöver då antingen öka inkomsterna eller minska utgifterna – till exempel genom att se över mat, abonnemang eller fritidsaktiviteter."
+  },
+  // 48
+  {
+    q: "Vilka gör budgetar?",
+    type: "single",
+    opts: [
+      { t: "Bara privatpersoner", c: false },
+      { t: "Bara staten", c: false },
+      { t: "Bara banker", c: false },
+      { t: "Hushåll, företag, kommuner och staten", c: true }
+    ],
+    fb: "Alla som behöver planera sina pengar gör budgetar. Hushåll planerar hyra, mat och fritid. Företag planerar löner och inköp. Kommunerna planerar hur mycket som ska gå till skolor och äldreomsorg, och staten gör varje år en stor budget för hela landet, som riksdagen beslutar om."
+  },
+  // 49
+  {
+    q: "Vilken roll passar beskrivningen?",
+    type: "match",
+    badge: "Para ihop – roller i en grupp",
+    choices: ["Ledaren", "Den tystlåtna", "Den pratglada", "Den roliga"],
+    rows: [
+      { t: "Tar ofta initiativ och bestämmer vad gruppen ska göra", ans: "Ledaren" },
+      { t: "Säger inte så mycket men lyssnar på de andra", ans: "Den tystlåtna" },
+      { t: "Får ofta de andra att skratta", ans: "Den roliga" },
+      { t: "Pratar gärna och mycket med alla", ans: "Den pratglada" }
+    ],
+    fb: "Det här är några vanliga roller i grupper. Ingen roll är bättre än någon annan, och samma person kan ha olika roller i olika grupper – ledare i laget men tystlåten i en ny klass. Ibland kan en roll kännas som ett fängelse, om andra förväntar sig att man alltid ska vara på ett visst sätt."
+  },
+  // 50
+  {
+    q: "Vilket begrepp passar bäst till varje situation?",
+    type: "match",
+    badge: "Para ihop – begrepp och situation",
+    choices: ["Norm", "Lag", "Socialisation", "Roll"],
+    rows: [
+      { t: "En pappa visar sitt barn att man inte pratar med mat i munnen.", ans: "Socialisation" },
+      { t: "Den som är under 15 år måste ha hjälm när hen cyklar.", ans: "Lag" },
+      { t: "I kompisgänget är det alltid Tilde som planerar vad de ska göra.", ans: "Roll" },
+      { t: "Man brukar inte ringa och väcka folk mitt i natten.", ans: "Norm" }
+    ],
+    fb: "Pappan som lär ut bordsskick är ett exempel på socialisation – barnet lär sig hur man förväntas bete sig. Hjälmkravet för barn under 15 år är en lag: skrivet och gäller alla. Tilde har rollen som ledare/planerare i sin grupp. Att inte ringa mitt i natten är en norm – det står ingenstans, men nästan alla vet att man inte gör så."
+  }
+];
+
+// ── Övningsformat: inmatning, para ihop/sortera, ordna ────────────
+function isCustom(q) {
+  return q.type === 'numeric' || q.type === 'match' || q.type === 'order';
+}
+
+var orderState = [];
+
+function shortNum(n) {
+  return String(n).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function parseNum(s) {
+  var v = parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
+  return isNaN(v) ? null : v;
+}
+
+function renderWork(q, list) {
+  var box = document.createElement('div');
+  box.className = 'work-box';
+  q.work.forEach(function(line) {
+    var d = document.createElement('div');
+    d.textContent = line;
+    box.appendChild(d);
+  });
+  list.appendChild(box);
+}
+
+function renderCustom(q, list) {
+  if (q.type === 'numeric') {
+    if (!q.badge) document.getElementById('typeBadge').textContent =
+      q.parts.length > 1 ? 'Räkna ut – lös i steg och skriv dina svar' : 'Räkna ut – skriv ditt svar';
+    q.parts.forEach(function(p, i) {
+      var row = document.createElement('div');
+      row.className = 'part-row';
+      row.innerHTML = '<span class="part-label"></span><span class="part-input">' +
+        '<input class="num-input" type="text" inputmode="decimal" autocomplete="off" id="part' + i + '">' +
+        '<span></span></span>';
+      row.querySelector('.part-label').textContent = p.label;
+      row.querySelector('.part-input span').textContent = p.unit;
+      list.appendChild(row);
+    });
+  } else if (q.type === 'match') {
+    q.rows.forEach(function(r, i) {
+      var row = document.createElement('div');
+      row.className = 'part-row';
+      var lab = document.createElement('span');
+      lab.className = 'part-label';
+      lab.textContent = r.t;
+      var sel = document.createElement('select');
+      sel.className = 'sel-input';
+      sel.id = 'part' + i;
+      sel.innerHTML = '<option value="">Välj …</option>';
+      q.choices.forEach(function(c) {
+        var o = document.createElement('option');
+        o.value = c; o.textContent = c;
+        sel.appendChild(o);
+      });
+      row.appendChild(lab);
+      row.appendChild(sel);
+      list.appendChild(row);
+    });
+  } else if (q.type === 'order') {
+    if (!q.badge) document.getElementById('typeBadge').textContent = 'Ordna – flytta raderna till rätt ordning';
+    orderState = q.items.slice();
+    drawOrder(list, false);
+  }
+  var first = list.querySelector('input, select');
+  if (first && window.matchMedia('(pointer: fine)').matches) first.focus();
+}
+
+function drawOrder(list, done, q) {
+  list.querySelectorAll('.order-item').forEach(function(el) { el.remove(); });
+  orderState.forEach(function(t, i) {
+    var row = document.createElement('div');
+    row.className = 'order-item';
+    if (done) row.classList.add(t === q.answer[i] ? 'correct' : 'incorrect');
+    row.innerHTML = '<span class="order-pos">' + (i + 1) + '.</span><span class="order-text"></span>' +
+      '<button class="order-btn" aria-label="Flytta upp">▲</button><button class="order-btn" aria-label="Flytta ned">▼</button>';
+    row.querySelector('.order-text').textContent = done && t !== q.answer[i]
+      ? t + '  (rätt plats: ' + (q.answer.indexOf(t) + 1) + ')' : t;
+    var btns = row.querySelectorAll('.order-btn');
+    btns[0].disabled = done || i === 0;
+    btns[1].disabled = done || i === orderState.length - 1;
+    btns[0].onclick = function() { swapOrder(list, i, i - 1); };
+    btns[1].onclick = function() { swapOrder(list, i, i + 1); };
+    list.appendChild(row);
+  });
+}
+
+function swapOrder(list, a, b) {
+  if (checked) return;
+  var tmp = orderState[a]; orderState[a] = orderState[b]; orderState[b] = tmp;
+  drawOrder(list, false);
+}
+
+function checkCustom(q) {
+  var list = document.getElementById('optionsList');
+  var results = [];
+
+  if (q.type === 'order') {
+    orderState.forEach(function(t, i) { results.push(t === q.answer[i]); });
+    drawOrder(list, true, q);
+  } else {
+    var rows = list.querySelectorAll('.part-row');
+    var defs = q.type === 'numeric' ? q.parts : q.rows;
+    defs.forEach(function(d, i) {
+      var inp = document.getElementById('part' + i);
+      var ok;
+      if (q.type === 'numeric') {
+        var v = parseNum(inp.value);
+        ok = v !== null && Math.abs(v - d.ans) <= Math.abs(d.ans) * 0.01 + 1e-9;
+      } else {
+        ok = inp.value === d.ans;
+      }
+      inp.disabled = true;
+      results.push(ok);
+      rows[i].classList.add(ok ? 'correct' : 'incorrect');
+      if (!ok) {
+        var note = document.createElement('span');
+        note.className = 'correct-note';
+        note.textContent = 'Rätt svar: ' + (q.type === 'numeric' ? shortNum(d.ans) + ' ' + d.unit : d.ans);
+        rows[i].appendChild(note);
+      }
+    });
+  }
+
+  var nRight = results.filter(Boolean).length;
+  var isExact = nRight === results.length;
+  var isPartial = !isExact && nRight > 0;
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt. (' + nRight + ' av ' + results.length + ' rätt)';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+  document.getElementById('feedbackText').textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+let current = 0;
+let score = 0;
+let answers = [];
+let checked = false;
+
+// ── localStorage helpers ──────────────────────────────────────────
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentQuestion: current + 1,
+      score: score,
+      answers: answers
+    }));
+  } catch(e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// ── Card template ─────────────────────────────────────────────────
+function getCardTemplate() {
+  return `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  `;
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  const saved = loadProgress();
+  if (saved && saved.currentQuestion > 0 && saved.currentQuestion < quizData.length) {
+    showResumeScreen(saved);
+  } else {
+    clearProgress();
+    render();
+  }
+}
+
+function showResumeScreen(saved) {
+  const nextQ = saved.currentQuestion;
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (nextQ + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width =
+    (nextQ / quizData.length * 100) + '%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div class="resume-screen">' +
+    '<div class="resume-title">Fortsätt där du slutade</div>' +
+    '<div class="resume-info">Du är på fråga <strong>' + (nextQ + 1) + '</strong> av ' + quizData.length + '</div>' +
+    '<div class="resume-score">' + saved.score + ' rätt hittills</div>' +
+    '<div class="btn-row" style="justify-content:center; margin-top:1.5rem;">' +
+    '<button class="btn" onclick="continueQuiz()">Fortsätt</button>' +
+    '<button class="btn btn-outline" onclick="freshStart()">Börja om</button>' +
+    '</div></div>';
+}
+
+function continueQuiz() {
+  const saved = loadProgress();
+  if (saved) {
+    current = saved.currentQuestion;
+    score = saved.score;
+    answers = saved.answers || [];
+  }
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+function freshStart() {
+  clearProgress();
+  current = 0; score = 0; answers = [];
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  const q = quizData[current];
+  const isSingle = q.type === 'single';
+  const pct = (current / quizData.length) * 100;
+
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (current + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  document.getElementById('typeBadge').textContent = q.badge || (isSingle
+    ? 'Enval – välj ett alternativ'
+    : 'Flerval – ett eller flera alternativ kan vara rätta');
+
+  document.getElementById('questionText').innerHTML = q.q.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+  if (q.work) renderWork(q, list);
+
+  if (isCustom(q)) renderCustom(q, list);
+  else q.opts.forEach(function(opt, i) {
+    var label = document.createElement('label');
+    label.className = 'option-label';
+
+    var input = document.createElement('input');
+    input.type = isSingle ? 'radio' : 'checkbox';
+    input.className = 'option-input';
+    input.id = 'opt' + i;
+    if (isSingle) input.name = 'quiz-option';
+
+    var textSpan = document.createElement('span');
+    textSpan.className = 'option-text';
+    textSpan.textContent = ['A', 'B', 'C', 'D'][i] + ') ' + opt.t;
+
+    label.appendChild(input);
+    label.appendChild(textSpan);
+
+    input.addEventListener('change', function() {
+      if (checked) return;
+      if (isSingle) {
+        list.querySelectorAll('.option-label').forEach(function(l) {
+          l.classList.remove('selected');
+        });
+      }
+      label.classList.toggle('selected', input.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  document.getElementById('checkBtn').style.display = 'inline-block';
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('nextBtn').style.display = 'none';
+
+  var fb = document.getElementById('feedbackBox');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+  checked = false;
+}
+
+// ── Check answer ──────────────────────────────────────────────────
+function checkAnswer() {
+  if (checked) return;
+  checked = true;
+
+  var q = quizData[current];
+  if (isCustom(q)) { checkCustom(q); return; }
+  var isSingle = q.type === 'single';
+  var labels = document.querySelectorAll('.option-label');
+  var inputs = isSingle
+    ? document.querySelectorAll('input[name="quiz-option"]')
+    : document.querySelectorAll('.option-input');
+
+  var selected = [];
+  inputs.forEach(function(inp, i) { if (inp.checked) selected.push(i); });
+
+  var correct = [];
+  q.opts.forEach(function(opt, i) { if (opt.c) correct.push(i); });
+
+  labels.forEach(function(label, i) {
+    label.classList.add('disabled', 'checked');
+    var inp = label.querySelector('input');
+    inp.disabled = true;
+    var textSpan = label.querySelector('.option-text');
+    var isCorrect = q.opts[i].c;
+    var wasSelected = inp.checked;
+
+    if (isCorrect) {
+      label.classList.add('correct');
+      var ind = document.createElement('span');
+      ind.className = 'option-indicator';
+      ind.textContent = '✓';
+      label.insertBefore(ind, textSpan);
+    } else if (wasSelected && !isCorrect) {
+      label.classList.add('incorrect');
+      var ind2 = document.createElement('span');
+      ind2.className = 'option-indicator';
+      ind2.textContent = '✗';
+      label.insertBefore(ind2, textSpan);
+    }
+    label.classList.remove('selected');
+  });
+
+  var correctSet = new Set(correct);
+  var isExact = selected.length === correct.length &&
+                selected.every(function(i) { return correctSet.has(i); });
+  var isPartial = !isSingle && !isExact && selected.length > 0 &&
+                  selected.some(function(i) { return correctSet.has(i); });
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  var fbText = document.getElementById('feedbackText');
+
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt.';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+
+  fbText.textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+// ── Navigation ────────────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= quizData.length) {
+    showResults();
+  } else {
+    render();
+  }
+}
+
+function showResults() {
+  clearProgress();
+  document.getElementById('progressText').textContent = 'Resultat';
+  document.getElementById('progressBar').style.width = '100%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div style="text-align:center; padding:1rem 0;">' +
+    '<div style="font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:1.5rem;">Resultat</div>' +
+    '<div style="font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1;">' + score + '</div>' +
+    '<div style="font-size:1rem;color:var(--text-secondary);margin-top:0.5rem;margin-bottom:0.25rem;">av ' + quizData.length + ' rätt</div>' +
+    '<div style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:2rem;">Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor.</div>' +
+    '<button class="btn" onclick="restart()">Starta om</button>' +
+    '</div>';
+}
+
+function restart() {
+  clearProgress();
+  current = 0; score = 0; answers = []; checked = false;
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

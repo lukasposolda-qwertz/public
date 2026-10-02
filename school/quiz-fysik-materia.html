@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Materia</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-bg: #fffbeb;
+    --partial-border: #d97706;
+    --partial-text: #92400e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .quiz-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .quiz-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .quiz-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .question-type-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 1rem;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .option-label:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: #f8f9ff;
+  }
+
+  .option-label.selected:not(.checked) {
+    border-color: var(--accent);
+    background: #eef2ff;
+  }
+
+  .option-label.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .option-label.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .option-label.disabled {
+    cursor: default;
+  }
+
+  .option-input {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .option-indicator {
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 18px;
+    margin-top: 1px;
+    font-size: 1rem;
+  }
+
+  .option-text {
+    flex: 1;
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: #eef2ff;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .feedback-box {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0 10px 10px 0;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-box.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .feedback-box.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .feedback-box.partial {
+    border-color: var(--partial-border);
+    background: var(--partial-bg);
+    color: var(--partial-text);
+  }
+
+  .feedback-verdict {
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-screen {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .resume-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .resume-info {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-score {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .work-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
+    line-height: 1.7;
+    font-size: 0.95rem;
+  }
+
+  .part-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+  }
+
+  .part-label { flex: 1 1 220px; line-height: 1.4; }
+
+  .part-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .num-input, .sel-input {
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: white;
+    color: var(--text-primary);
+  }
+
+  .num-input { width: 8rem; }
+  .sel-input { min-width: 11rem; max-width: 100%; }
+
+  .num-input:focus, .sel-input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .part-row.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .part-row.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+
+  .correct-note {
+    flex-basis: 100%;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .order-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem 0.625rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+  }
+
+  .order-item.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .order-item.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+
+  .order-pos { font-weight: 700; color: var(--text-secondary); width: 1.25rem; }
+  .order-text { flex: 1; }
+
+  .order-btn {
+    font-family: inherit;
+    font-size: 0.9rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: white;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  .order-btn:hover:not(:disabled) { border-color: var(--accent); background: #eef2ff; }
+  .order-btn:disabled { opacity: 0.35; cursor: default; }
+
+  @media (max-width: 480px) {
+    .card { padding: 1.25rem; }
+    .quiz-title { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-title">Materia</div>
+    <div class="quiz-subtitle">Fysik åk 7 – Materia | 70 frågor</div>
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">Fråga 1 av 70</span>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionCard">
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz-progress-quiz-fysik-materia';
+
+const quizData = [
+  {
+    q: "Vad menas med att något består av materia?",
+    type: "single",
+    opts: [
+      { t: "Att det går att se med blotta ögat", c: false },
+      { t: "Att det befinner sig i fast form", c: false },
+      { t: "Att det har massa och därmed kan vägas", c: true },
+      { t: "Att det kan leda värme", c: false }
+    ],
+    fb: "Allt som har massa, alltså allt som kan vägas, består av materia. Därför är även luft och vatten materia, trots att luft är osynlig och vatten är flytande. Att något syns eller leder värme avgör inte om det är materia – glas är genomskinligt och trä leder värme dåligt, men båda är materia."
+  },
+  {
+    q: "Vilka av följande omvandlingar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "200 g = 0,2 kg", c: true },
+      { t: "8400 g = 84 kg", c: false },
+      { t: "12,7 kg = 12 700 g", c: true },
+      { t: "4500 mg = 45 g", c: false }
+    ],
+    fb: "A och C stämmer. 1 kg = 1000 g, så 200 g = 0,2 kg och 12,7 kg = 12 700 g. B är fel: 8400 g = 8,4 kg (dela med 1000, inte med 100). D är fel: 1 g = 1000 mg, så 4500 mg = 4,5 g."
+  },
+  {
+    q: "Vilka påståenden om atomens uppbyggnad stämmer?",
+    type: "multi",
+    opts: [
+      { t: "I atomkärnan finns protoner och neutroner", c: true },
+      { t: "Elektronerna rör sig runt atomkärnan", c: true },
+      { t: "Antalet protoner avgör alltid vilket grundämne atomen tillhör", c: true },
+      { t: "En vanlig atom har fler elektroner än protoner", c: false }
+    ],
+    fb: "A, B och C stämmer. En atom har en kärna med protoner och neutroner, och elektroner som rör sig runt kärnan. Antalet protoner är det som skiljer olika grundämnen åt – en atom med 6 protoner är alltid kol, en med 8 protoner är alltid syre. D är fel: en vanlig (oladdad) atom har lika många elektroner som protoner. Har den fler eller färre kallas den en jon."
+  },
+  {
+    q: "Vilket av följande mätinstrument kan normalt mäta en längd allra noggrannast?",
+    type: "single",
+    opts: [
+      { t: "Mikrometer", c: true },
+      { t: "Skjutmått", c: false },
+      { t: "Stållinjal", c: false },
+      { t: "Tumstock", c: false }
+    ],
+    fb: "En mikrometer mäter normalt med en noggrannhet på 0,01 mm. Ett skjutmått brukar ge ungefär 0,1 mm, medan en stållinjal eller tumstock bara ger ungefär 1 mm. Vilket instrument man väljer beror på hur noggrant man behöver mäta."
+  },
+  {
+    q: "Vad kallas övergången från gas till vätska?",
+    type: "single",
+    opts: [
+      { t: "Avdunstning", c: false },
+      { t: "Smältning", c: false },
+      { t: "Stelning", c: false },
+      { t: "Kondensation", c: true }
+    ],
+    fb: "När en gas kyls ned och blir vätska kallas det kondensation. Avdunstning är det motsatta – vätska som blir gas. Smältning är när ett fast ämne blir flytande, och stelning är när en vätska blir fast."
+  },
+  {
+    q: "Vilka av följande ämnen är grundämnen?",
+    type: "multi",
+    opts: [
+      { t: "Guld", c: true },
+      { t: "Vatten", c: false },
+      { t: "Syre", c: true },
+      { t: "Socker", c: false }
+    ],
+    fb: "A och C är grundämnen. Ett grundämne består av bara ett slags atomer – guld består bara av guldatomer och syre bara av syreatomer. Vatten (väte och syre) och socker (kol, väte och syre) består av atomer från flera olika grundämnen och är därför sammansatta ämnen."
+  },
+  {
+    q: "Vilka av följande består av materia?",
+    type: "multi",
+    opts: [
+      { t: "Värmen som strålar ut från ett element", c: false },
+      { t: "Ljudet av ett eko i en grotta", c: false },
+      { t: "Skuggan bakom ett träd", c: false },
+      { t: "Ljuset från ett stearinljus", c: false }
+    ],
+    fb: "Inget av alternativen är materia. Värme och ljus är former av energi, inte ämnen, och kan inte vägas. Ljud är en vibration som färdas genom luften – luften är materia, men själva ljudet är det inte. En skugga är bara ett område dit ljuset inte når. Däremot är elementet, grottan, trädet och stearinljuset materia."
+  },
+  {
+    q: "Vilka påståenden om ytspänning stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Den beror på krafter som håller ihop vätskans molekyler", c: true },
+      { t: "Den gör att vatten kan bilda droppar", c: true },
+      { t: "Den gör det lättare för vatten att tränga in i små porer vid tvätt", c: false },
+      { t: "Den finns bara hos vatten och inte hos andra vätskor", c: false }
+    ],
+    fb: "A och B stämmer. Molekylerna i en vätska drar i varandra, så att ytan beter sig ungefär som en tunn hinna. Det gör att vatten kan bilda droppar. C är fel: ytspänningen gör det svårare för vatten att tränga in mellan fibrer och i porer – därför används tvål och diskmedel. D är fel: alla vätskor har ytspänning, även om den är olika stark."
+  },
+  {
+    q: "Ett föremål väger 33,9 g och har volymen 3 cm³. Vilken densitet har det?",
+    type: "single",
+    opts: [
+      { t: "101,7 g/cm³", c: false },
+      { t: "11,3 g/cm³", c: true },
+      { t: "30,9 g/cm³", c: false },
+      { t: "0,09 g/cm³", c: false }
+    ],
+    fb: "Densitet = massa / volym = 33,9 g / 3 cm³ = 11,3 g/cm³, vilket är densiteten för bly. 101,7 får man om man multiplicerar i stället för att dividera, 30,9 om man subtraherar, och 0,09 om man dividerar volymen med massan."
+  },
+  {
+    q: "Hur många liter motsvarar 2500 cm³?",
+    type: "single",
+    opts: [
+      { t: "0,25 liter", c: false },
+      { t: "25 liter", c: false },
+      { t: "2,5 liter", c: true },
+      { t: "250 liter", c: false }
+    ],
+    fb: "1 liter = 1 dm³ = 1000 cm³. Därför blir 2500 cm³ = 2500 / 1000 = 2,5 liter. De andra svaren uppstår om man flyttar decimaltecknet fel antal steg."
+  },
+  {
+    q: "Vilka av följande är sammansatta ämnen?",
+    type: "multi",
+    opts: [
+      { t: "Vatten", c: true },
+      { t: "Koldioxid", c: true },
+      { t: "Socker", c: true },
+      { t: "Plast", c: true }
+    ],
+    fb: "Alla fyra är sammansatta ämnen (kemiska föreningar), eftersom de består av atomer från två eller flera grundämnen. Vatten består av väte och syre, koldioxid av kol och syre, socker av kol, väte och syre, och plast består främst av kol och väte. Alla ämnen som inte är grundämnen är sammansatta ämnen."
+  },
+  {
+    q: "Vilka påståenden om molekylerna i ett fast ämne stämmer?",
+    type: "multi",
+    opts: [
+      { t: "De sitter kvar på bestämda platser", c: true },
+      { t: "De står helt stilla", c: false },
+      { t: "De rör sig fritt åt alla håll", c: false },
+      { t: "De svänger långsammare om ämnet värms upp", c: false }
+    ],
+    fb: "Bara A stämmer. I ett fast ämne håller krafterna kvar molekylerna på bestämda platser. B är fel: molekylerna svänger hela tiden fram och tillbaka, även om de inte flyttar sig. C beskriver en gas, inte ett fast ämne. D är fel: när ämnet värms svänger molekylerna kraftigare, och till slut smälter ämnet."
+  },
+  {
+    q: "Ett rum är 6 m långt, 5 m brett och 3 m högt. Hur stor är rummets volym?",
+    type: "single",
+    opts: [
+      { t: "14 m³", c: false },
+      { t: "30 m³", c: false },
+      { t: "60 m³", c: false },
+      { t: "90 m³", c: true }
+    ],
+    fb: "Volym = längd · bredd · höjd = 6 m · 5 m · 3 m = 90 m³. 30 m² är golvets area (6 · 5), och då har man glömt höjden. 14 får man om man adderar måtten i stället för att multiplicera."
+  },
+  {
+    q: "Vilken legering får man om man smälter samman koppar och tenn?",
+    type: "single",
+    opts: [
+      { t: "Mässing", c: false },
+      { t: "Brons", c: true },
+      { t: "Stål", c: false },
+      { t: "Lod", c: false }
+    ],
+    fb: "Brons är en legering av koppar och tenn. Både koppar och tenn är mjuka metaller, men brons är hårt – därför användes det till yxor och vapen under bronsåldern. Mässing är koppar och zink, stål är järn med lite kol, och lod är ofta tenn blandat med andra metaller."
+  },
+  {
+    q: "1 m² är lika med:",
+    type: "single",
+    opts: [
+      { t: "1000 dm²", c: false },
+      { t: "10 dm²", c: false },
+      { t: "10 000 cm²", c: true },
+      { t: "100 cm²", c: false }
+    ],
+    fb: "En kvadratmeter är en kvadrat med sidan 1 m = 100 cm. Arean blir 100 cm · 100 cm = 10 000 cm². På samma sätt är 1 m² = 10 dm · 10 dm = 100 dm². För areaenheter är steget mellan två enheter alltså 100, inte 10."
+  },
+  {
+    q: "Vilka av följande beror på kapillärverkan?",
+    type: "multi",
+    opts: [
+      { t: "Ett hushållspapper suger upp utspillt vatten", c: true },
+      { t: "Imma bildas på en kall fönsterruta", c: false },
+      { t: "Is flyter på vatten", c: false },
+      { t: "En vattendroppe blir rund på ett vaxat bord", c: false }
+    ],
+    fb: "Bara A beror på kapillärverkan. Vattnet sugs in i de små kanalerna mellan pappersfibrerna eftersom vattnets molekyler dras till papperets. B är kondensation – vattenånga som kyls av och blir vatten. C beror på att is har lägre densitet än vatten. D beror på ytspänning – vattnet drar ihop sig till en droppe när det inte kan väta den vaxade ytan."
+  },
+  {
+    q: "Här är några densiteter: järn 7,8 g/cm³, kork 0,2 g/cm³, glas 2,5 g/cm³ och stearin 0,9 g/cm³. Vilka av ämnena har högre densitet än vatten?",
+    type: "multi",
+    opts: [
+      { t: "Järn", c: true },
+      { t: "Kork", c: false },
+      { t: "Glas", c: true },
+      { t: "Stearin", c: false }
+    ],
+    fb: "A och C. Vattnets densitet är 1,0 g/cm³ – 1 cm³ vatten väger 1 g. Järn (7,8) och glas (2,5) har högre densitet. Kork (0,2) och stearin (0,9) har lägre densitet, och därför flyter kork och stearinljus i vatten."
+  },
+  {
+    q: "En skål med vatten står framme inomhus. Efter några dagar är skålen tom. Vad har hänt med vattnet?",
+    type: "single",
+    opts: [
+      { t: "Det har avdunstat och finns kvar som vattenånga i luften", c: true },
+      { t: "Det har trängt in i skålens material", c: false },
+      { t: "Det har förstörts och finns inte längre", c: false },
+      { t: "Det har kokat bort långsamt eftersom rummets värme till slut fick vattnet att nå sin kokpunkt", c: false }
+    ],
+    fb: "Vattnet har avdunstat. Avdunstning sker vid alla temperaturer, inte bara vid kokpunkten – molekylerna närmast ytan lämnar vätskan och sprider sig i luften. Vattnet har inte förstörts: materia kan inte förintas, bara ändra form. Ett rum är heller aldrig i närheten av 100 °C, så vattnet har inte kokat."
+  },
+  {
+    q: "Vilka av följande längdomvandlingar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "1 mil = 1 km", c: false },
+      { t: "1 m = 100 mm", c: false },
+      { t: "3,5 km = 350 m", c: false },
+      { t: "1 cm = 100 mm", c: false }
+    ],
+    fb: "Ingen av omvandlingarna stämmer. Rätt är: 1 mil = 10 km, 1 m = 1000 mm (10 dm = 100 cm = 1000 mm), 3,5 km = 3500 m (1 km = 1000 m) och 1 cm = 10 mm."
+  },
+  {
+    q: "Vad finns inuti bubblorna som bildas när vatten kokar?",
+    type: "single",
+    opts: [
+      { t: "Luft", c: false },
+      { t: "Syrgas", c: false },
+      { t: "Vätgas", c: false },
+      { t: "Vattenånga", c: true }
+    ],
+    fb: "Bubblorna innehåller vattenånga, alltså vatten i gasform. Vid kokpunkten blir molekylernas rörelser så kraftiga att vatten övergår till gas inne i vätskan, inte bara vid ytan. Vattenmolekylerna delas inte upp i väte och syre när vatten kokar – de förblir hela vattenmolekyler."
+  },
+  {
+    q: "Vid vilken temperatur smälter is vid normalt lufttryck?",
+    type: "single",
+    opts: [
+      { t: "–4 °C", c: false },
+      { t: "0 °C", c: true },
+      { t: "4 °C", c: false },
+      { t: "100 °C", c: false }
+    ],
+    fb: "Is smälter vid 0 °C, och vatten fryser vid samma temperatur. 100 °C är vattnets kokpunkt. 4 °C är temperaturen där vatten har sin största densitet – det var vattnets massa vid den temperaturen som en gång användes för att definiera 1 kilogram."
+  },
+  {
+    q: "Ett föremål sänks ner i ett mätglas med vatten. Vattennivån stiger från 18 ml till 77 ml. Vilka påståenden om föremålets volym stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Volymen är 59 cm³", c: true },
+      { t: "Volymen är 59 ml", c: true },
+      { t: "Volymen är 95 cm³", c: false },
+      { t: "Volymen är 0,059 liter", c: true }
+    ],
+    fb: "A, B och D stämmer. Föremålet tränger undan lika mycket vatten som sin egen volym: 77 − 18 = 59 ml. Eftersom 1 ml = 1 cm³ är det också 59 cm³, och eftersom 1 liter = 1000 ml är det 0,059 liter. 95 får man om man adderar i stället för att subtrahera."
+  },
+  {
+    q: "Vilka påståenden om luften stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Luften består till största delen av kväve", c: true },
+      { t: "Ungefär en femtedel av luften är syre", c: true },
+      { t: "Luft kan kylas ned så mycket att den blir flytande", c: true },
+      { t: "Syret i luften finns mest som ensamma syreatomer", c: false }
+    ],
+    fb: "A, B och C stämmer. Luften är ungefär 78 % kväve och 21 % syre. Vid cirka −190 °C blir luft flytande, och ännu kallare blir den fast. D är fel: syreatomerna sitter nästan alltid ihop två och två som syremolekyler. Samma sak gäller för kvävet."
+  },
+  {
+    q: "En korkbit har volymen 2 cm³. Kork har densiteten 0,2 g/cm³. Hur mycket väger korkbiten?",
+    type: "single",
+    opts: [
+      { t: "0,1 g", c: false },
+      { t: "0,4 g", c: true },
+      { t: "2,2 g", c: false },
+      { t: "10 g", c: false }
+    ],
+    fb: "Densiteten 0,2 g/cm³ betyder att varje kubikcentimeter väger 0,2 g. Massa = densitet · volym = 0,2 g/cm³ · 2 cm³ = 0,4 g. 10 får man om man dividerar volymen med densiteten, och 2,2 om man adderar."
+  },
+  {
+    q: "Vilka av följande påståenden om grundämnen stämmer **INTE**?",
+    type: "multi",
+    opts: [
+      { t: "Ett grundämne innehåller bara ett slags atomer", c: false },
+      { t: "Man känner till ungefär 20 olika grundämnen", c: true },
+      { t: "Vatten är ett grundämne", c: true },
+      { t: "Alla atomer i ett grundämne har lika många protoner", c: false }
+    ],
+    fb: "B och C stämmer INTE och ska markeras. Man känner till drygt 100 grundämnen (idag 118), inte ungefär 20. Vatten är ett sammansatt ämne av väte och syre. A och D är sanna: ett grundämne innehåller bara ett slags atomer, och alla atomer i samma grundämne har samma antal protoner."
+  },
+  {
+    q: "Vilket instrument används på fartyg för att mäta havsdjupet?",
+    type: "single",
+    opts: [
+      { t: "Ekolod", c: true },
+      { t: "Barometer", c: false },
+      { t: "Kompass", c: false },
+      { t: "Mikrometer", c: false }
+    ],
+    fb: "Ett ekolod skickar ut en ljudvåg mot botten och mäter hur lång tid det tar innan ekot kommer tillbaka. Ju längre tid, desto djupare. En barometer mäter lufttryck, en kompass visar väderstreck och en mikrometer mäter mycket små längder."
+  },
+  {
+    q: "Vilket av följande mätinstrument används för att mäta massa?",
+    type: "single",
+    opts: [
+      { t: "Tumstock", c: false },
+      { t: "Mätglas", c: false },
+      { t: "Balansvåg", c: true },
+      { t: "Termometer", c: false }
+    ],
+    fb: "Massa mäts med en våg, till exempel en balansvåg, en hushållsvåg eller en elektronisk våg. Tumstocken mäter längd, mätglaset mäter volym och termometern mäter temperatur."
+  },
+  {
+    q: "Vilka påståenden om vad som händer med materia stämmer?",
+    type: "multi",
+    opts: [
+      { t: "När bensin förbränns i en bilmotor hamnar dess atomer i avgaserna", c: true },
+      { t: "När vatten avdunstar finns alla vattenmolekylerna kvar, utspridda i luften", c: true },
+      { t: "När en träbit brinner upp förstörs de flesta av dess atomer, och därför blir det bara lite aska kvar", c: false },
+      { t: "Nya atomer bildas när ett ämne värms upp", c: false }
+    ],
+    fb: "A och B stämmer. Materia kan varken förstöras eller nyskapas – den kan bara omvandlas. Atomerna i bensinen finns kvar i avgaserna, och vattenmolekylerna finns kvar i luften. C är fel: när trä brinner förvandlas det mesta till gaser (främst koldioxid och vattenånga) som sprids i luften. Atomerna finns kvar, bara inte i askan. D är fel: uppvärmning får molekylerna att röra sig mer, men skapar inga nya atomer."
+  },
+  {
+    q: "Vilka av följande uttryck anger samma volym som 1 liter?",
+    type: "multi",
+    opts: [
+      { t: "1 dm³", c: true },
+      { t: "1000 ml", c: true },
+      { t: "1000 cm³", c: true },
+      { t: "10 dl", c: true }
+    ],
+    fb: "Alla fyra är lika med 1 liter. En kub med sidan 1 dm har volymen 1 dm³ = 1 liter. 1 liter = 10 dl = 100 cl = 1000 ml, och eftersom 1 ml = 1 cm³ är 1 liter också 1000 cm³."
+  },
+  {
+    q: "En metallbit väger 540 g och har volymen 200 cm³. Vilken metall kan det vara? (Densiteter: aluminium 2,7 g/cm³, järn 7,8 g/cm³, koppar 8,9 g/cm³, bly 11,3 g/cm³)",
+    type: "single",
+    opts: [
+      { t: "Bly", c: false },
+      { t: "Koppar", c: false },
+      { t: "Järn", c: false },
+      { t: "Aluminium", c: true }
+    ],
+    fb: "Densitet = massa / volym = 540 g / 200 cm³ = 2,7 g/cm³, vilket stämmer med aluminium. Att jämföra en uträknad densitet med en tabell är ett vanligt sätt att ta reda på vilket ämne ett föremål består av."
+  },
+  {
+    q: "Vilka påståenden om kondensation stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Den sker när vattenånga kyls ned", c: true },
+      { t: "Moln bildas när vattenånga kondenserar i kallare luftlager", c: true },
+      { t: "Imma på en kall spegel efter en dusch är kondenserad vattenånga", c: true },
+      { t: "Den kan bara ske när temperaturen är under 0 °C", c: false }
+    ],
+    fb: "A, B och C stämmer. När vattenånga kyls ned övergår den till små vattendroppar. Det är så moln och imma bildas. D är fel: vattenånga kondenserar vid betydligt högre temperaturer än 0 °C – imman i badrummet bildas ju i ett varmt rum, bara spegeln är svalare än ångan."
+  },
+  {
+    q: "Två lika stora kuber, en av bly och en av aluminium, ställs på en våg. Blykuben väger mer. Vad är förklaringen?",
+    type: "single",
+    opts: [
+      { t: "Tyngdkraften drar hårdare i bly än i aluminium", c: false },
+      { t: "Bly har högre densitet än aluminium", c: true },
+      { t: "Bly är ett grundämne medan aluminium är ett sammansatt ämne", c: false },
+      { t: "Molekylerna i bly sitter på bestämda platser medan molekylerna i aluminium kan röra sig fritt", c: false }
+    ],
+    fb: "Bly har högre densitet (11,3 g/cm³) än aluminium (2,7 g/cm³), så lika stora bitar väger olika mycket. Densiteten beror på hur tunga atomerna är och hur tätt de är packade. Tyngdkraften drar lika mycket per kilogram i alla ämnen. Både bly och aluminium är grundämnen, och båda är fasta ämnen vid rumstemperatur."
+  },
+  {
+    q: "Vad betyder ordet ”atom” ursprungligen?",
+    type: "single",
+    opts: [
+      { t: "Odelbar", c: true },
+      { t: "Liten kula", c: false },
+      { t: "Ämne", c: false },
+      { t: "Byggsten", c: false }
+    ],
+    fb: "Atom är ett grekiskt ord som betyder odelbar, eftersom man trodde att atomen var den minsta delen som inte gick att dela. ”Ämne” är vad det latinska ordet materia betyder. Atomer brukar ritas som kulor och beskrivs ofta som byggstenar, men det är inte vad själva ordet betyder."
+  },
+  {
+    q: "Du har en rulle med 200 likadana frimärken och en köksvåg. Vilka metoder ger massan av ett enda frimärke?",
+    type: "multi",
+    opts: [
+      { t: "Väg hela rullen och dividera med 200", c: true },
+      { t: "Väg hela rullen och multiplicera med 200", c: false },
+      { t: "Väg rullen och dividera med ett frimärkes area", c: false },
+      { t: "Mät rullens volym med ett mätglas", c: false }
+    ],
+    fb: "Bara A ger rätt svar. Ett enda frimärke väger för lite för att en köksvåg ska kunna visa det noggrant, men 200 frimärken går att väga. Massan delat med antalet ger massan per frimärke. Att multiplicera ger massan av 40 000 frimärken. Att dividera med arean eller mäta volymen ger inte massan av ett frimärke."
+  },
+  {
+    q: "Vilka påståenden om metaller stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Alla metaller är fasta vid rumstemperatur", c: false },
+      { t: "Alla metaller leder elektricitet", c: true },
+      { t: "Alla metaller dras till en magnet", c: false },
+      { t: "Metaller är sammansatta ämnen", c: false }
+    ],
+    fb: "Bara B stämmer. En gemensam egenskap för metaller är att de leder elektricitet och värme. A är fel: kvicksilver är en metall som är flytande vid rumstemperatur. C är fel: bara vissa metaller, till exempel järn och nickel, är magnetiska – guld, koppar och aluminium är det inte. D är fel: rena metaller som guld, järn och koppar är grundämnen."
+  },
+  {
+    q: "Vattnets densitet är 1 g/cm³. Hur mycket väger 1 liter vatten?",
+    type: "single",
+    opts: [
+      { t: "1 g", c: false },
+      { t: "100 g", c: false },
+      { t: "1 kg", c: true },
+      { t: "10 kg", c: false }
+    ],
+    fb: "1 liter = 1000 cm³. Eftersom varje cm³ vatten väger 1 g väger 1 liter 1000 g = 1 kg. Därför kan man också säga att vattnets densitet är 1 kg/dm³."
+  },
+  {
+    q: "En tom bägare väger 380 g. Efter att man hällt i vatten visar vågen 580 g. Vilka påståenden stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Vattnets massa är 200 g", c: true },
+      { t: "Vattnets volym är 200 cm³", c: true },
+      { t: "Vattnets volym är 580 ml", c: false },
+      { t: "Vattnets massa är 960 g", c: false }
+    ],
+    fb: "A och B stämmer. Vattnets massa är 580 g − 380 g = 200 g. Eftersom vattnets densitet är 1 g/cm³ har 200 g vatten volymen 200 cm³. 580 är den totala massan inklusive bägaren, och 960 får man om man adderar i stället för att subtrahera."
+  },
+  {
+    q: "Varför innehåller tvål och diskmedel ämnen som minskar vattnets ytspänning?",
+    type: "single",
+    opts: [
+      { t: "För att vattnet lättare ska tränga in mellan fibrer och i små porer", c: true },
+      { t: "För att vattnet ska bli varmare", c: false },
+      { t: "För att vattnet ska avdunsta långsammare", c: false },
+      { t: "För att vattnet ska få högre densitet och därmed lättare kunna lösa upp fett och smuts från disken", c: false }
+    ],
+    fb: "Ytspänningen gör att vatten hellre drar ihop sig till droppar än sprider ut sig. När ytspänningen minskar kan vattnet lättare tränga in i tyg, porer och smuts, vilket gör rengöringen effektivare. Diskmedel påverkar inte vattnets temperatur, och det är inte densiteten som avgör hur bra vatten löser fett."
+  },
+  {
+    q: "Varför ”klättrar” vatten en liten bit upp längs insidan av ett dricksglas?",
+    type: "single",
+    opts: [
+      { t: "Glaset är varmare än vattnet", c: false },
+      { t: "Vattnet avdunstar från ytan och kondenserar sedan direkt på glasväggen ovanför", c: false },
+      { t: "Luften trycker ned vattnet i mitten av glaset", c: false },
+      { t: "Vattnets och glasets molekyler drar i varandra", c: true }
+    ],
+    fb: "Det finns en dragningskraft mellan vattnets molekyler och glasets molekyler. Man säger att vatten väter glas. Samma kraft får vatten att stiga upp i tunna rör – kapillärverkan. Avdunstning och kondensation sker visserligen, men förklarar inte varför vattenytan böjer sig uppåt vid kanten."
+  },
+  {
+    q: "Vilka påståenden om vatten stämmer?",
+    type: "multi",
+    opts: [
+      { t: "En vattenmolekyl består av två väteatomer och en syreatom", c: true },
+      { t: "Is, flytande vatten och vattenånga består av samma slags molekyler", c: true },
+      { t: "Vatten kan övergå till gas både genom avdunstning och genom kokning", c: true },
+      { t: "Rent vatten kokar vid 100 °C vid normalt lufttryck", c: true }
+    ],
+    fb: "Alla fyra stämmer. En vattenmolekyl (H₂O) består av två väteatomer och en syreatom. Det är samma molekyler i is, vatten och ånga – det som skiljer formerna åt är hur fritt molekylerna rör sig. Vatten blir gas genom avdunstning (vid alla temperaturer, från ytan) och genom kokning (vid kokpunkten, i hela vätskan). Vid normalt lufttryck är kokpunkten 100 °C."
+  },
+  {
+    q: "Vilka av följande areaomvandlingar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "1 dm² = 10 cm²", c: false },
+      { t: "1 cm² = 10 mm²", c: false },
+      { t: "6,3 dm² = 630 mm²", c: false },
+      { t: "17,3 cm² = 1,73 dm²", c: false }
+    ],
+    fb: "Ingen stämmer. Mellan två areaenheter är steget 100, inte 10: 1 dm² = 100 cm² och 1 cm² = 100 mm². Därför är 6,3 dm² = 630 cm² = 63 000 mm², och 17,3 cm² = 0,173 dm²."
+  },
+  {
+    q: "En juiceförpackning har en kvadratisk botten med sidan 10 cm och är 20 cm hög. Hur mycket rymmer den?",
+    type: "single",
+    opts: [
+      { t: "0,2 liter", c: false },
+      { t: "2 liter", c: true },
+      { t: "20 liter", c: false },
+      { t: "200 liter", c: false }
+    ],
+    fb: "Volym = 10 cm · 10 cm · 20 cm = 2000 cm³. Eftersom 1000 cm³ = 1 liter rymmer förpackningen 2 liter."
+  },
+  {
+    q: "Vilka påståenden om materiens former stämmer **INTE**?",
+    type: "multi",
+    opts: [
+      { t: "I en gas rör sig molekylerna fritt", c: false },
+      { t: "När ett ämne smälter går det från fast till flytande form", c: false },
+      { t: "När ett ämne stelnar går det från gasform till fast form", c: true },
+      { t: "De flesta ämnen kan förekomma i alla tre formerna", c: false }
+    ],
+    fb: "Bara C stämmer INTE och ska markeras. Att stelna betyder att gå från flytande till fast form, till exempel när vatten fryser till is. A, B och D är sanna: i en gas rör sig molekylerna fritt, smältning är övergången fast → flytande, och nästan all materia kan finnas som fast ämne, vätska och gas."
+  },
+  {
+    q: "Ett föremål av bly (densitet 11,3 g/cm³) sänks ner i ett mätglas med vatten. Vattennivån stiger från 20 ml till 50 ml. Hur mycket väger föremålet?",
+    type: "single",
+    opts: [
+      { t: "30 g", c: false },
+      { t: "113 g", c: false },
+      { t: "339 g", c: true },
+      { t: "565 g", c: false }
+    ],
+    fb: "Föremålets volym är 50 − 20 = 30 ml = 30 cm³. Massa = densitet · volym = 11,3 g/cm³ · 30 cm³ = 339 g. 565 får man om man använder 50 ml som volym, och 30 g gäller bara om föremålet hade haft samma densitet som vatten."
+  },
+  {
+    q: "En stor träbit jämförs med en liten järnkula. Vilka påståenden stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Träbiten kan väga mer än järnkulan", c: true },
+      { t: "Järnkulan väger alltid mest, eftersom järn har högre densitet", c: false },
+      { t: "Järn har högre densitet än trä, oavsett hur stora bitarna är", c: true },
+      { t: "Om träbiten väger mest måste trä ha högre densitet än järn", c: false }
+    ],
+    fb: "A och C stämmer. Densitet beskriver hur mycket 1 cm³ väger, och den är densamma oavsett hur stor biten är. Järn (7,8 g/cm³) har alltid högre densitet än trä (cirka 0,5 g/cm³). Men en stor träbit har så mycket större volym att den ändå kan väga mer. Därför är det fel att säga att järn är tyngre än trä – man bör säga att järn har högre densitet."
+  },
+  {
+    q: "Vilket ord betyder ungefär samma sak som densitet?",
+    type: "single",
+    opts: [
+      { t: "Täthet", c: true },
+      { t: "Tyngd", c: false },
+      { t: "Massa", c: false },
+      { t: "Storlek", c: false }
+    ],
+    fb: "Densitet betyder täthet – hur tätt packad materien är, alltså hur mycket massa som finns i en viss volym. Massa beskriver hur mycket ett helt föremål väger, och storlek beskriver volymen. Densitet kombinerar de två: massa delat med volym."
+  },
+  {
+    q: "Ett rum är 10 m långt, 8 m brett och 2,5 m högt. Luftens densitet är 1,3 kg/m³. Hur stor massa har luften i rummet?",
+    type: "single",
+    opts: [
+      { t: "26 kg", c: false },
+      { t: "154 kg", c: false },
+      { t: "200 kg", c: false },
+      { t: "260 kg", c: true }
+    ],
+    fb: "Rummets volym är 10 · 8 · 2,5 = 200 m³. Massa = densitet · volym = 1,3 kg/m³ · 200 m³ = 260 kg. 200 är volymen i m³, inte massan, och 154 får man om man dividerar volymen med densiteten. Luft väger alltså mer än man kanske tror."
+  },
+  {
+    q: "Vilka påståenden om enheter för massa stämmer?",
+    type: "multi",
+    opts: [
+      { t: "1 ton = 1000 kg", c: true },
+      { t: "1 hg = 100 g", c: true },
+      { t: "1 g = 1000 mg", c: true },
+      { t: "1 kg = 100 hg", c: false }
+    ],
+    fb: "A, B och C stämmer. D är fel: 1 kg = 1000 g, och eftersom 1 hg = 100 g blir 1 kg = 10 hg. Prefixen hjälper: kilo betyder tusen, hekto betyder hundra och milli betyder tusendel."
+  },
+  {
+    q: "Vilka påståenden om vad som händer när ett ämne byter form stämmer?",
+    type: "multi",
+    opts: [
+      { t: "När ett ämne värms upp rör sig molekylerna kraftigare", c: true },
+      { t: "Ett ämne kokar när molekylerna har vuxit sig större", c: false },
+      { t: "När ett ämne smälter försvinner krafterna mellan molekylerna helt", c: false },
+      { t: "När vatten kokar delas vattenmolekylerna upp i väteatomer och syreatomer som sedan sprider sig i luften", c: false }
+    ],
+    fb: "Bara A stämmer. Formändringar beror på hur kraftigt molekylerna rör sig. B är fel: molekylerna ändrar inte storlek. C är fel: i en vätska finns fortfarande krafter mellan molekylerna – det är därför vätskor har ytspänning. D är fel: vattenmolekylerna förblir hela vid kokning, de frigör sig bara från varandra och blir vattenånga."
+  },
+  {
+    q: "Vilka av följande längdenheter byggde ursprungligen på mått från människokroppen?",
+    type: "multi",
+    opts: [
+      { t: "Meter", c: false },
+      { t: "Ljusår", c: false },
+      { t: "Aln", c: true },
+      { t: "Sjömil", c: false }
+    ],
+    fb: "Bara aln. En aln var längden från armbågen till fingerspetsen. Även fot och tum byggde på kroppsdelar, och därför skilde sig måtten mellan olika länder. Metern bestämdes först utifrån jordklotet (en tiomiljondel av avståndet från ekvatorn till nordpolen), ett ljusår är hur långt ljuset färdas på ett år, och en sjömil bygger också på jordklotets mått."
+  }
+];
+
+// ── Övningsfrågor i andra format (blandas in efter angiven fråga) ──
+const extraData = [
+  {
+    after: 3,
+    q: "En sten väger 19,5 g och har volymen 7,8 cm³. Vilken densitet har stenen?",
+    type: "numeric",
+    parts: [{ label: "Densitet", ans: 2.5, unit: "g/cm³" }],
+    fb: "Densitet = massa / volym = 19,5 g / 7,8 cm³ = 2,5 g/cm³. Kontrollera alltid att svaret är rimligt: stenen väger ungefär 2,5 gånger så mycket som lika mycket vatten, vilket stämmer bra med vanliga bergarter som granit (2,7 g/cm³)."
+  },
+  {
+    after: 6,
+    q: "Ordna massorna från minst till störst. Använd pilarna för att flytta raderna.",
+    type: "order",
+    items: ["1100 g", "0,9 kg", "0,0012 ton", "9,8 hg", "950 g"],
+    answer: ["0,9 kg", "950 g", "9,8 hg", "1100 g", "0,0012 ton"],
+    fb: "Gör om allt till gram först: 0,9 kg = 900 g, 9,8 hg = 980 g (1 hg = 100 g) och 0,0012 ton = 1,2 kg = 1200 g. Ordningen blir då 900 g, 950 g, 980 g, 1100 g, 1200 g. När värden har olika enheter går de bara att jämföra om de först omvandlas till samma enhet."
+  },
+  {
+    after: 9,
+    q: "En metallbit sänks ner i ett mätglas. Vattennivån stiger från 35 ml till 47 ml. Metallbiten väger 106,8 g.",
+    type: "numeric",
+    parts: [
+      { label: "a) Metallbitens volym", ans: 12, unit: "cm³" },
+      { label: "b) Metallens densitet", ans: 8.9, unit: "g/cm³" }
+    ],
+    fb: "a) Metallbiten tränger undan lika mycket vatten som sin egen volym: 47 − 35 = 12 ml = 12 cm³. b) Densitet = massa / volym = 106,8 g / 12 cm³ = 8,9 g/cm³. Det är densiteten för koppar. Den här metoden fungerar för föremål med oregelbunden form, där volymen inte går att räkna ut med längd · bredd · höjd."
+  },
+  {
+    after: 12,
+    q: "Sortera ämnena efter vilken form de normalt har vid rumstemperatur.",
+    type: "match",
+    badge: "Sortera – välj kategori för varje ämne",
+    choices: ["Fast", "Flytande", "Gas"],
+    rows: [
+      { t: "Koldioxid", ans: "Gas" },
+      { t: "Järn", ans: "Fast" },
+      { t: "Bensin", ans: "Flytande" },
+      { t: "Glas", ans: "Fast" },
+      { t: "Syre", ans: "Gas" },
+      { t: "Mjölk", ans: "Flytande" },
+      { t: "Koppar", ans: "Fast" },
+      { t: "Väte", ans: "Gas" }
+    ],
+    fb: "Fasta: järn, glas och koppar – molekylerna/atomerna sitter på bestämda platser. Flytande: bensin och mjölk – molekylerna kan röra sig förbi varandra. Gaser: koldioxid, syre och väte – molekylerna rör sig fritt. Vilken form ett ämne har beror på temperaturen: även järn blir flytande om det värms tillräckligt, och koldioxid kan bli fast (kolsyreis) om den kyls ned kraftigt."
+  },
+  {
+    after: 14,
+    q: "Hur många cm³ är 0,75 liter?",
+    type: "numeric",
+    parts: [{ label: "Volym", ans: 750, unit: "cm³" }],
+    fb: "1 liter = 1 dm³ = 1000 cm³. Därför är 0,75 liter = 0,75 · 1000 = 750 cm³. Det är också 750 ml, eftersom 1 ml = 1 cm³."
+  },
+  {
+    after: 16,
+    q: "En elev ska omvandla 3,2 m² till cm². Vilket är det första steget som innehåller ett fel?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: ["Steg 1: 1 m = 100 cm", "Steg 2: Alltså är 1 m² = 100 cm²", "Steg 3: 3,2 m² = 3,2 · 100 = 320 cm²"],
+    opts: [
+      { t: "Steg 1", c: false },
+      { t: "Steg 2", c: true },
+      { t: "Steg 3", c: false },
+      { t: "Inget steg är fel", c: false }
+    ],
+    fb: "Steg 2 är fel. En kvadratmeter är en kvadrat med sidan 100 cm, så arean blir 100 cm · 100 cm = 10 000 cm². Steg 1 stämmer. Steg 3 räknar rätt utifrån steg 2, men eftersom steg 2 är fel blir även svaret fel. Rätt svar är 3,2 · 10 000 = 32 000 cm²."
+  },
+  {
+    after: 19,
+    q: "Para ihop varje mätuppgift med det mätinstrument som passar bäst.",
+    type: "match",
+    badge: "Para ihop – välj ett alternativ för varje rad",
+    choices: ["Tumstock", "Skjutmått", "Mönsterdjupsmätare", "Mätglas", "Termometer"],
+    rows: [
+      { t: "Mäta längden på en bräda", ans: "Tumstock" },
+      { t: "Mäta diametern på en skruv med 0,1 mm noggrannhet", ans: "Skjutmått" },
+      { t: "Kontrollera hur slitna däcken på en bil är", ans: "Mönsterdjupsmätare" },
+      { t: "Mäta upp 40 ml vätska på en laboration", ans: "Mätglas" }
+    ],
+    fb: "En tumstock räcker för längre mått där millimeterprecision inte behövs. Ett skjutmått mäter små föremål med ungefär 0,1 mm noggrannhet. En mönsterdjupsmätare mäter hur djupa spåren i ett däck är. Ett mätglas (mätcylinder) används för att mäta vätskevolymer noggrant. Termometern mäter temperatur och passar inte till någon av uppgifterna."
+  },
+  {
+    after: 21,
+    q: "Para ihop varje händelse med rätt namn på övergången.",
+    type: "match",
+    badge: "Para ihop – välj ett alternativ för varje rad",
+    choices: ["Kondensation", "Avdunstning", "Smältning", "Stelning", "Kokning"],
+    rows: [
+      { t: "Imma bildas på en kall spegel", ans: "Kondensation" },
+      { t: "En vattenpöl försvinner en solig dag", ans: "Avdunstning" },
+      { t: "Smör blir flytande i en varm stekpanna", ans: "Smältning" },
+      { t: "Vatten i en frys blir till is", ans: "Stelning" }
+    ],
+    fb: "Imma är vattenånga som kyls av mot den kalla spegeln och blir vatten – kondensation. Pölen försvinner genom avdunstning, som sker vid ytan och vid temperaturer långt under kokpunkten. Smöret går från fast till flytande form – smältning. Vatten som blir is går från flytande till fast form – stelning. Kokning passar inte: det sker vid kokpunkten och då bildas gasbubblor inne i vätskan."
+  },
+  {
+    after: 24,
+    q: "En glasbit väger 5 g. Glas har densiteten 2,5 g/cm³. Hur stor volym har glasbiten?",
+    type: "numeric",
+    parts: [{ label: "Volym", ans: 2, unit: "cm³" }],
+    fb: "Volym = massa / densitet = 5 g / 2,5 g/cm³ = 2 cm³. Varje kubikcentimeter glas väger 2,5 g, så 5 g motsvarar två kubikcentimeter. Formeln densitet = massa / volym kan skrivas om på tre sätt: massa = densitet · volym och volym = massa / densitet."
+  },
+  {
+    after: 28,
+    q: "Sortera ämnena i grundämnen och sammansatta ämnen.",
+    type: "match",
+    badge: "Sortera – välj kategori för varje ämne",
+    choices: ["Grundämne", "Sammansatt ämne"],
+    rows: [
+      { t: "Kväve", ans: "Grundämne" },
+      { t: "Salt", ans: "Sammansatt ämne" },
+      { t: "Aluminium", ans: "Grundämne" },
+      { t: "Bensin", ans: "Sammansatt ämne" },
+      { t: "Väte", ans: "Grundämne" },
+      { t: "Trä", ans: "Sammansatt ämne" },
+      { t: "Silver", ans: "Grundämne" },
+      { t: "Koldioxid", ans: "Sammansatt ämne" }
+    ],
+    fb: "Grundämnen: kväve, aluminium, väte och silver – de består av bara ett slags atomer. Sammansatta ämnen: salt (natrium och klor), bensin (kol och väte), trä (främst kol, väte och syre) och koldioxid (kol och syre). Ett sammansatt ämne innehåller atomer från minst två olika grundämnen."
+  },
+  {
+    after: 30,
+    q: "Ordna volymerna från minst till störst. Använd pilarna för att flytta raderna.",
+    type: "order",
+    items: ["3 dl", "0,02 m³", "250 cm³", "0,35 liter", "280 ml"],
+    answer: ["250 cm³", "280 ml", "3 dl", "0,35 liter", "0,02 m³"],
+    fb: "Gör om allt till cm³ (= ml): 250 cm³, 280 ml = 280 cm³, 3 dl = 300 cm³, 0,35 liter = 350 cm³ och 0,02 m³ = 20 dm³ = 20 000 cm³. Kubikmeter är en stor enhet: 1 m³ = 1000 liter, så även 0,02 m³ är 20 liter."
+  },
+  {
+    after: 32,
+    q: "En elev ska räkna ut densiteten för en metallbit som väger 88 g och har volymen 8 cm³. Vilket är det första steget som innehåller ett fel?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: ["Steg 1: Densitet = volym / massa", "Steg 2: 8 / 88 ≈ 0,09", "Steg 3: Densiteten är 0,09 g/cm³"],
+    opts: [
+      { t: "Steg 1", c: true },
+      { t: "Steg 2", c: false },
+      { t: "Steg 3", c: false },
+      { t: "Inget steg är fel", c: false }
+    ],
+    fb: "Steg 1 är fel – formeln är uppochnedvänd. Densitet = massa / volym = 88 g / 8 cm³ = 11 g/cm³. Ett sätt att upptäcka felet är att fundera på rimligheten: en metall med densiteten 0,09 g/cm³ skulle vara mycket lättare än kork och flyta högt på vatten."
+  },
+  {
+    after: 35,
+    q: "En tom bägare väger 150 g. När den fylls med tändvätska väger den 310 g. Tändvätska har densiteten 0,8 g/cm³.",
+    type: "numeric",
+    parts: [
+      { label: "a) Tändvätskans massa", ans: 160, unit: "g" },
+      { label: "b) Tändvätskans volym", ans: 200, unit: "cm³" },
+      { label: "c) Tändvätskans volym", ans: 2, unit: "dl" }
+    ],
+    fb: "a) 310 g − 150 g = 160 g. b) Volym = massa / densitet = 160 g / 0,8 g/cm³ = 200 cm³. Eftersom tändvätska har lägre densitet än vatten blir volymen större än 160 cm³. c) 200 cm³ = 200 ml = 2 dl (1 dl = 100 ml)."
+  },
+  {
+    after: 37,
+    q: "Densiteter: furu 0,5 g/cm³, is 0,9 g/cm³, granit 2,7 g/cm³, guld 19,3 g/cm³, tegel 1,9 g/cm³, bivax 0,96 g/cm³. Sortera föremålen efter om de flyter eller sjunker i vatten.",
+    type: "match",
+    badge: "Sortera – välj kategori för varje föremål",
+    choices: ["Flyter", "Sjunker"],
+    rows: [
+      { t: "En planka av furu", ans: "Flyter" },
+      { t: "Ett isblock", ans: "Flyter" },
+      { t: "En granitsten", ans: "Sjunker" },
+      { t: "En guldring", ans: "Sjunker" },
+      { t: "En tegelsten", ans: "Sjunker" },
+      { t: "Ett bivaxljus", ans: "Flyter" }
+    ],
+    fb: "Ett massivt föremål flyter om dess densitet är lägre än vattnets (1,0 g/cm³) och sjunker om den är högre. Furu (0,5), is (0,9) och bivax (0,96) flyter. Bivaxet ligger mycket nära 1,0 och flyter därför djupt. Granit (2,7), guld (19,3) och tegel (1,9) sjunker. Storleken spelar ingen roll – även ett enormt isberg flyter."
+  },
+  {
+    after: 41,
+    q: "Para ihop varje beskrivning med rätt begrepp.",
+    type: "match",
+    badge: "Para ihop – välj ett alternativ för varje rad",
+    choices: ["Ytspänning", "Kapillärverkan", "Densitet", "Legering", "Kondensation"],
+    rows: [
+      { t: "Får vatten att stiga upp i tunna rör och i växters stjälkar", ans: "Kapillärverkan" },
+      { t: "Anger hur många gram 1 cm³ av ett ämne väger", ans: "Densitet" },
+      { t: "En blandning av två eller flera sammansmälta metaller", ans: "Legering" },
+      { t: "Gör att vattenytan beter sig som en tunn hinna", ans: "Ytspänning" }
+    ],
+    fb: "Kapillärverkan beror på att vätskans molekyler dras till materialet i smala kanaler, så att vätskan stiger. Densitet är massa per volymenhet. En legering, till exempel brons eller mässing, är sammansmälta metaller. Ytspänning beror på att vätskans molekyler drar i varandra. Kondensation – när gas blir vätska – passar inte på någon av beskrivningarna."
+  },
+  {
+    after: 43,
+    q: "Ett rektangulärt golv är 4 m långt och 2,5 m brett. Hur stor är golvets area i dm²?",
+    type: "numeric",
+    parts: [{ label: "Area", ans: 1000, unit: "dm²" }],
+    fb: "Area = 4 m · 2,5 m = 10 m². Eftersom 1 m² = 10 dm · 10 dm = 100 dm² blir 10 m² = 1000 dm². Man kan också räkna direkt i dm: 40 dm · 25 dm = 1000 dm²."
+  },
+  {
+    after: 45,
+    q: "Ordna areorna från minst till störst. Använd pilarna för att flytta raderna.",
+    type: "order",
+    items: ["0,5 m²", "4800 cm²", "52 000 mm²", "45 dm²"],
+    answer: ["52 000 mm²", "45 dm²", "4800 cm²", "0,5 m²"],
+    fb: "Gör om allt till cm². För areaenheter är steget 100: 52 000 mm² = 520 cm², 45 dm² = 4500 cm², och 0,5 m² = 5000 cm². Ordningen blir 520, 4500, 4800, 5000 cm². Det stora talet 52 000 är alltså minst – ett stort mätetal betyder inte en stor area om enheten är liten."
+  },
+  {
+    after: 47,
+    q: "En korkbit väger 3 g. Kork har densiteten 0,2 g/cm³. En elev räknar ut korkbitens volym. Vilket är det första steget som innehåller ett fel?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: ["Steg 1: Volym = massa / densitet", "Steg 2: Volym = 3 / 0,2", "Steg 3: Volym = 15 cm³"],
+    opts: [
+      { t: "Steg 1", c: false },
+      { t: "Steg 2", c: false },
+      { t: "Steg 3", c: false },
+      { t: "Inget steg är fel", c: true }
+    ],
+    fb: "Uträkningen är helt rätt. Volym = massa / densitet, och 3 / 0,2 = 15 eftersom 0,2 får plats 15 gånger i 3. Svaret är också rimligt: kork är mycket lätt, så 3 g kork tar stor plats – fem gånger mer än 3 g vatten (3 cm³)."
+  },
+  {
+    after: 48,
+    q: "Ett akvarium är 50 cm långt, 30 cm brett och 40 cm högt. Det fylls helt med vatten.",
+    type: "numeric",
+    parts: [
+      { label: "a) Volym", ans: 60000, unit: "cm³" },
+      { label: "b) Volym", ans: 60, unit: "liter" },
+      { label: "c) Vattnets massa", ans: 60, unit: "kg" }
+    ],
+    fb: "a) Volym = 50 · 30 · 40 = 60 000 cm³. b) 1 liter = 1000 cm³, så 60 000 cm³ = 60 liter. c) Vatten har densiteten 1 kg/dm³ (= 1 kg per liter), så 60 liter vatten väger 60 kg. Ett fyllt akvarium är alltså mycket tyngre än man kanske tror."
+  },
+  {
+    after: 50,
+    q: "Guld har densiteten 19,3 g/cm³. En guldtacka har volymen 50 cm³. Hur mycket väger den i kilogram?",
+    type: "numeric",
+    parts: [{ label: "Massa", ans: 0.965, unit: "kg" }],
+    fb: "Massa = densitet · volym = 19,3 g/cm³ · 50 cm³ = 965 g. Eftersom 1 kg = 1000 g blir det 0,965 kg. Tackan är ungefär lika stor som en tändsticksask men väger nästan ett kilo – guld är ett av de tätaste ämnena som finns."
+  }
+];
+
+(function mergeExtras() {
+  var merged = [];
+  quizData.forEach(function(q, i) {
+    merged.push(q);
+    extraData.forEach(function(e) { if (e.after === i + 1) merged.push(e); });
+  });
+  quizData.length = 0;
+  merged.forEach(function(q) { quizData.push(q); });
+})();
+
+// ── Övningsformat: inmatning, para ihop/sortera, ordna ────────────
+function isCustom(q) {
+  return q.type === 'numeric' || q.type === 'match' || q.type === 'order';
+}
+
+var orderState = [];
+
+function shortNum(n) {
+  return String(n).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function parseNum(s) {
+  var v = parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
+  return isNaN(v) ? null : v;
+}
+
+function renderWork(q, list) {
+  var box = document.createElement('div');
+  box.className = 'work-box';
+  q.work.forEach(function(line) {
+    var d = document.createElement('div');
+    d.textContent = line;
+    box.appendChild(d);
+  });
+  list.appendChild(box);
+}
+
+function renderCustom(q, list) {
+  if (q.type === 'numeric') {
+    if (!q.badge) document.getElementById('typeBadge').textContent =
+      q.parts.length > 1 ? 'Räkna ut – lös i steg och skriv dina svar' : 'Räkna ut – skriv ditt svar';
+    q.parts.forEach(function(p, i) {
+      var row = document.createElement('div');
+      row.className = 'part-row';
+      row.innerHTML = '<span class="part-label"></span><span class="part-input">' +
+        '<input class="num-input" type="text" inputmode="decimal" autocomplete="off" id="part' + i + '">' +
+        '<span></span></span>';
+      row.querySelector('.part-label').textContent = p.label;
+      row.querySelector('.part-input span').textContent = p.unit;
+      list.appendChild(row);
+    });
+  } else if (q.type === 'match') {
+    q.rows.forEach(function(r, i) {
+      var row = document.createElement('div');
+      row.className = 'part-row';
+      var lab = document.createElement('span');
+      lab.className = 'part-label';
+      lab.textContent = r.t;
+      var sel = document.createElement('select');
+      sel.className = 'sel-input';
+      sel.id = 'part' + i;
+      sel.innerHTML = '<option value="">Välj …</option>';
+      q.choices.forEach(function(c) {
+        var o = document.createElement('option');
+        o.value = c; o.textContent = c;
+        sel.appendChild(o);
+      });
+      row.appendChild(lab);
+      row.appendChild(sel);
+      list.appendChild(row);
+    });
+  } else if (q.type === 'order') {
+    if (!q.badge) document.getElementById('typeBadge').textContent = 'Ordna – flytta raderna till rätt ordning';
+    orderState = q.items.slice();
+    drawOrder(list, false);
+  }
+  var first = list.querySelector('input, select');
+  if (first && window.matchMedia('(pointer: fine)').matches) first.focus();
+}
+
+function drawOrder(list, done, q) {
+  list.querySelectorAll('.order-item').forEach(function(el) { el.remove(); });
+  orderState.forEach(function(t, i) {
+    var row = document.createElement('div');
+    row.className = 'order-item';
+    if (done) row.classList.add(t === q.answer[i] ? 'correct' : 'incorrect');
+    row.innerHTML = '<span class="order-pos">' + (i + 1) + '.</span><span class="order-text"></span>' +
+      '<button class="order-btn" aria-label="Flytta upp">▲</button><button class="order-btn" aria-label="Flytta ned">▼</button>';
+    row.querySelector('.order-text').textContent = done && t !== q.answer[i]
+      ? t + '  (rätt plats: ' + (q.answer.indexOf(t) + 1) + ')' : t;
+    var btns = row.querySelectorAll('.order-btn');
+    btns[0].disabled = done || i === 0;
+    btns[1].disabled = done || i === orderState.length - 1;
+    btns[0].onclick = function() { swapOrder(list, i, i - 1); };
+    btns[1].onclick = function() { swapOrder(list, i, i + 1); };
+    list.appendChild(row);
+  });
+}
+
+function swapOrder(list, a, b) {
+  if (checked) return;
+  var tmp = orderState[a]; orderState[a] = orderState[b]; orderState[b] = tmp;
+  drawOrder(list, false);
+}
+
+function checkCustom(q) {
+  var list = document.getElementById('optionsList');
+  var results = [];
+
+  if (q.type === 'order') {
+    orderState.forEach(function(t, i) { results.push(t === q.answer[i]); });
+    drawOrder(list, true, q);
+  } else {
+    var rows = list.querySelectorAll('.part-row');
+    var defs = q.type === 'numeric' ? q.parts : q.rows;
+    defs.forEach(function(d, i) {
+      var inp = document.getElementById('part' + i);
+      var ok;
+      if (q.type === 'numeric') {
+        var v = parseNum(inp.value);
+        ok = v !== null && Math.abs(v - d.ans) <= Math.abs(d.ans) * 0.01 + 1e-9;
+      } else {
+        ok = inp.value === d.ans;
+      }
+      inp.disabled = true;
+      results.push(ok);
+      rows[i].classList.add(ok ? 'correct' : 'incorrect');
+      if (!ok) {
+        var note = document.createElement('span');
+        note.className = 'correct-note';
+        note.textContent = 'Rätt svar: ' + (q.type === 'numeric' ? shortNum(d.ans) + ' ' + d.unit : d.ans);
+        rows[i].appendChild(note);
+      }
+    });
+  }
+
+  var nRight = results.filter(Boolean).length;
+  var isExact = nRight === results.length;
+  var isPartial = !isExact && nRight > 0;
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt. (' + nRight + ' av ' + results.length + ' rätt)';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+  document.getElementById('feedbackText').textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+let current = 0;
+let score = 0;
+let answers = [];
+let checked = false;
+
+// ── localStorage helpers ──────────────────────────────────────────
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentQuestion: current + 1,
+      score: score,
+      answers: answers
+    }));
+  } catch(e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// ── Card template ─────────────────────────────────────────────────
+function getCardTemplate() {
+  return `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  `;
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  const saved = loadProgress();
+  if (saved && saved.currentQuestion > 0 && saved.currentQuestion < quizData.length) {
+    showResumeScreen(saved);
+  } else {
+    clearProgress();
+    render();
+  }
+}
+
+function showResumeScreen(saved) {
+  const nextQ = saved.currentQuestion;
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (nextQ + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width =
+    (nextQ / quizData.length * 100) + '%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div class="resume-screen">' +
+    '<div class="resume-title">Fortsätt där du slutade</div>' +
+    '<div class="resume-info">Du är på fråga <strong>' + (nextQ + 1) + '</strong> av ' + quizData.length + '</div>' +
+    '<div class="resume-score">' + saved.score + ' rätt hittills</div>' +
+    '<div class="btn-row" style="justify-content:center; margin-top:1.5rem;">' +
+    '<button class="btn" onclick="continueQuiz()">Fortsätt</button>' +
+    '<button class="btn btn-outline" onclick="freshStart()">Börja om</button>' +
+    '</div></div>';
+}
+
+function continueQuiz() {
+  const saved = loadProgress();
+  if (saved) {
+    current = saved.currentQuestion;
+    score = saved.score;
+    answers = saved.answers || [];
+  }
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+function freshStart() {
+  clearProgress();
+  current = 0; score = 0; answers = [];
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  const q = quizData[current];
+  const isSingle = q.type === 'single';
+  const pct = (current / quizData.length) * 100;
+
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (current + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  document.getElementById('typeBadge').textContent = q.badge || (isSingle
+    ? 'Enval – välj ett alternativ'
+    : 'Flerval – ett eller flera alternativ kan vara rätta');
+
+  document.getElementById('questionText').innerHTML = q.q.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+  if (q.work) renderWork(q, list);
+
+  if (isCustom(q)) renderCustom(q, list);
+  else q.opts.forEach(function(opt, i) {
+    var label = document.createElement('label');
+    label.className = 'option-label';
+
+    var input = document.createElement('input');
+    input.type = isSingle ? 'radio' : 'checkbox';
+    input.className = 'option-input';
+    input.id = 'opt' + i;
+    if (isSingle) input.name = 'quiz-option';
+
+    var textSpan = document.createElement('span');
+    textSpan.className = 'option-text';
+    textSpan.textContent = ['A', 'B', 'C', 'D'][i] + ') ' + opt.t;
+
+    label.appendChild(input);
+    label.appendChild(textSpan);
+
+    input.addEventListener('change', function() {
+      if (checked) return;
+      if (isSingle) {
+        list.querySelectorAll('.option-label').forEach(function(l) {
+          l.classList.remove('selected');
+        });
+      }
+      label.classList.toggle('selected', input.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  document.getElementById('checkBtn').style.display = 'inline-block';
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('nextBtn').style.display = 'none';
+
+  var fb = document.getElementById('feedbackBox');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+  checked = false;
+}
+
+// ── Check answer ──────────────────────────────────────────────────
+function checkAnswer() {
+  if (checked) return;
+  checked = true;
+
+  var q = quizData[current];
+  if (isCustom(q)) { checkCustom(q); return; }
+  var isSingle = q.type === 'single';
+  var labels = document.querySelectorAll('.option-label');
+  var inputs = isSingle
+    ? document.querySelectorAll('input[name="quiz-option"]')
+    : document.querySelectorAll('.option-input');
+
+  var selected = [];
+  inputs.forEach(function(inp, i) { if (inp.checked) selected.push(i); });
+
+  var correct = [];
+  q.opts.forEach(function(opt, i) { if (opt.c) correct.push(i); });
+
+  labels.forEach(function(label, i) {
+    label.classList.add('disabled', 'checked');
+    var inp = label.querySelector('input');
+    inp.disabled = true;
+    var textSpan = label.querySelector('.option-text');
+    var isCorrect = q.opts[i].c;
+    var wasSelected = inp.checked;
+
+    if (isCorrect) {
+      label.classList.add('correct');
+      var ind = document.createElement('span');
+      ind.className = 'option-indicator';
+      ind.textContent = '✓';
+      label.insertBefore(ind, textSpan);
+    } else if (wasSelected && !isCorrect) {
+      label.classList.add('incorrect');
+      var ind2 = document.createElement('span');
+      ind2.className = 'option-indicator';
+      ind2.textContent = '✗';
+      label.insertBefore(ind2, textSpan);
+    }
+    label.classList.remove('selected');
+  });
+
+  var correctSet = new Set(correct);
+  var isExact = selected.length === correct.length &&
+                selected.every(function(i) { return correctSet.has(i); });
+  var isPartial = !isSingle && !isExact && selected.length > 0 &&
+                  selected.some(function(i) { return correctSet.has(i); });
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  var fbText = document.getElementById('feedbackText');
+
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt.';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+
+  fbText.textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+// ── Navigation ────────────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= quizData.length) {
+    showResults();
+  } else {
+    render();
+  }
+}
+
+function showResults() {
+  clearProgress();
+  document.getElementById('progressText').textContent = 'Resultat';
+  document.getElementById('progressBar').style.width = '100%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div style="text-align:center; padding:1rem 0;">' +
+    '<div style="font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:1.5rem;">Resultat</div>' +
+    '<div style="font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1;">' + score + '</div>' +
+    '<div style="font-size:1rem;color:var(--text-secondary);margin-top:0.5rem;margin-bottom:0.25rem;">av ' + quizData.length + ' rätt</div>' +
+    '<div style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:2rem;">Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor.</div>' +
+    '<button class="btn" onclick="restart()">Starta om</button>' +
+    '</div>';
+}
+
+function restart() {
+  clearProgress();
+  current = 0; score = 0; answers = []; checked = false;
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

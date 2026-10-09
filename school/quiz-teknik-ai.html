@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Artificiell intelligens</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-bg: #fffbeb;
+    --partial-border: #d97706;
+    --partial-text: #92400e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .quiz-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .quiz-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .quiz-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .question-type-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 1rem;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .option-label:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: #f8f9ff;
+  }
+
+  .option-label.selected:not(.checked) {
+    border-color: var(--accent);
+    background: #eef2ff;
+  }
+
+  .option-label.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .option-label.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .option-label.disabled {
+    cursor: default;
+  }
+
+  .option-input {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .option-indicator {
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 18px;
+    margin-top: 1px;
+    font-size: 1rem;
+  }
+
+  .option-text {
+    flex: 1;
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: #eef2ff;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .feedback-box {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0 10px 10px 0;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-box.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .feedback-box.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .feedback-box.partial {
+    border-color: var(--partial-border);
+    background: var(--partial-bg);
+    color: var(--partial-text);
+  }
+
+  .feedback-verdict {
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-screen {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .resume-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .resume-info {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-score {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+  @media (max-width: 480px) {
+    .card { padding: 1.25rem; }
+    .quiz-title { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-title">Artificiell intelligens</div>
+    <div class="quiz-subtitle">Teknik – AI, algoritmer och källkritik | 35 frågor</div>
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">Fråga 1 av 35</span>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionCard">
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz-progress-quiz-teknik-ai';
+
+const quizData = [
+  {
+    q: "Vad står förkortningen AI för?",
+    type: "single",
+    opts: [
+      { t: "Automatisk information", c: false },
+      { t: "Artificiell intelligens", c: true },
+      { t: "Avancerad internetteknik", c: false },
+      { t: "Algoritmisk insamling", c: false }
+    ],
+    fb: "AI står för artificiell intelligens. \"Artificiell\" betyder konstgjord – alltså intelligens som skapats av människor i form av teknik. De andra alternativen låter tekniska men är inga etablerade begrepp som AI står för."
+  },
+  {
+    q: "Vilka av följande uppgifter är exempel på sådant som AI-system används till?",
+    type: "multi",
+    opts: [
+      { t: "Att känna igen ansikten på bilder", c: true },
+      { t: "Att föreslå låtar utifrån vad man lyssnat på tidigare", c: true },
+      { t: "Att bestämma vilka lagar som ska gälla i ett land", c: false },
+      { t: "Att hjälpa en självkörande bil att upptäcka fotgängare", c: true }
+    ],
+    fb: "A, B och D stämmer. AI används för bildigenkänning (till exempel för att låsa upp en mobil med ansiktet), för rekommendationer i musik- och filmtjänster och för att självkörande bilar ska kunna tolka sin omgivning. C är fel: lagar beslutas av människor, i Sverige av riksdagen. AI kan möjligen användas som hjälpmedel för att sammanställa information, men den bestämmer inte vilka lagar som ska gälla."
+  },
+  {
+    q: "Hur får ett AI-system förmågan att till exempel känna igen katter på bilder?",
+    type: "single",
+    opts: [
+      { t: "En programmerare skriver in en exakt beskrivning av varje katt som finns i hela världen", c: false },
+      { t: "Systemet förstår vad en katt är på samma sätt som ett barn gör", c: false },
+      { t: "Systemet tränas med stora mängder bilder och hittar mönster i dem", c: true },
+      { t: "Systemet tittar på en enda katt och vet sedan allt", c: false }
+    ],
+    fb: "C är rätt. Ett AI-system tränas med mycket stora mängder exempel, till exempel tusentals bilder på katter, och hittar mönster som skiljer katter från annat. A är fel eftersom det är omöjligt att beskriva varje katt – det är just därför man låter systemet lära sig av exempel. B är fel: AI förstår inte saker som en människa, den känner igen mönster. D är fel eftersom ett enda exempel inte räcker för att hitta pålitliga mönster."
+  },
+  {
+    q: "Vilka påståenden om hur ett AI-system fungerar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Det förstår känslor på samma sätt som en människa", c: false },
+      { t: "Det skapar sina svar utifrån mönster i det det har tränats med", c: true },
+      { t: "Det har egna åsikter som bygger på vad det själv har varit med om", c: false },
+      { t: "Det lär sig genom att själv uppleva världen med kropp och sinnen, som en människa", c: false }
+    ],
+    fb: "Bara B stämmer. Ett AI-system tänker inte som en människa – det använder mönster från den information det har tränats med för att känna igen saker eller skapa svar. A och C är fel: AI har inga egna känslor, upplevelser eller åsikter, även om den kan skriva text som låter så. D är fel eftersom AI-system lär sig från data, till exempel text och bilder, inte genom att leva och uppleva saker själva."
+  },
+  {
+    q: "Vad kännetecknar generativ AI?",
+    type: "single",
+    opts: [
+      { t: "Den kan bara känna igen saker men aldrig skapa något", c: false },
+      { t: "Den används enbart för att styra robotar i fabriker", c: false },
+      { t: "Den fungerar utan att ha tränats på någon information", c: false },
+      { t: "Den kan skapa nytt innehåll, till exempel text eller bilder", c: true }
+    ],
+    fb: "D är rätt. \"Generativ\" kommer av att generera, alltså att skapa. Generativ AI kan skapa nytt innehåll som text, bilder, musik, ljud och film. A beskriver motsatsen – AI som bara känner igen saker är inte generativ. B är fel eftersom generativ AI främst skapar innehåll, inte styr maskiner. C är fel: all AI behöver tränas på stora mängder information."
+  },
+  {
+    q: "Vilka av följande är exempel på något som generativ AI skapar?",
+    type: "multi",
+    opts: [
+      { t: "En bild av en drake som aldrig har funnits", c: true },
+      { t: "En ny låt i en viss musikstil", c: true },
+      { t: "En sortering av e-post i skräppost och vanlig post", c: false },
+      { t: "Ett besked om vilken person som syns på ett foto", c: false }
+    ],
+    fb: "A och B stämmer – där skapas något nytt som inte fanns innan, vilket är det som gör AI:n generativ. C och D är också exempel på AI, men där skapas inget nytt innehåll. C handlar om att sortera och D om att känna igen. Att sortera eller känna igen befintligt innehåll är inte samma sak som att generera nytt."
+  },
+  {
+    q: "Vad är en chattbot?",
+    type: "single",
+    opts: [
+      { t: "Ett datorprogram som man kan skriva eller prata med", c: true },
+      { t: "En robot som städar och lagar datorer", c: false },
+      { t: "Ett virus som sprids genom chattar", c: false },
+      { t: "En app för att dela korta videor", c: false }
+    ],
+    fb: "A är rätt. En chattbot är ett datorprogram som man kommunicerar med genom att skriva eller prata, till exempel en kundtjänst på en webbsida eller en AI-assistent. Ordet kommer från \"chatt\" och \"bot\" (kort för robot), men en chattbot är ett program, inte en fysisk robot. Virus och videoappar är något helt annat."
+  },
+  {
+    q: "Vilka påståenden om chattbottar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Alla chattbottar använder AI", c: false },
+      { t: "Vissa chattbottar ger bara färdigskrivna svar på vanliga frågor", c: true },
+      { t: "En chattbot måste ha en robotkropp för att fungera", c: false },
+      { t: "En chattbot kan bara användas genom att skriva, aldrig genom att prata", c: false }
+    ],
+    fb: "Bara B stämmer. Det finns enkla chattbottar som följer förprogrammerade regler och ger färdiga svar, utan AI. Därför är A fel – bara vissa chattbottar använder AI för att förstå frågor och skapa svar. C är fel eftersom en chattbot är ett datorprogram. D är fel: många chattbottar och röstassistenter går att prata med."
+  },
+  {
+    q: "Varför behövs serverhallar för att AI ska fungera?",
+    type: "single",
+    opts: [
+      { t: "För att AI-program måste skrivas ut på papper", c: false },
+      { t: "För att skydda datorer från att kopplas till internet", c: false },
+      { t: "För att AI kräver mycket datorkraft för att lagra och bearbeta stora mängder information", c: true },
+      { t: "För att utvecklare ska ha någonstans att träffas", c: false }
+    ],
+    fb: "C är rätt. AI behöver mycket datorkraft. I serverhallar finns många datorer och servrar samlade, och där lagras och bearbetas stora mängder information. När du använder en AI-tjänst i mobilen sker beräkningarna ofta i en serverhall någon annanstans. Serverhallar är tvärtom kopplade till internet, och de är byggda för datorer, inte för möten."
+  },
+  {
+    q: "Vilka påståenden om serverhallar stämmer?",
+    type: "multi",
+    opts: [
+      { t: "De använder elektricitet och behöver kylas", c: true },
+      { t: "De påverkar inte miljön eftersom de ligger inomhus", c: false },
+      { t: "De behövs bara för att spara foton, inte för AI", c: false },
+      { t: "En serverhall är en enda jättestor dator som går helt på solenergi och därför aldrig blir varm", c: false }
+    ],
+    fb: "Bara A stämmer. Datorerna i en serverhall använder mycket el och blir varma, så de måste kylas – vilket kräver ännu mer energi. Därför kan digital teknik och AI påverka miljön. B är fel: att något sker inomhus betyder inte att det saknar miljöpåverkan. C är fel eftersom serverhallar är just det som ger AI dess datorkraft. D är fel: en serverhall innehåller många datorer, och de blir varma oavsett var elen kommer ifrån."
+  },
+  {
+    q: "Vad är en algoritm?",
+    type: "single",
+    opts: [
+      { t: "En maskin som lagrar information i serverhallar", c: false },
+      { t: "En uppsättning instruktioner eller regler för hur något ska göras eller beräknas", c: true },
+      { t: "Ett program som av misstag ändrar vad du ser", c: false },
+      { t: "En person som väljer vilka klipp som visas i en app", c: false }
+    ],
+    fb: "B är rätt. En algoritm är en uppsättning instruktioner eller regler som talar om hur något ska göras eller beräknas, steg för steg. På internet används algoritmer bland annat för att bestämma vilket innehåll som visas för olika personer. En algoritm är inte en maskin (A) eller en person (D), och den följer sina regler med avsikt, inte av misstag (C)."
+  },
+  {
+    q: "Vilka av följande kan räknas som algoritmer?",
+    type: "multi",
+    opts: [
+      { t: "Ett recept som steg för steg beskriver hur man bakar en kaka", c: true },
+      { t: "Reglerna en app använder för att välja vilka klipp som visas först", c: true },
+      { t: "Instruktionerna en kartapp följer för att räkna ut den kortaste vägen", c: true },
+      { t: "En regel som säger att man får slå tärningen igen om man får en sexa", c: true }
+    ],
+    fb: "Alla fyra stämmer. En algoritm är vilken uppsättning instruktioner eller regler som helst som talar om hur något ska göras – den behöver inte finnas i en dator. Ett recept och en spelregel är alltså också algoritmer. I datorer och appar är algoritmerna skrivna som kod, till exempel för att välja klipp eller räkna ut en resväg."
+  },
+  {
+    q: "Sara tittar ofta på klipp om hästar och brukar gilla och kommentera dem. Vad händer troligen i hennes flöde?",
+    type: "single",
+    opts: [
+      { t: "Hon får färre hästklipp, eftersom appen vill variera innehållet", c: false },
+      { t: "Hon får helt slumpmässiga klipp utan koppling till vad hon gjort", c: false },
+      { t: "Ingenting förändras, eftersom appar inte samlar information om användare", c: false },
+      { t: "Hon får fler hästklipp, eftersom appen använder hennes gillningar för att välja innehåll", c: true }
+    ],
+    fb: "D är rätt. Plattformar samlar information om vad du tittar på, gillar och kommenterar. Algoritmen använder informationen för att välja innehåll som den räknar ut att du är intresserad av. Det kan vara praktiskt, men det kan också göra att man mest får se samma sorts innehåll. Appar samlar alltså information (C är fel), och rekommendationerna bygger på ditt beteende, inte på slump (B)."
+  },
+  {
+    q: "I vilken ordning sker stegen när en plattform ger dig nya rekommendationer?",
+    type: "single",
+    opts: [
+      { t: "Algoritmen väljer innehåll → du gör något → information samlas in → du får rekommendationer", c: false },
+      { t: "Information samlas in → du får rekommendationer → du gör något → algoritmen väljer innehåll", c: false },
+      { t: "Du gör något → information samlas in → algoritmen väljer innehåll → du får rekommendationer", c: true },
+      { t: "Du får rekommendationer → algoritmen väljer innehåll → du gör något → information samlas in", c: false }
+    ],
+    fb: "C är rätt. Först gör du något (tittar, gillar, kommenterar). Systemet samlar in information om det. Algoritmen använder informationen för att välja innehåll, och till sist får du nya rekommendationer. Sedan börjar kedjan om, eftersom det du gör med rekommendationerna samlas in som ny information."
+  },
+  {
+    q: "Vilka beskrivningar passar in på en filterbubbla?",
+    type: "multi",
+    opts: [
+      { t: "Att man mest får se information som liknar det man redan har tittat på", c: true },
+      { t: "Att algoritmen slumpar fram helt nytt innehåll varje gång man öppnar appen", c: false },
+      { t: "Att man bara får se reklam i stället för vanliga inlägg", c: false },
+      { t: "Att en app kan visa medvetna lögner för att lura användaren", c: false }
+    ],
+    fb: "Bara A stämmer. En filterbubbla uppstår när algoritmer hela tiden visar innehåll som liknar det man redan har tittat på, så att man stängs in i en \"bubbla\" av liknande information. B beskriver motsatsen. C handlar om reklam, inte om filterbubblor. D beskriver snarare desinformation – en filterbubbla behöver inte innehålla lögner, den visar bara en begränsad del av verkligheten."
+  },
+  {
+    q: "Varför kan en filterbubbla bli ett problem?",
+    type: "multi",
+    opts: [
+      { t: "Man kan få en ensidig bild av en fråga", c: true },
+      { t: "Man kan tro att fler håller med en än vad som faktiskt gör", c: true },
+      { t: "Man kan missa andra perspektiv och fakta", c: true },
+      { t: "Mobilen blir långsammare när den fylls med liknande innehåll", c: false }
+    ],
+    fb: "A, B och C stämmer. Om man nästan bara möter en sida av en fråga kan man få en ensidig bild, missa viktig information och tro att ens egen åsikt är mer spridd än den är, eftersom man sällan ser andra åsikter. D är fel: en filterbubbla handlar om vilket innehåll som visas, inte om hur snabb mobilen är."
+  },
+  {
+    q: "Vilket är ett bra sätt att motverka en filterbubbla?",
+    type: "single",
+    opts: [
+      { t: "Att själv söka information från flera olika källor", c: true },
+      { t: "Att bara titta på det som rekommenderas automatiskt", c: false },
+      { t: "Att gilla ännu fler klipp av samma slag", c: false },
+      { t: "Att följa fler konton som tycker likadant som en själv", c: false }
+    ],
+    fb: "A är rätt. Genom att själv söka information från olika källor möter man fler perspektiv än de som algoritmen väljer ut. B, C och D gör i stället bubblan ännu tätare: algoritmen får mer information om att man vill ha samma sorts innehåll och visar därför ännu mer av det."
+  },
+  {
+    q: "Vilka av följande uppgifter passar ofta bra för AI eller robotar på en arbetsplats?",
+    type: "multi",
+    opts: [
+      { t: "Att sortera stora mängder information", c: true },
+      { t: "Att utföra samma uppgift väldigt många gånger", c: true },
+      { t: "Att arbeta i miljöer som är farliga för människor", c: true },
+      { t: "Att trösta en ledsen patient och förstå hur hen känner sig inför en svår operation", c: false }
+    ],
+    fb: "A, B och C stämmer. AI och robotar är bra på att snabbt bearbeta stora mängder information, på att upprepa samma uppgift utan att bli trötta och på att arbeta där det är farligt för människor, till exempel i gruvor eller med giftiga ämnen. D är fel: att förstå och bry sig om andra människors känslor och behov är något som människor är bättre på."
+  },
+  {
+    q: "Vilken förmåga är människor generellt bättre på än AI?",
+    type: "single",
+    opts: [
+      { t: "Att på kort tid gå igenom miljontals dokument", c: false },
+      { t: "Att räkna ut stora tal på en bråkdel av en sekund", c: false },
+      { t: "Att hitta mönster i enorma mängder data", c: false },
+      { t: "Att ta ansvar för ett beslut och förstå andras behov", c: true }
+    ],
+    fb: "D är rätt. Människor kan använda erfarenhet, ta ansvar, samarbeta och förstå andra människors känslor och behov. A, B och C är tvärtom saker som datorer och AI är mycket snabbare på än människor. Därför kan människor och AI ofta komplettera varandra genom att arbeta tillsammans."
+  },
+  {
+    q: "Vilka av följande påståenden om AI och arbete stämmer **INTE**?",
+    type: "multi",
+    opts: [
+      { t: "AI är alltid bättre än människor på alla arbetsuppgifter", c: true },
+      { t: "Ny teknik kan göra att vissa arbetsuppgifter förändras eller försvinner", c: false },
+      { t: "Ny teknik kan leda till att nya yrken skapas", c: false },
+      { t: "Människor och AI kan ofta arbeta tillsammans", c: false }
+    ],
+    fb: "Frågan gällde vilka påståenden som INTE stämmer, och det är bara A. AI kan hjälpa människor att arbeta snabbare, men det betyder inte att AI alltid är bättre – människor är bättre på till exempel ansvar, samarbete och att förstå andra. B, C och D stämmer: när ny teknik utvecklas kan vissa arbetsuppgifter försvinna samtidigt som nya skapas, och människor och AI kompletterar ofta varandra."
+  },
+  {
+    q: "En fabrik har skaffat robotar som lyfter tunga och heta metalldelar. Vilket svar på frågan \"Vilken fördel finns med det?\" är mest utvecklat?",
+    type: "single",
+    opts: [
+      { t: "\"Robotar är bra.\"", c: false },
+      { t: "\"Robotar kan lyfta saker.\"", c: false },
+      { t: "\"En fördel är att robotarna tar de farliga lyften, eftersom arbetarna då inte riskerar att skadas.\"", c: true },
+      { t: "\"Robotar är mycket starkare än människor, så därför kommer alla fabriker i hela världen snart att vara helt utan anställda.\"", c: false }
+    ],
+    fb: "C är rätt. Ett utvecklat svar innehåller både ett exempel (robotarna tar de farliga lyften) och en förklaring (arbetarna riskerar inte att skadas), sammanbundna med ett resonerande ord som \"eftersom\". A saknar både exempel och förklaring. B ger ett exempel men ingen förklaring. D är långt men drar en överdriven slutsats och svarar inte på frågan om fördelen."
+  },
+  {
+    q: "Vilka av följande beskriver en risk eller ett problem med AI?",
+    type: "multi",
+    opts: [
+      { t: "Vissa arbeten kan förändras eller försvinna", c: true },
+      { t: "Serverhallar som driver AI förbrukar mycket energi", c: true },
+      { t: "Det kan vara svårt att veta vem som bär ansvaret när ett AI-system gör fel", c: true },
+      { t: "Människor kan bli för beroende av AI och sluta tänka själva", c: true }
+    ],
+    fb: "Alla fyra stämmer. AI kan förändra arbetsmarknaden, och serverhallarna kräver mycket el och kylning, vilket påverkar miljön. En AI kan inte själv ta ansvar, så när den gör fel kan det vara oklart vem som ansvarar – den som gjort systemet eller den som använt det. Den som låter AI tänka åt sig kan dessutom tappa förmågan att själv resonera och granska information. Samtidigt finns det också många möjligheter med AI."
+  },
+  {
+    q: "Du frågar en AI \"När föddes den här personen?\" och får ett långt, självsäkert svar med ett exakt årtal. Vilka slutsatser är rimliga?",
+    type: "multi",
+    opts: [
+      { t: "Svaret är korrekt, eftersom det innehåller ett exakt årtal", c: false },
+      { t: "Ett självsäkert svar kan ändå vara fel", c: true },
+      { t: "Viktiga uppgifter bör alltid kontrolleras i andra trovärdiga källor", c: true },
+      { t: "Långa svar från en AI är mer pålitliga än korta", c: false }
+    ],
+    fb: "B och C stämmer. Att ett svar låter trovärdigt betyder inte att det är korrekt. En AI kan skriva ett exakt årtal och ett långt svar även när uppgiften är fel. Om informationen är viktig bör man därför kontrollera den med andra trovärdiga källor. A och D är fel: varken exakthet eller längd säger något om huruvida svaret är sant."
+  },
+  {
+    q: "Vilka typer av misstag kan en AI göra?",
+    type: "multi",
+    opts: [
+      { t: "Ge felaktig information", c: true },
+      { t: "Blanda ihop fakta om olika personer eller händelser", c: true },
+      { t: "Hitta på källor eller citat som inte finns", c: true },
+      { t: "Skapa information som låter trovärdig fast den är fel", c: true }
+    ],
+    fb: "Alla fyra stämmer. En AI skapar svar utifrån mönster i det den tränats med. Den kan därför ge fel uppgifter, blanda ihop fakta och till och med hitta på källor eller citat som låter riktiga. Eftersom svaren ofta är välformulerade kan de låta trovärdiga fast de är fel. Ett självsäkert svar behöver inte vara ett korrekt svar."
+  },
+  {
+    q: "Vad är en deepfake?",
+    type: "single",
+    opts: [
+      { t: "AI-skapat eller manipulerat material där en verklig person ser ut att göra eller säga något den inte gjort", c: true },
+      { t: "Ett datorvirus som förstör filmer på datorn", c: false },
+      { t: "En film som spelats in utan någon redigering", c: false },
+      { t: "En nyhetsartikel med ett stavfel", c: false }
+    ],
+    fb: "A är rätt. En deepfake är manipulerat eller AI-skapat material – bild, röst eller film – där det ser ut eller låter som att en verklig person gör eller säger något som personen egentligen inte har gjort eller sagt. Ett virus (B) är något annat, en oredigerad film (C) är motsatsen, och ett stavfel (D) är inte en förfalskning av en person."
+  },
+  {
+    q: "Vilka påståenden om deepfakes stämmer?",
+    type: "multi",
+    opts: [
+      { t: "En deepfake kan användas i ett försök att lura människor", c: true },
+      { t: "Det kan ibland vara svårt att upptäcka att materialet är falskt", c: true },
+      { t: "Deepfakes kan bara göras av bilder, aldrig av röster", c: false },
+      { t: "Tekniken bakom kan också användas på roliga och kreativa sätt", c: true }
+    ],
+    fb: "A, B och D stämmer. AI kan skapa mycket verklighetstrogna bilder, röster och filmer. Tekniken kan användas kreativt, till exempel i filmer och skämtvideor, men också för att lura människor. Eftersom resultatet kan se väldigt äkta ut är det ibland svårt att avslöja. C är fel: AI kan även härma röster så att de låter som en verklig person."
+  },
+  {
+    q: "Vad skiljer desinformation från felaktig information?",
+    type: "single",
+    opts: [
+      { t: "Desinformation är alltid skapad av AI", c: false },
+      { t: "Desinformation sprids medvetet för att lura eller påverka", c: true },
+      { t: "Felaktig information är alltid farligare", c: false },
+      { t: "Det finns ingen skillnad mellan dem", c: false }
+    ],
+    fb: "B är rätt. Skillnaden ligger i avsikten. Felaktig information är något som är fel, men personen som sprider den vet kanske inte om det. Desinformation är falsk eller vilseledande information som medvetet skapas eller sprids för att lura eller påverka människor. Desinformation fanns långt innan AI, så A är fel."
+  },
+  {
+    q: "Vilka av följande är exempel på desinformation?",
+    type: "multi",
+    opts: [
+      { t: "Någon skapar en falsk bild av en översvämning och sprider den för att skapa panik", c: true },
+      { t: "En elev skriver av misstag fel årtal i ett skolarbete", c: false },
+      { t: "Ett konto sprider medvetet påhittade siffror för att påverka hur folk röstar", c: true },
+      { t: "En kompis delar en gammal nyhet utan att veta att den inte längre stämmer", c: false }
+    ],
+    fb: "A och C stämmer, eftersom informationen där sprids medvetet för att lura eller påverka. B och D är exempel på felaktig information: uppgifterna är fel, men personerna vet inte om det och försöker inte lura någon. Avsikten är alltså avgörande för om något är desinformation."
+  },
+  {
+    q: "En AI-film visar en känd person säga något som personen aldrig har sagt. Filmen gjordes som ett skämt och är tydligt märkt som skämt. Vilka påståenden stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Filmen kan räknas som en deepfake", c: true },
+      { t: "Filmen är desinformation, eftersom innehållet är falskt", c: false },
+      { t: "Om någon senare sprider filmen utan märkningen för att lura folk kan den bli desinformation", c: true },
+      { t: "Alla som ser filmen kommer att tro att den är äkta", c: false }
+    ],
+    fb: "A och C stämmer. Filmen är AI-skapad och visar en verklig person säga något hen inte sagt, alltså en deepfake. Men den är inte desinformation när den är tydligt märkt som skämt, eftersom ingen försöker lura någon (B är fel). Om någon medvetet sprider den som äkta för att lura människor kan samma film däremot bli desinformation. D är fel: märkningen gör att de flesta förstår att filmen inte är äkta."
+  },
+  {
+    q: "Du ser ett inlägg med en väldigt överraskande nyhet. Vad är det klokaste att göra först?",
+    type: "single",
+    opts: [
+      { t: "Stanna upp och fundera innan du gör något med det", c: true },
+      { t: "Dela det direkt så att fler får veta", c: false },
+      { t: "Gilla det så att du får se mer av samma sort", c: false },
+      { t: "Skriva en kommentar om att det stämmer", c: false }
+    ],
+    fb: "A är rätt. Det första steget i källkritik är att stanna och inte skicka vidare något direkt. Fundera på om informationen verkar väldigt överraskande, om den försöker göra dig arg eller rädd, och om det finns anledning att vara misstänksam. Att dela, gilla eller bekräfta något innan man har undersökt det kan bidra till att felaktig information sprids."
+  },
+  {
+    q: "Vilka frågor är användbara när man undersöker om en uppgift på internet är trovärdig?",
+    type: "multi",
+    opts: [
+      { t: "Vem har publicerat detta?", c: true },
+      { t: "Hur snyggt är inlägget gjort?", c: false },
+      { t: "Hur många har gillat inlägget?", c: false },
+      { t: "Finns det bevis för det som påstås?", c: true }
+    ],
+    fb: "A och D stämmer. När man undersöker information ska man ta reda på vem som publicerat den, vem som är den ursprungliga avsändaren, när den publicerades, varifrån den kommer och om det finns bevis. B och C säger inget om sanningen: falska inlägg kan vara snyggt gjorda, och många gillningar visar bara att inlägget är populärt."
+  },
+  {
+    q: "Varför är det bra att undersöka om flera oberoende källor säger samma sak?",
+    type: "single",
+    opts: [
+      { t: "För att det alltid bevisar att uppgiften är helt sann", c: false },
+      { t: "För att den källa som skriver längst brukar ha rätt", c: false },
+      { t: "För att algoritmer bara visar källor som är sanna", c: false },
+      { t: "För att en uppgift blir mer trovärdig om flera källor som inte hänger ihop bekräftar den", c: true }
+    ],
+    fb: "D är rätt. Att jämföra med andra trovärdiga källor är ett viktigt steg i källkritik. Om flera oberoende källor, alltså källor som inte bara har kopierat varandra, säger samma sak blir uppgiften mer trovärdig. Det är ändå inget absolut bevis (A är fel). Längden på en text avgör inte om den är sann (B), och algoritmer väljer innehåll efter vad du tittar på, inte efter vad som är sant (C)."
+  },
+  {
+    q: "Vilka av följande tecken är **INTE** skäl att vara extra misstänksam mot ett inlägg?",
+    type: "multi",
+    opts: [
+      { t: "Inlägget försöker göra dig arg, rädd eller upprörd", c: false },
+      { t: "Man vet inte vem som ursprungligen skapade det", c: false },
+      { t: "Det uppmanar dig att skicka vidare det direkt", c: false },
+      { t: "Det innehåller en uppgift som verkar väldigt överraskande", c: false }
+    ],
+    fb: "Inget alternativ är rätt att markera – alla fyra är skäl att vara extra misstänksam. Inlägg som väcker starka känslor, saknar känd avsändare, uppmanar till snabb spridning eller verkar väldigt överraskande är typiska kännetecken för falsk eller vilseledande information. Då är det klokt att stanna, kolla och jämföra innan man tror på eller delar inlägget."
+  },
+  {
+    q: "Vilka av följande påståenden stämmer?",
+    type: "multi",
+    opts: [
+      { t: "En AI som tränats på mycket information kan aldrig ha fel", c: false },
+      { t: "Rekommendationer i appar väljs alltid helt slumpmässigt", c: false },
+      { t: "Allt som en AI-chattbot svarar har först kontrollerats av en människa", c: false },
+      { t: "Om en bild ser verklig ut måste den vara äkta", c: false }
+    ],
+    fb: "Inget av påståendena stämmer. Även AI som tränats på mycket information kan ge fel svar (A). Rekommendationer väljs av algoritmer utifrån information om vad du gör, inte slumpmässigt (B). En chattbot skapar sina svar själv i stunden, så ingen människa hinner kontrollera dem (C). Och AI kan skapa bilder som ser helt verkliga ut fast de är falska (D)."
+  },
+  {
+    q: "Din kompis skickar en film och skriver: \"KOLLA! Det här är helt sjukt! Det är sant – skicka vidare!\" Du vet inte vem som har gjort filmen. Vad visar bäst källkritiskt tänkande?",
+    type: "single",
+    opts: [
+      { t: "Att skicka vidare filmen, eftersom kompisen säger att den är sann", c: false },
+      { t: "Att ta reda på vem som publicerat filmen, leta efter den ursprungliga källan och jämföra med andra trovärdiga källor", c: true },
+      { t: "Att direkt bestämma att filmen är falsk, eftersom alla filmer som skickas mellan kompisar är falska", c: false },
+      { t: "Att lita på filmen om den har många visningar", c: false }
+    ],
+    fb: "B är rätt. Man ska inte skicka vidare något direkt, utan först kolla avsändare och ursprung och jämföra med andra källor. Man bör också tänka på att AI kan skapa falska bilder, röster och filmer. A är fel eftersom en kompis kan ha blivit lurad. C är fel: att avfärda allt utan att undersöka är inte heller källkritik. D är fel eftersom många visningar inte säger något om sanningen."
+  }
+];
+
+let current = 0;
+let score = 0;
+let answers = [];
+let checked = false;
+
+// ── localStorage helpers ──────────────────────────────────────────
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentQuestion: current + 1,
+      score: score,
+      answers: answers
+    }));
+  } catch(e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// ── Card template ─────────────────────────────────────────────────
+function getCardTemplate() {
+  return `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  `;
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  const saved = loadProgress();
+  if (saved && saved.currentQuestion > 0 && saved.currentQuestion < quizData.length) {
+    showResumeScreen(saved);
+  } else {
+    clearProgress();
+    render();
+  }
+}
+
+function showResumeScreen(saved) {
+  const nextQ = saved.currentQuestion;
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (nextQ + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width =
+    (nextQ / quizData.length * 100) + '%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div class="resume-screen">' +
+    '<div class="resume-title">Fortsätt där du slutade</div>' +
+    '<div class="resume-info">Du är på fråga <strong>' + (nextQ + 1) + '</strong> av ' + quizData.length + '</div>' +
+    '<div class="resume-score">' + saved.score + ' rätt hittills</div>' +
+    '<div class="btn-row" style="justify-content:center; margin-top:1.5rem;">' +
+    '<button class="btn" onclick="continueQuiz()">Fortsätt</button>' +
+    '<button class="btn btn-outline" onclick="freshStart()">Börja om</button>' +
+    '</div></div>';
+}
+
+function continueQuiz() {
+  const saved = loadProgress();
+  if (saved) {
+    current = saved.currentQuestion;
+    score = saved.score;
+    answers = saved.answers || [];
+  }
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+function freshStart() {
+  clearProgress();
+  current = 0; score = 0; answers = [];
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  const q = quizData[current];
+  const isSingle = q.type === 'single';
+  const pct = (current / quizData.length) * 100;
+
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (current + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  document.getElementById('typeBadge').textContent = isSingle
+    ? 'Enval – välj ett alternativ'
+    : 'Flerval – ett eller flera alternativ kan vara rätta';
+
+  document.getElementById('questionText').innerHTML = q.q.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+
+  q.opts.forEach(function(opt, i) {
+    var label = document.createElement('label');
+    label.className = 'option-label';
+
+    var input = document.createElement('input');
+    input.type = isSingle ? 'radio' : 'checkbox';
+    input.className = 'option-input';
+    input.id = 'opt' + i;
+    if (isSingle) input.name = 'quiz-option';
+
+    var textSpan = document.createElement('span');
+    textSpan.className = 'option-text';
+    textSpan.textContent = ['A', 'B', 'C', 'D'][i] + ') ' + opt.t;
+
+    label.appendChild(input);
+    label.appendChild(textSpan);
+
+    input.addEventListener('change', function() {
+      if (checked) return;
+      if (isSingle) {
+        list.querySelectorAll('.option-label').forEach(function(l) {
+          l.classList.remove('selected');
+        });
+      }
+      label.classList.toggle('selected', input.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  document.getElementById('checkBtn').style.display = 'inline-block';
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('nextBtn').style.display = 'none';
+
+  var fb = document.getElementById('feedbackBox');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+  checked = false;
+}
+
+// ── Check answer ──────────────────────────────────────────────────
+function checkAnswer() {
+  if (checked) return;
+  checked = true;
+
+  var q = quizData[current];
+  var isSingle = q.type === 'single';
+  var labels = document.querySelectorAll('.option-label');
+  var inputs = document.querySelectorAll('.option-input');
+
+  var selected = [];
+  inputs.forEach(function(inp, i) { if (inp.checked) selected.push(i); });
+
+  var correct = [];
+  q.opts.forEach(function(opt, i) { if (opt.c) correct.push(i); });
+
+  labels.forEach(function(label, i) {
+    label.classList.add('disabled', 'checked');
+    var inp = label.querySelector('input');
+    inp.disabled = true;
+    var textSpan = label.querySelector('.option-text');
+    var isCorrect = q.opts[i].c;
+    var wasSelected = inp.checked;
+
+    if (isCorrect) {
+      label.classList.add('correct');
+      var ind = document.createElement('span');
+      ind.className = 'option-indicator';
+      ind.textContent = '✓';
+      label.insertBefore(ind, textSpan);
+    } else if (wasSelected) {
+      label.classList.add('incorrect');
+      var ind2 = document.createElement('span');
+      ind2.className = 'option-indicator';
+      ind2.textContent = '✗';
+      label.insertBefore(ind2, textSpan);
+    }
+    label.classList.remove('selected');
+  });
+
+  var correctSet = new Set(correct);
+  var isExact = selected.length === correct.length &&
+                selected.every(function(i) { return correctSet.has(i); });
+  var isPartial = !isSingle && !isExact && selected.length > 0 &&
+                  selected.some(function(i) { return correctSet.has(i); });
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  var fbText = document.getElementById('feedbackText');
+
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt.';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+
+  fbText.textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+// ── Navigation ────────────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= quizData.length) {
+    showResults();
+  } else {
+    render();
+  }
+}
+
+function showResults() {
+  clearProgress();
+  document.getElementById('progressText').textContent = 'Resultat';
+  document.getElementById('progressBar').style.width = '100%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div style="text-align:center; padding:1rem 0;">' +
+    '<div style="font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:1.5rem;">Resultat</div>' +
+    '<div style="font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1;">' + score + '</div>' +
+    '<div style="font-size:1rem;color:var(--text-secondary);margin-top:0.5rem;margin-bottom:0.25rem;">av ' + quizData.length + ' rätt</div>' +
+    '<div style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:2rem;">Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor.</div>' +
+    '<button class="btn" onclick="restart()">Starta om</button>' +
+    '</div>';
+}
+
+function restart() {
+  clearProgress();
+  current = 0; score = 0; answers = []; checked = false;
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -122,6 +122,11 @@ const INDIKATORER = {
   punkt:   { namn: "Avgångar i tid (högst 5 min sena)", num: p => p.punktlighet?.andel_i_tid, kalla: "Trafikverket", omvand: true, enhet: "%" },
   inst:    { namn: "Inställda avgångar", num: p => p.punktlighet?.andel_installda, kalla: "Trafikverket", enhet: "%" },
   kollbuss:{ namn: "Bussavgångar per vardag inom 500 m", num: p => p.trafik?.avgangar.buss, kalla: "Trafiklab, GTFS Sverige 2" },
+  syss:    { namn: "Sysselsättningsgrad 20–64 år (DeSO)", num: p => p.demografi?.sysselsattning_20_64, kalla: "SCB 2024", enhet: "%" },
+  ink:     { namn: "Nettoinkomst, medel (DeSO)", num: p => p.demografi?.nettoinkomst_tkr, kalla: "SCB 2024" },
+  temp:    { namn: "Årsmedeltemperatur 1991–2020", num: p => p.klimat?.arsmedel_temp, kalla: "SMHI", enhet: "°C" },
+  neder:   { namn: "Årsnederbörd 1991–2020", num: p => p.klimat?.arsnederbord_mm, kalla: "SMHI" },
+  sparl:   { namn: "Spårlängd inom 300 m", num: p => p.spar?.totalt_m, kalla: "OpenStreetMap" },
   bef:     { namn: "Invånare inom 1 km", num: p => p.befolkning?.inom_1km, kalla: "SCB 2025" },
   service: { namn: "Butiker, mat och service inom 500 m", num: p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), kalla: "OpenStreetMap" },
   buss:    { namn: "Busshållplatser inom 500 m", num: p => p.service_500m?.busshallplatser, kalla: "OpenStreetMap" },
@@ -162,11 +167,12 @@ function ritaLegend() {
   let h = I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
     : [minVarde, ...brytpunkter].map((fran, i) => {
         // Heltal (antal): "8–17". Andelar i procent: gränsen är "under nästa brytpunkt".
-        const pct = I.enhet === "%";
+        const pct = I.enhet === "%" || I.enhet === "°C";       // decimaltal: gräns = "under nästa brytpunkt"
         const fmt = n => pct ? Number(n).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) : Math.round(n).toLocaleString("sv-SE");
         const till = i < brytpunkter.length ? (pct ? brytpunkter[i] : brytpunkter[i] - 1) : null;
+        const e = " " + I.enhet;
         const text = pct
-          ? (till === null ? fmt(fran) + " % och mer" : i === 0 ? "under " + fmt(till) + " %" : fmt(fran) + " till under " + fmt(till) + " %")
+          ? (till === null ? fmt(fran) + e + " och mer" : i === 0 ? "under " + fmt(till) + e : fmt(fran) + " till under " + fmt(till) + e)
           : till === null ? fmt(fran) + " och fler" : fran === till ? fmt(fran) : fmt(fran) + "–" + fmt(till);
         return `<div>${sw(klassFarg(i))}${text}</div>`;
       }).join("");
@@ -206,6 +212,11 @@ function om() {
           Samtrafiken i Sverige AB via Trafiklab. Licens CC0 1.0. Källa: Trafiklab.</li>
       <li>Punktlighet och inställda tåg: <a href="https://data.trafikverket.se/" target="_blank" rel="noopener">Trafikverket</a>,
           API Öppna Data (TrainAnnouncement). Licens CC0 1.0. Källa: Trafikverket.</li>
+      <li>Befolkning per DeSO (sysselsättning, inkomst, ekonomisk standard): <a href="https://www.statistikdatabasen.scb.se" target="_blank" rel="noopener">SCB</a>,
+          Statistikdatabasen och DeSO 2025. Källa: SCB.</li>
+      <li>Klimat: <a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>, meteorologiska observationer, normalperiod 1991–2020.
+          Licens CC BY 4.0. Källa: SMHI (bearbetad).</li>
+      <li>Spår: © OpenStreetMap-bidragsgivare (railway=rail), via Overpass. ODbL.</li>
       <li>Naturrisker: <a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF</a>
           (översvämnings- och stabilitetskarteringar, öppen WFS) och <a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a>
           (skred i finkornig jordart, CC0; jordarter). Källa: MCF, SGU.</li>
@@ -314,6 +325,31 @@ function omgivning(p) {
       : `<div class="muted">Inga gällande skyddade områden inom 500 m.</div>`) +
       `<div class="kalla">Källa: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket, Naturvårdsregistret</a> (CC0).
       Hämtad ${esc(nat.hamtad)}. Avståndet räknas från punkten, inte från fastighetens gräns.</div></div>`;
+  const dm = p.demografi;
+  if (dm) h += `<div class="section"><h2>Befolkning i DeSO-området</h2><table>
+      ${rad("Sysselsättningsgrad 20–64 år", n(dm.sysselsattning_20_64) + " %")}
+      ${rad("Nettoinkomst, medel", n(dm.nettoinkomst_tkr) + " tkr")}
+      ${rad("… kommunen / riket", n(dm.nettoinkomst_kommun_tkr) + " / " + n(dm.nettoinkomst_riket_tkr) + " tkr")}
+      ${rad("Låg ekonomisk standard", n(dm.lag_ek_standard) + " % (kommunen " + n(dm.lag_ek_standard_kommun) + " %)")}
+      ${rad("Hög ekonomisk standard", n(dm.hog_ek_standard) + " %")}</table>
+      <div class="kalla">DeSO ${esc(dm.deso)} (DeSO 2025), år ${esc(dm.ar)}. Beskriver de som bor i området, inte de som arbetar där.
+      Källa: <a href="https://www.statistikdatabasen.scb.se" target="_blank" rel="noopener">SCB, Statistikdatabasen</a> (TAB6680, TAB6683, TAB6685)
+      och SCB:s DeSO-indelning. Hämtad ${esc(dm.hamtad)}.</div></div>`;
+  const kl = p.klimat;
+  if (kl) h += `<div class="section"><h2>Klimat ${esc(kl.period)}</h2><table>
+      ${rad("Årsmedeltemperatur", n(kl.arsmedel_temp) + " °C")}${rad("Januari / juli", n(kl.jan_temp) + " / " + n(kl.jul_temp) + " °C")}
+      ${rad("Årsnederbörd", n(kl.arsnederbord_mm) + " mm")}</table>
+      <div class="kalla">Normalvärden beräknade ur SMHI:s kvalitetskontrollerade månadsvärden. Temperatur: ${esc(kl.temp_station || "–")};
+      nederbörd: ${esc(kl.neder_station || "–")}. Källa: <a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>,
+      CC BY 4.0, bearbetad. Hämtad ${esc(kl.hamtad)}.</div></div>`;
+  const sp = p.spar;
+  if (sp) h += `<div class="section"><h2>Spår inom ${n(sp.radie_m)} m</h2><table>
+      ${rad("Spår totalt", "<b>" + n(sp.totalt_m) + " m</b>")}${rad("Huvudspår", n(sp.huvudspar) + " m")}${rad("Bangård", n(sp.bangard) + " m")}
+      ${rad("Sidospår", n(sp.sidospar) + " m")}${rad("Anslutnings-/industrispår", n(sp.anslutningsspar) + " m")}
+      ${rad("Varav elektrifierat", n(sp.elektrifierat_m) + " m")}</table>
+      <div class="kalla">Spårlängd i OpenStreetMap (railway=rail) inom ${n(sp.radie_m)} m, uppdelad efter OSM:s spårtyp. Spårtyperna är
+      frivilligt taggade och OSM är inte heltäckande; Trafikverkets järnvägsnät är den officiella källan. Hämtad ${esc(sp.hamtad)}
+      via Overpass. ${ODBL}.</div></div>`;
   const rk = p.risk;
   if (rk) {
     // MCF-lager: true = karterat område inom 100 m. SGU-skred: avstånd i meter.

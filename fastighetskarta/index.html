@@ -61,6 +61,7 @@
     <h1>Jernhusens fastigheter</h1>
     <span class="sub">enligt fastighetsförteckningen per 2025-12-31</span>
     <a href="3d/" style="font-size:13px">Tio största i 3D →</a>
+    <a href="jamforelse.html" style="font-size:13px">Jämförelsetabell →</a>
     <span class="inoff">Inofficiell demo, inte en tjänst från Jernhusen AB</span>
   </header>
 
@@ -130,6 +131,10 @@ const INDIKATORER = {
   lamn:    { namn: "Kulturhistoriska lämningar inom 250 m", num: p => p.kulturmiljo?.antal_lamningar, kalla: "Riksantikvarieämbetet" },
   bminne:  { namn: "Byggnadsminne inom 250 m", kat: p => p.kulturmiljo ? (p.kulturmiljo.byggnadsminnen.length ? "Ja" : "Nej") : null,
              farger: () => ({ "Ja": "#9a3412", "Nej": "#d6dbe1" }), kalla: "Riksantikvarieämbetet" },
+  flod:    { namn: "Översvämning (100-årsflöde) inom 100 m", kat: p => p.risk ? (p.risk.q100 !== null ? "Ja" : (p.risk.bhf !== null ? "Bara vid högsta flöde" : "Nej")) : null,
+             farger: () => ({ "Ja": "#b91c1c", "Bara vid högsta flöde": "#f59e0b", "Nej": "#d6dbe1" }), kalla: "MCF" },
+  skred:   { namn: "Skred eller stabilitetsrisk inom 100 m", kat: p => p.risk ? ((p.risk.sgu_skred !== null || p.risk.stabilitet !== null) ? "Ja" : "Nej") : null,
+             farger: () => ({ "Ja": "#7c2d12", "Nej": "#d6dbe1" }), kalla: "SGU, MCF" },
   station: { namn: "Järnvägsstation inom 500 m", kat: p => p.osm_station ? "Ja" : (p.befolkning ? "Nej" : null),
              farger: () => ({ "Ja": "#1f6feb", "Nej": "#d6dbe1" }), kalla: "OpenStreetMap" },
 };
@@ -201,7 +206,10 @@ function om() {
           Samtrafiken i Sverige AB via Trafiklab. Licens CC0 1.0. Källa: Trafiklab.</li>
       <li>Punktlighet och inställda tåg: <a href="https://data.trafikverket.se/" target="_blank" rel="noopener">Trafikverket</a>,
           API Öppna Data (TrainAnnouncement). Licens CC0 1.0. Källa: Trafikverket.</li>
-      <li>Kulturmiljö: <ahref="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>,
+      <li>Naturrisker: <a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF</a>
+          (översvämnings- och stabilitetskarteringar, öppen WFS) och <a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a>
+          (skred i finkornig jordart, CC0; jordarter). Källa: MCF, SGU.</li>
+      <li>Kulturmiljö: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>,
           kulturhistoriska lämningar, kulturhistoriskt inventerad bebyggelse och byggnadsminnen. Licens CC0/CC BY. Källa: Riksantikvarieämbetet.</li>
       <li>Bakgrundskarta: © OpenStreetMap-bidragsgivare.</li>
       <li>Kartbibliotek: <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> (BSD-2-Clause).</li>
@@ -306,6 +314,23 @@ function omgivning(p) {
       : `<div class="muted">Inga gällande skyddade områden inom 500 m.</div>`) +
       `<div class="kalla">Källa: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket, Naturvårdsregistret</a> (CC0).
       Hämtad ${esc(nat.hamtad)}. Avståndet räknas från punkten, inte från fastighetens gräns.</div></div>`;
+  const rk = p.risk;
+  if (rk) {
+    // MCF-lager: true = karterat område inom 100 m. SGU-skred: avstånd i meter.
+    const avst = m => m === null || m === undefined ? "Nej" : m === true ? "<b>Ja</b>, inom 100 m"
+      : m === 0 ? "<b>Ja, punkten ligger i området</b>" : "<b>Ja</b>, ca " + n(m) + " m";
+    h += `<div class="section"><h2>Naturrisker inom 100 m</h2><table>
+      ${rad("Översvämning, 100-årsflöde", avst(rk.q100))}${rad("Översvämning, 200-årsflöde", avst(rk.q200))}
+      ${rad("Översvämning, beräknat högsta flöde", avst(rk.bhf))}
+      ${rad("Område med betydande översvämningsrisk", avst(rk.apsfr))}
+      ${rad("Stabilitetskartering (skred/ras), MCF", avst(rk.stabilitet))}
+      ${rad("Aktsamhetsområde för skred, SGU", avst(rk.sgu_skred))}
+      ${rad("Jordart vid punkten", esc(rk.jordart || "–"))}</table>
+      <div class="kalla">Källor: <a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF, översvämnings-
+      och stabilitetskarteringar</a> · <a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a>, förutsättningar för skred i finkornig jordart (CC0)
+      och jordarter 1:25 000–1:100 000. Hämtad ${esc(rk.hamtad)}. Karteringarna täcker inte hela Sverige, så "Nej" betyder att
+      inget område är karterat inom 100 m, inte att risk saknas. Räknat från punkten, inte från fastighetsgränsen.</div></div>`;
+  }
   const km = p.kulturmiljo;
   if (km) {
     const raaLank = (url, text) => url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text)}</a>` : esc(text);
@@ -346,8 +371,10 @@ function valj(id, zooma) {
     <div class="kalla">Källa: <a href="${esc(data.metadata.kalla_url)}" target="_blank" rel="noopener">${esc(data.metadata.kalla)}</a>, sida ${esc(p.pdf_sida)}.
       Tomma värden är tomma i förteckningen.</div></div>
     <div class="section"><h2>Läge på kartan</h2>
-    ${f.geometry ? `<div>${esc(p.lage_metod)}</div><div class="kalla">Träff i OpenStreetMap: ${esc(p.lage_osm)}<br>
-      Hämtad ${esc(p.lage_hamtad)} via Nominatim. © OpenStreetMap-bidragsgivare, ODbL.</div>`
+    ${f.geometry ? `<div>${esc(p.lage_metod)}</div><div class="kalla">${p.lage_flyttad_m !== undefined
+      ? `Adressen träffade bara gatan (${esc(p.lage_osm)}), så punkten flyttades ca ${kvm(p.lage_flyttad_m)} m. ` : `Träff i OpenStreetMap: ${esc(p.lage_osm)}. `}
+      Hämtad ${esc(p.lage_hamtad)} via Nominatim${(p.lage_metod || "").startsWith("Trafikverket") ? " och Trafikverkets stationsregister (CC0)" : ""}.
+      © OpenStreetMap-bidragsgivare, ODbL.</div>`
       : `<div class="muted">Adressen kunde inte hittas i OpenStreetMap i rätt kommun, så fastigheten saknar punkt.</div>`}
     </div>
     ${f.geometry ? osmSektioner(p) : ""}

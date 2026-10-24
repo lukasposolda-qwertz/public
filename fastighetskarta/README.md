@@ -22,6 +22,7 @@ fastighetsförteckning per 2025-12-31.
 | Lägen (koordinater) | Adressen i förteckningen sökt i [OpenStreetMap](https://www.openstreetmap.org) via [Nominatim](https://nominatim.org) | © OpenStreetMap-bidragsgivare, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) |
 | Byggnad på adressen, närmaste station, service inom 500 m | OpenStreetMap via [Overpass API](https://overpass-api.de) | © OpenStreetMap-bidragsgivare, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) |
 | Kollektivtrafik inom 500 m | [GTFS Sverige 2](https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/), Samtrafiken i Sverige AB via Trafiklab (version 2026-10-01) | CC0 1.0. Källa: Trafiklab |
+| Punktlighet och inställda tåg | [Trafikverket, API Öppna Data](https://data.trafikverket.se/) (TrainAnnouncement) | CC0 1.0. Källa: Trafikverket |
 | Befolkning inom 1 km | [SCB, öppna geodata](https://www.scb.se/vara-tjanster/oppna-data/oppna-geodata/): befolkning per 1 km-ruta, 2025-12-31 | Öppna data. Källa: SCB |
 | Skyddad natur inom 500 m | [Naturvårdsverket, Naturvårdsregistret](https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/) | CC0. Källa: Naturvårdsverket |
 | Kulturmiljö inom 250 m | [Riksantikvarieämbetet, öppna data](https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/): kulturhistoriska lämningar, kulturhistoriskt inventerad bebyggelse, byggnadsminnen (OGC API Features) | CC0 / CC BY. Källa: Riksantikvarieämbetet |
@@ -54,6 +55,7 @@ anrop i taget, och svaren cachades.
 | Uppgift | Hur den räknas |
 |---|---|
 | Kollektivtrafik inom 500 m | Planerade avgångar tisdagen 2026-11-10 från alla hållplatser inom 500 m, per trafikslag. En tur som stannar vid flera hållplatser räknas en gång, och tåg som slutar vid hållplatsen räknas inte. Dessutom flest tåg under en timme, första och sista tåg samt tågoperatörer. |
+| Punktlighet | Alla annonserade avgångar de tre senaste hela dygnen (så långt bakåt som API:t sparar data) från en Trafikverket-station: i första hand den station vars namn står i fastighetsbeskrivningen (inom 3 km), annars närmaste station inom 500 m. I tid = högst 5 minuter efter tidtabell. Andelen räknas på avgångna och inställda tåg. Tre dygn är ett kort fönster, så siffrorna kan svänga mycket. |
 | Invånare inom 1 km | Summan av SCB:s 1 km-rutor, där varje ruta viktas med hur stor del av den som ligger inom 1 km från punkten. En uppskattning. |
 | Service inom 500 m | Antal objekt i OpenStreetMap inom 500 m fågelvägen: butiker (`shop`), restauranger och kaféer, övrig service (apotek, bank, vård, skola m.m.), busshållplatser och cykelparkeringar. OSM är inte heltäckande, så siffrorna är ett minimum. |
 | Kulturmiljö inom 250 m | Lämningar, inventerad bebyggelse och byggnadsminnen hos RAÄ vars geometri ligger inom 250 m från punkten. Varje objekt länkar till RAÄ:s objektsida. RAÄ påpekar att kvaliteten kan variera och att länsstyrelsen ska kontaktas inför planering eller markarbeten. |

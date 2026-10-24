@@ -73,6 +73,11 @@
       <select id="fKommun"><option value="">Alla kommuner</option></select>
     </div>
     <div class="section">
+      <h2>Färga efter</h2>
+      <select id="fInd"></select>
+      <div id="legend" style="margin-top:8px"></div>
+    </div>
+    <div class="section">
       <h2>Affärsområde</h2>
       <div id="fOmr"></div>
       <div class="liten" style="margin-top:6px">Punktens storlek visar lokalarean.</div>
@@ -99,7 +104,50 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-bidragsgivare'
 }).addTo(map);
 const lager = L.layerGroup().addTo(map);
+const byggLager = L.layerGroup();      // OSM-byggnader, visas från zoom 15
+map.on("zoomend", () => map.getZoom() >= 15 ? map.addLayer(byggLager) : map.removeLayer(byggLager));
+const osmLank = (id, text) => `<a href="https://www.openstreetmap.org/${esc(id)}" target="_blank" rel="noopener">${esc(text || id)}</a>`;
+const ODBL = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bidragsgivare, ODbL';
 const radie = p => 5 + Math.sqrt(p["Lokalarea Summa"] || 0) / 18;
+
+// Indikatorer för färgläggning. Numeriska delas i fem lika stora grupper (kvintiler).
+const RAMP = ["#dbe9f6", "#9ecae1", "#5ba3cf", "#2171b5", "#08306b"];
+const SAKNAS = "#b8bec8";
+const INDIKATORER = {
+  omr:     { namn: "Affärsområde", kat: p => p["Affärsområde"], farger: () => Object.fromEntries(Object.entries(OMR).map(([k, v]) => [k, css(v)])) },
+  bef:     { namn: "Invånare inom 1 km", num: p => p.befolkning?.inom_1km, kalla: "SCB 2025" },
+  service: { namn: "Butiker, mat och service inom 500 m", num: p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), kalla: "OpenStreetMap" },
+  buss:    { namn: "Busshållplatser inom 500 m", num: p => p.service_500m?.busshallplatser, kalla: "OpenStreetMap" },
+  cykel:   { namn: "Cykelparkeringar inom 500 m", num: p => p.service_500m?.cykelparkering, kalla: "OpenStreetMap" },
+  natur:   { namn: "Skyddad natur inom 500 m", kat: p => p.skyddad_natur ? (p.skyddad_natur.omraden.length ? "Ja" : "Nej") : null,
+             farger: () => ({ "Ja": "#15803d", "Nej": "#d6dbe1" }), kalla: "Naturvårdsverket" },
+  station: { namn: "Järnvägsstation inom 500 m", kat: p => p.osm_station ? "Ja" : (p.befolkning ? "Nej" : null),
+             farger: () => ({ "Ja": "#1f6feb", "Nej": "#d6dbe1" }), kalla: "OpenStreetMap" },
+};
+let ind = "omr", brytpunkter = [];
+
+function beraknaBrytpunkter() {
+  const I = INDIKATORER[ind];
+  if (!I.num) { brytpunkter = []; return; }
+  const v = data.features.map(f => I.num(f.properties)).filter(x => x !== null && x !== undefined).sort((a, b) => a - b);
+  brytpunkter = [1, 2, 3, 4].map(i => v[Math.floor(i * v.length / 5)]);
+}
+function farg(p) {
+  const I = INDIKATORER[ind];
+  if (I.kat) { const k = I.kat(p); return k === null || k === undefined ? SAKNAS : (I.farger()[k] || SAKNAS); }
+  const x = I.num(p);
+  if (x === null || x === undefined) return SAKNAS;
+  return RAMP[brytpunkter.filter(b => x >= b).length];
+}
+function ritaLegend() {
+  const I = INDIKATORER[ind], fmt = n => Math.round(n).toLocaleString("sv-SE");
+  const sw = c => `<span class="swatch" style="background:${c}"></span>`;
+  let h = I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
+    : RAMP.map((c, i) => `<div>${sw(c)}${i === 0 ? "under " + fmt(brytpunkter[0])
+        : i === 4 ? fmt(brytpunkter[3]) + " och fler" : fmt(brytpunkter[i - 1]) + "–" + fmt(brytpunkter[i] - 1)}</div>`).join("");
+  if (ind !== "omr") h += `<div>${sw(SAKNAS)}Uppgift saknas</div><div class="liten" style="margin-top:4px">Källa: ${esc(I.kalla)}</div>`;
+  document.getElementById("legend").innerHTML = h;
+}
 
 function om() {
   const m = data.metadata;
@@ -111,12 +159,24 @@ function om() {
     Lokalarea (LOA) och lokaltyper är återgivna som i förteckningen.</p>
     <p>Punkterna är <b>ungefärliga lägen</b>. De är framtagna genom att adressen i förteckningen har sökts i
     OpenStreetMap (Nominatim). Punkten är alltså inte fastighetens gräns eller en exakt position.
-    Fastigheter vars adress inte gick att hitta i rätt kommun saknar punkt och visas bara i listan.</p></div>
+    Fastigheter vars adress inte gick att hitta i rätt kommun saknar punkt och visas bara i listan.</p>
+    <p>När punkten ligger i en byggnad i OpenStreetMap visas byggnaden (zooma in). Varje fastighet visar också
+    närmaste järnvägsstation inom 500 m, befolkningen inom 1 km, service inom 500 m och skyddad natur inom 500 m.
+    Välj under <b>Färga efter</b> vilken uppgift punkterna ska färgas efter. Alla avstånd räknas från punkten.</p>
+    <p class="liten">Fastighetsgränser och energideklarationer finns inte med. De kommer från Lantmäteriet och
+    Boverket, vars villkor inte tillåter att uppgifterna publiceras öppet.</p></div>
     <div class="section"><h2>Källor och licenser</h2>
     <ul style="padding-left:18px;margin:0">
       <li>Fastighetsdata: ${esc(m.kalla)}. © Jernhusen AB.</li>
       <li>Lägen (koordinater): © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bidragsgivare,
           via Nominatim. Licens <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">ODbL 1.0</a>.</li>
+      <li>Byggnader och stationer: © OpenStreetMap-bidragsgivare, via
+          <a href="https://overpass-api.de" target="_blank" rel="noopener">Overpass API</a>. Licens ODbL 1.0.</li>
+      <li>Service inom 500 m: © OpenStreetMap-bidragsgivare, via Overpass API. Licens ODbL 1.0.</li>
+      <li>Befolkning: <a href="https://www.scb.se/vara-tjanster/oppna-data/oppna-geodata/" target="_blank" rel="noopener">SCB</a>,
+          befolkning per 1 km-ruta 2025 (öppna geodata). Källa: SCB.</li>
+      <li>Skyddad natur: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket</a>,
+          Naturvårdsregistret. Licens CC0. Källa: Naturvårdsverket.</li>
       <li>Bakgrundskarta: © OpenStreetMap-bidragsgivare.</li>
       <li>Kartbibliotek: <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> (BSD-2-Clause).</li>
       <li>Kod: MIT-licens, © 2026 Lukas Posolda.</li>
@@ -134,24 +194,72 @@ function filtrerade() {
 }
 
 function rita() {
-  lager.clearLayers();
+  lager.clearLayers(); byggLager.clearLayers();
   const fs = filtrerade();
   for (const f of fs) {
     if (!f.geometry) continue;
     const p = f.properties, [lon, lat] = f.geometry.coordinates, vald = p.id === valdId;
+    if (p.osm_byggnad) {
+      L.geoJSON(p.osm_byggnad.geometry, { style: { color: css(OMR[p["Affärsområde"]]), weight: vald ? 3 : 1.5,
+        fillColor: css(OMR[p["Affärsområde"]]), fillOpacity: .2 } })
+        .bindTooltip(`Byggnad på adressen (OSM)`).on("click", () => valj(p.id)).addTo(byggLager);
+    }
     L.circleMarker([lat, lon], { radius: radie(p), color: vald ? "#000" : "#fff", weight: vald ? 3 : 1.5,
-      fillColor: css(OMR[p["Affärsområde"]]), fillOpacity: .85 })
+      fillColor: farg(p), fillOpacity: .9 })
       .bindTooltip(`${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}<br><span class="liten">${esc(p.Kommun)} ${esc(p.Fastighetsbeteckning)}</span>`)
       .on("click", () => valj(p.id)).addTo(lager);
   }
+  ritaLegend();
   document.getElementById("antal").textContent = `Fastigheter (${fs.length} av ${data.features.length})`;
   const ul = document.getElementById("lista");
   ul.innerHTML = fs.map(({ geometry, properties: p }) => `<li data-id="${esc(p.id)}" class="${p.id === valdId ? "vald" : ""}">
-    <span class="swatch" style="background:${css(OMR[p["Affärsområde"]])}"></span>${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}
+    <span class="swatch" style="background:${farg(p)}"></span>${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}
     <div class="liten">${esc(p.Kommun)} ${esc(p.Fastighetsbeteckning)}</div>
     ${geometry ? "" : '<div class="nopos">Saknar läge på kartan</div>'}</li>`).join("");
   ul.querySelectorAll("li").forEach(li => li.onclick = () => valj(li.dataset.id, true));
   return fs.filter(f => f.geometry).map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+}
+
+function osmSektioner(p) {
+  const b = p.osm_byggnad, s = p.osm_station;
+  const rad = (k, v) => v ? `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>` : "";
+  const typ = { yes: "Ospecificerad", train_station: "Stationsbyggnad", commercial: "Kommersiell", office: "Kontor",
+                industrial: "Industri", retail: "Handel", warehouse: "Lager", parking: "Parkeringshus", hotel: "Hotell" };
+  return `<div class="section"><h2>Byggnad på adressen</h2>` + (b
+    ? `<table>${rad("Byggnadstyp (OSM)", typ[b.building] || b.building)}${rad("Namn", b.name)}${rad("Våningar", b["building:levels"])}
+        ${rad("Byggår", b.start_date)}${rad("Adress i OSM", [b["addr:street"], b["addr:housenumber"]].filter(Boolean).join(" "))}</table>
+       <div class="kalla">Den byggnad i OpenStreetMap som adresspunkten ligger i. Visar inte fastighetens gräns och inte
+       nödvändigtvis alla byggnader på fastigheten. ${osmLank(b.osm, "Visa i OSM")}. Hämtad ${esc(b.hamtad)} via Overpass. ${ODBL}.</div>`
+    : `<div class="muted">Ingen entydig byggnad i OpenStreetMap på adressen${(p.lage_metod || "").startsWith("Adress (husnummer)") ? "" : " (läget är inte en exakt adress)"}.</div>`) +
+    `</div><div class="section"><h2>Närmaste järnvägsstation</h2>` + (s
+    ? `<table>${rad("Namn", s.namn)}${rad("Typ", s.typ === "halt" ? "Hållplats" : "Station")}${rad("Avstånd", "ca " + s.avstand_m + " m")}${rad("Operatör", s.operator)}</table>
+       <div class="kalla">${osmLank(s.osm, "Visa i OSM")}${s.wikidata ? ` · <a href="https://www.wikidata.org/wiki/${esc(s.wikidata)}" target="_blank" rel="noopener">Wikidata</a>` : ""}.
+       Hämtad ${esc(s.hamtad)} via Overpass. ${ODBL}.</div>`
+    : `<div class="muted">Ingen station eller hållplats inom 500 m i OpenStreetMap.</div>`) + `</div>` + omgivning(p);
+}
+
+function omgivning(p) {
+  const n = v => v === null || v === undefined ? '<span class="muted">–</span>' : Number(v).toLocaleString("sv-SE");
+  const rad = (k, v) => `<tr><th>${esc(k)}</th><td class="num">${v}</td></tr>`;
+  const b = p.befolkning, s = p.service_500m, nat = p.skyddad_natur;
+  let h = "";
+  if (b) h += `<div class="section"><h2>Befolkning inom 1 km</h2><table>
+      ${rad("Invånare (ca)", "<b>" + n(b.inom_1km) + "</b>")}${rad("0–19 år", n(b.alder_0_19))}${rad("20–64 år", n(b.alder_20_64))}${rad("65 år och äldre", n(b.alder_65_plus))}</table>
+      <div class="kalla">Uppskattning från SCB:s befolkning per 1 km-ruta per ${esc(b.referenstid)}, viktad med hur stor del av
+      varje ruta som ligger inom 1 km från punkten. Källa: <a href="https://www.scb.se/vara-tjanster/oppna-data/oppna-geodata/" target="_blank" rel="noopener">SCB, öppna geodata</a>.
+      Hämtad ${esc(b.hamtad)}.</div></div>`;
+  if (s) h += `<div class="section"><h2>Service inom 500 m</h2><table>
+      ${rad("Butiker", n(s.butiker))}${rad("Restauranger, kaféer, barer", n(s.mat_dryck))}
+      ${rad("Apotek, bank, vård, skola m.m.", n(s.service))}${rad("Busshållplatser", n(s.busshallplatser))}${rad("Cykelparkeringar", n(s.cykelparkering))}</table>
+      <div class="kalla">Antal objekt i OpenStreetMap inom 500 m fågelvägen. OSM är inte heltäckande, så siffrorna är
+      ett minimum. Hämtad ${esc(s.hamtad)} via Overpass. ${ODBL}.</div></div>`;
+  if (nat) h += `<div class="section"><h2>Skyddad natur inom 500 m</h2>` + (nat.omraden.length
+      ? `<table>${nat.omraden.map(o => `<tr><th>${esc(o.namn)}<div class="liten">${esc(o.skyddstyp)}</div></th>
+          <td class="num">${o.avstand_m === 0 ? "Punkten ligger i området" : "ca " + n(o.avstand_m) + " m"}</td></tr>`).join("")}</table>`
+      : `<div class="muted">Inga gällande skyddade områden inom 500 m.</div>`) +
+      `<div class="kalla">Källa: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket, Naturvårdsregistret</a> (CC0).
+      Hämtad ${esc(nat.hamtad)}. Avståndet räknas från punkten, inte från fastighetens gräns.</div></div>`;
+  return h;
 }
 
 function valj(id, zooma) {
@@ -176,6 +284,7 @@ function valj(id, zooma) {
       Hämtad ${esc(p.lage_hamtad)} via Nominatim. © OpenStreetMap-bidragsgivare, ODbL.</div>`
       : `<div class="muted">Adressen kunde inte hittas i OpenStreetMap i rätt kommun, så fastigheten saknar punkt.</div>`}
     </div>
+    ${f.geometry ? osmSektioner(p) : ""}
     <div class="section"><a href="#" id="tillbaka">← Om kartan, källor och licenser</a></div>`;
   document.getElementById("tillbaka").onclick = e => { e.preventDefault(); valdId = null; rita(); document.getElementById("detail").innerHTML = om(); };
 }
@@ -193,6 +302,9 @@ fetch("fastigheter.geojson").then(r => r.json()).then(d => {
     if (el.id === "fKommun" && pts.length) map.fitBounds(pts, { maxZoom: 14, padding: [40, 40] });
   });
   document.getElementById("fSok").oninput = rita;
+  const sel = document.getElementById("fInd");
+  sel.innerHTML = Object.entries(INDIKATORER).map(([k, I]) => `<option value="${k}">${esc(I.namn)}</option>`).join("");
+  sel.onchange = () => { ind = sel.value; beraknaBrytpunkter(); rita(); };
   const pts = rita();
   if (pts.length) map.fitBounds(pts, { padding: [20, 20] });
 }).catch(() => document.getElementById("detail").innerHTML =

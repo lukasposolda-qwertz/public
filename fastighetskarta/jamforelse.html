@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jernhusens fastigheter – jämförelse</title>
+<meta name="description" content="Inofficiell jämförelsetabell över Jernhusens fastigheter med trafik, punktlighet, omgivning, kulturmiljö och risker från öppna data.">
+<style>
+  :root { --bg: #f6f7f9; --panel: #fff; --text: #1d2430; --muted: #5d6676; --line: #e2e5ea; --accent: #0b5cad;
+          --stationer: #1f6feb; --depaer: #c2410c; --warn-bg: #fff7e0; --warn-line: #e0b84a; --risk: #b91c1c; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); background: var(--bg); }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 10px 16px; background: var(--panel);
+           border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 3; }
+  h1 { font-size: 17px; margin: 0; }
+  .sub, .muted { color: var(--muted); font-size: 13px; }
+  .inoff { margin-left: auto; font-size: 12px; background: var(--warn-bg); border: 1px solid var(--warn-line); padding: 2px 8px; border-radius: 4px; }
+  .verktyg { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px; }
+  select, input { font: inherit; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; }
+  .wrap { overflow: auto; margin: 0 16px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; max-height: calc(100vh - 150px); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { position: sticky; top: 0; background: #f0f2f5; text-align: left; font-weight: 600; cursor: pointer; user-select: none; z-index: 1; }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  th .k { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+  th.sort::after { content: " ▾"; } th.sort.asc::after { content: " ▴"; }
+  td:first-child, th:first-child { position: sticky; left: 0; background: inherit; }
+  tbody tr { background: var(--panel); } tbody tr:hover { background: #eef4fb; }
+  td:first-child { background: var(--panel); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+  .bar { display: inline-block; height: 6px; border-radius: 3px; background: #9ecae1; vertical-align: middle; margin-left: 6px; }
+  .ja { color: var(--risk); font-weight: 600; }
+  .kallor { padding: 0 16px 24px; color: var(--muted); font-size: 12px; max-width: 1100px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Jernhusens fastigheter – jämförelse</h1>
+  <span class="sub">samma mått för alla fastigheter, från öppna data</span>
+  <a href="./" style="font-size:13px">← Kartan</a><a href="3d/" style="font-size:13px">3D</a>
+  <span class="inoff">Inofficiell demo, inte en tjänst från Jernhusen AB</span>
+</header>
+<div class="verktyg">
+  <label>Affärsområde <select id="fOmr"><option value="">Alla</option><option>Stationer</option><option>Depåer och kombiterminaler</option></select></label>
+  <label>Sök <input id="fSok" type="search" placeholder="Kommun eller namn"></label>
+  <label><input id="fLage" type="checkbox" checked> Bara fastigheter med läge</label>
+  <span class="muted" id="antal"></span>
+  <button id="csv" style="margin-left:auto;font:inherit;padding:4px 10px">Ladda ner CSV</button>
+</div>
+<div class="wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+<div class="kallor">
+  Klicka på en kolumnrubrik för att sortera. "–" betyder att uppgift saknas. Alla avstånd räknas från fastighetens ungefärliga punkt,
+  inte från fastighetsgränsen. Källor: Jernhusen AB, fastighetsförteckning 2025-12-31 · Trafiklab/Samtrafiken, GTFS Sverige 2 (CC0) ·
+  Trafikverket, API Öppna Data (CC0) · SCB, befolkning per 1 km-ruta 2025 · © OpenStreetMap-bidragsgivare (ODbL) ·
+  Riksantikvarieämbetet (CC0/CC BY) · Naturvårdsverket, Naturvårdsregistret (CC0) · MCF, översvämnings- och stabilitetskarteringar ·
+  SGU, skred och jordarter (CC0). Fullständiga källor och metoder i <a href="README.md">README</a>.
+</div>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const n = v => v === null || v === undefined || Number.isNaN(v) ? "–" : Number(v).toLocaleString("sv-SE", { maximumFractionDigits: 1 });
+const jaNej = v => v === null || v === undefined ? null : (v ? 1 : 0);
+// Kolumner: namn, källa, värde, typ (num|text|flagga)
+const KOL = [
+  ["Fastighet", "", p => p.Fastighetsbeskrivning || p.Fastighetsbeteckning, "text"],
+  ["Kommun", "", p => p.Kommun, "text"],
+  ["Beteckning", "", p => p.Fastighetsbeteckning, "text"],
+  ["Lokalarea", "kvm", p => p["Lokalarea Summa"], "num"],
+  ["Tåg/vardag", "inom 500 m", p => p.trafik?.avgangar.tag, "num"],
+  ["Max tåg/h", "", p => p.trafik?.tag_max_per_timme, "num"],
+  ["Buss/vardag", "inom 500 m", p => p.trafik?.avgangar.buss, "num"],
+  ["I tid", "%, ≤ 5 min", p => p.punktlighet?.andel_i_tid, "num"],
+  ["Inställda", "%", p => p.punktlighet?.andel_installda, "num"],
+  ["Invånare", "inom 1 km", p => p.befolkning?.inom_1km, "num"],
+  ["Service", "inom 500 m", p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), "num"],
+  ["Lämningar", "inom 250 m", p => p.kulturmiljo?.antal_lamningar, "num"],
+  ["Byggnadsminne", "inom 250 m", p => p.kulturmiljo ? jaNej(p.kulturmiljo.byggnadsminnen.length) : null, "flagga"],
+  ["Skyddad natur", "inom 500 m", p => p.skyddad_natur ? jaNej(p.skyddad_natur.omraden.length) : null, "flagga"],
+  ["Översvämning", "100-år, inom 100 m", p => p.risk ? jaNej(p.risk.q100 !== null) : null, "flagga"],
+  ["Skred", "SGU/MCF, inom 100 m", p => p.risk ? jaNej(p.risk.sgu_skred !== null || p.risk.stabilitet !== null) : null, "flagga"],
+  ["Jordart", "SGU", p => p.risk?.jordart, "text"],
+  ["Läge", "metod", p => p.lage_metod || "Saknas", "text"],
+];
+let data, sortKol = 3, asc = false;
+const max = {};
+
+function rader() {
+  const omr = document.getElementById("fOmr").value, s = document.getElementById("fSok").value.trim().toLowerCase();
+  const lage = document.getElementById("fLage").checked;
+  let r = data.features.filter(f => (!omr || f.properties["Affärsområde"] === omr) && (!lage || f.geometry) &&
+    (!s || [f.properties.Kommun, f.properties.Fastighetsbeskrivning, f.properties.Fastighetsbeteckning].join(" ").toLowerCase().includes(s)));
+  const get = KOL[sortKol][2];
+  r.sort((a, b) => {
+    const x = get(a.properties), y = get(b.properties);
+    if (x === null || x === undefined) return 1; if (y === null || y === undefined) return -1;
+    const c = typeof x === "string" ? x.localeCompare(y, "sv") : x - y;
+    return asc ? c : -c;
+  });
+  return r;
+}
+function rita() {
+  document.getElementById("thead").innerHTML = "<tr>" + KOL.map(([namn, k, , typ], i) =>
+    `<th data-i="${i}" class="${typ !== "text" ? "num" : ""} ${i === sortKol ? "sort" + (asc ? " asc" : "") : ""}">${esc(namn)}${k ? `<span class="k">${esc(k)}</span>` : ""}</th>`).join("") + "</tr>";
+  document.querySelectorAll("th").forEach(th => th.onclick = () => {
+    const i = +th.dataset.i; asc = i === sortKol ? !asc : KOL[i][3] === "text"; sortKol = i; rita();
+  });
+  const r = rader();
+  document.getElementById("antal").textContent = `${r.length} fastigheter`;
+  document.getElementById("tbody").innerHTML = r.map(({ properties: p }) => "<tr>" + KOL.map(([namn, , get, typ], i) => {
+    const v = get(p);
+    if (i === 0) return `<td><span class="dot" style="background:${p["Affärsområde"] === "Stationer" ? "var(--stationer)" : "var(--depaer)"}"></span>${esc(v)}</td>`;
+    if (typ === "flagga") return `<td class="num ${v ? "ja" : ""}">${v === null ? "–" : v ? "Ja" : "Nej"}</td>`;
+    if (typ === "num") return `<td class="num">${n(v)}${v ? `<span class="bar" style="width:${Math.round(40 * v / max[i])}px"></span>` : ""}</td>`;
+    return `<td>${esc(v ?? "–")}</td>`;
+  }).join("") + "</tr>").join("");
+}
+document.getElementById("csv").onclick = () => {
+  const r = rader(), rubrik = KOL.map(k => k[0] + (k[1] ? " (" + k[1] + ")" : ""));
+  const rows = [rubrik, ...r.map(f => KOL.map(k => { const v = k[2](f.properties); return v === null || v === undefined ? "" : v; }))];
+  const csv = "﻿" + rows.map(x => x.map(c => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = "jernhusen_fastigheter_jamforelse.csv"; a.click();
+};
+fetch("fastigheter.geojson", { cache: "no-cache" }).then(r => r.json()).then(d => {
+  data = d;
+  KOL.forEach(([, , get, typ], i) => { if (typ === "num") max[i] = Math.max(1, ...d.features.map(f => get(f.properties) || 0)); });
+  ["fOmr", "fSok", "fLage"].forEach(id => document.getElementById(id).oninput = rita);
+  rita();
+});
+</script>
+</body>
+</html>

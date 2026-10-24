@@ -43,6 +43,7 @@
            cursor: pointer; font-size: 13px; white-space: nowrap; }
   .knapp:hover, .seg button:hover:not(.on) { background: var(--hover); }
   .knapp.on { border-color: var(--rail); color: var(--rail); }
+  #platt.on { background: none; color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); font-weight: 600; }
   .knapp:disabled { opacity: .45; cursor: default; }
   .hoger { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 
@@ -106,12 +107,14 @@
   </div>
   <div class="falt"><select id="ind" aria-label="Färga punkterna efter" title="Färga punkterna efter"></select></div>
   <div class="seg" id="kartval" role="group" aria-label="Bakgrundskarta">
-    <button data-k="mork" class="on">Mörk</button><button data-k="ljus">Ljus</button><button data-k="detalj">Detaljerad karta</button><button data-k="foto">Flygfoto</button>
+    <button data-k="mork" class="on">Mörk</button><button data-k="ljus">Ljus</button><button data-k="detalj" title="Vanlig karta med alla detaljer">Standard</button><button data-k="foto">Flygfoto</button>
   </div>
   <button class="knapp on" id="sparknapp" aria-pressed="true">Spår</button>
   <div class="hoger">
-    <button class="knapp" id="platt" disabled title="Tillbaka till platt vy">Platt vy</button>
-    <button class="knapp" id="sverige">Hela Sverige</button>
+    <div class="seg" role="group" aria-label="Vy">
+      <button id="platt" title="Räta upp kartan här: ingen lutning, norr uppåt, samma zoom">⟂ Platt</button>
+      <button id="sverige" title="Platt översikt över hela Sverige">Hela Sverige</button>
+    </div>
     <a class="textknapp" href="jamforelse.html">Jämförelse</a>
     <button class="textknapp" id="omknapp">Om och källor</button>
   </div>
@@ -270,7 +273,7 @@ function fargaPunkter() {
 
 map.on("style.load", async () => {
   if (!data) {
-    [dataJarnvag, dataBygg, data] = await Promise.all(["3d/jarnvag.geojson", "3d/byggnader.geojson", "3d/fastigheter3d.geojson"]
+    [dataJarnvag, dataBygg, data] = await Promise.all(["jarnvag.geojson", "byggnader.geojson", "karta.geojson"]
       .map(u => fetch(u, { cache: "no-cache" }).then(r => r.json())));
     valdaBasId = dataBygg.features.map(b => ({ id: b.properties.basid, f: b.properties.fastighet }));
     document.getElementById("ind").innerHTML = Object.entries(IND).map(([k, I]) => `<option value="${k}">Färga: ${esc(I.namn)}</option>`).join("");
@@ -284,7 +287,9 @@ map.on("style.load", async () => {
 map.on("click", "fast", e => valj(e.features[0].properties.id));
 map.on("mouseenter", "fast", () => map.getCanvas().style.cursor = "pointer");
 map.on("mouseleave", "fast", () => map.getCanvas().style.cursor = "");
-map.on("pitchend", () => { document.getElementById("platt").disabled = map.getPitch() < 1 && Math.abs(map.getBearing()) < 1; });
+// Platt-knappen markeras när kartan är lutad eller vriden, så att det syns att den gör något
+const uppdateraPlatt = () => document.getElementById("platt").classList.toggle("on", map.getPitch() >= 1 || Math.abs(map.getBearing()) >= 1);
+map.on("pitchend", uppdateraPlatt); map.on("rotateend", uppdateraPlatt); map.on("moveend", uppdateraPlatt);
 
 function markeraVald() {
   if (map.getLayer("fast")) {
@@ -345,7 +350,8 @@ document.getElementById("sparknapp").onclick = e => {
   e.currentTarget.classList.toggle("on", sparPa); e.currentTarget.setAttribute("aria-pressed", sparPa);
   for (const id of ["jarnvag", "jarnvag-glod"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", sparPa ? "visible" : "none");
 };
-document.getElementById("platt").onclick = () => map.easeTo({ pitch: 0, bearing: 0, duration: 1200 });
+// Platt: räta upp där man är (samma centrum och zoom). Hela Sverige: platt översikt.
+document.getElementById("platt").onclick = () => map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
 document.getElementById("sverige").onclick = () => {
   valdId = null; markeraVald(); ritaLista(); visaOm();
   map.flyTo({ ...SVERIGE, duration: 2500 });
@@ -372,7 +378,8 @@ function visaOm() {
     <p>Kartan visar fastigheterna i Jernhusens publicerade <a href="${PDF_URL}" target="_blank" rel="noopener">fastighetsförteckning
       per 2025-12-31</a>. Varje punkt är ett ungefärligt läge, framtaget från adressen i förteckningen och förbättrat med
       Trafikverkets stationslägen och namngivna depåer i OpenStreetMap. Punkten är inte fastighetens gräns.</p>
-    <p>Klicka på en fastighet för att se uppgifterna och flyga in i 3D. <b>Platt vy</b> tar dig tillbaka. Under <b>Färga</b> väljer du
+    <p>Klicka på en fastighet för att se uppgifterna och flyga in i 3D. <b>Platt</b> rätar upp kartan där du är;
+      <b>Hela Sverige</b> visar översikten igen. Under <b>Färga</b> väljer du
       vilken uppgift punkterna färgas efter. Alla avstånd räknas från punkten.</p>
     <p class="liten">Fastighetsgränser och energideklarationer finns inte med: Lantmäteriets och Boverkets villkor tillåter inte att de
       publiceras öppet. Turkosa byggnader är byggnader i OpenStreetMap som kopplats till fastigheten (på adressen, med samma namn,
@@ -399,7 +406,6 @@ function valj(id) {
   const f = data.features.find(x => x.properties.id === id), p = f.properties;
   valdId = id; markeraVald(); ritaLista();
   map.flyTo({ center: f.geometry.coordinates, zoom: 16, pitch: 60, bearing: ((p.rank * 37) % 120) - 60, duration: 3000, essential: true });
-  document.getElementById("platt").disabled = false;
   const k = document.getElementById("kort");
   k.innerHTML = kortHtml(p); k.style.display = "block"; k.scrollTop = 0;
   document.getElementById("stang").onclick = () => { k.style.display = "none"; };

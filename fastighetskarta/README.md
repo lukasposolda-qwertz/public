@@ -72,6 +72,8 @@ fastigheterna (lokalarea) som har ett läge. Den största, Örebro CV, saknar l�
 
 | Lager | Källa |
 |---|---|
+| Bakgrund Mörk, Ljus, Färg | [OpenFreeMap](https://openfreemap.org) stilarna Dark, Positron och Liberty. © OpenMapTiles, data från OpenStreetMap |
+| Bakgrund Flygfoto | [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9). Källa: Esri, Maxar, Earthstar Geographics och GIS-användarsamfundet. Visas enligt Esris användarvillkor |
 | Järnvägsnätet (huvud- och bandelar), synligt över hela Sverige | OpenStreetMap `railway=rail` + `usage=main/branch`, förenklat med 25 m tolerans. ODbL |
 | Alla byggnader i 3D | OpenFreeMap/OpenMapTiles, höjd från `render_height` |
 | Byggnader på järnvägsmark (turkos) | OSM-byggnader inom 600 m som ligger på `landuse=railway` eller är märkta som stations- eller trafikbyggnader. Höjd från OSM, annars 8 m. Visar järnvägsmiljön, **inte** vilka byggnader Jernhusen äger. ODbL |

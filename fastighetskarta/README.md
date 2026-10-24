@@ -96,7 +96,7 @@ Kan laddas ner som CSV.
 En enda karta byggd med [MapLibre GL JS](https://maplibre.org) 4.7.1 (BSD-3-Clause) och vektorkartor från
 [OpenFreeMap](https://openfreemap.org) (© OpenMapTiles, data från OpenStreetMap). Den är platt i mörkt läge
 med tända spår som standard. När en fastighet väljs flyger kameran in och lutar till 3D; **Platt** tar en
-tillbaka. Menyerna ligger överst: sök, affärsområde, vad punkterna färgas efter, bakgrundskarta, spår av/på,
+tillbaka. Menyerna ligger överst: sök, affärsområde, bakgrundskarta, järnväg av/på, vad punkterna färgas efter,
 **Platt** (rätar upp kartan där man är) och **Hela Sverige** (platt översikt).
 
 | Lager | Källa |
@@ -104,6 +104,7 @@ tillbaka. Menyerna ligger överst: sök, affärsområde, vad punkterna färgas e
 | Bakgrund Mörk, Ljus, Standard | [OpenFreeMap](https://openfreemap.org) stilarna Dark, Positron och Liberty. © OpenMapTiles, data från OpenStreetMap |
 | Bakgrund Flygfoto | [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9). Källa: Esri, Maxar, Earthstar Geographics och GIS-användarsamfundet. Visas enligt Esris användarvillkor |
 | Järnvägsnätet (huvud- och bandelar), synligt över hela Sverige | OpenStreetMap `railway=rail` + `usage=main/branch`, förenklat med 25 m tolerans. ODbL |
+| Alla spår inzoomat (bangårdar, sidospår, industrispår) | OpenFreeMap/OpenMapTiles `transportation`, `class=rail`, från zoom 12; servicespåren finns i vektorrutorna från ca zoom 14. © OpenMapTiles, data från OpenStreetMap |
 | Alla byggnader i 3D | OpenFreeMap/OpenMapTiles, höjd från `render_height` |
 | Kopplade byggnader (turkos) | OSM-byggnader som kopplats till fastigheten: byggnaden på adressen, byggnader med samma namn som fastigheten, stations-/trafikbyggnader inom 150 m och, för depåer, byggnader på järnvägs- eller depåmark inom 300 m. Färgen läggs på bakgrundskartans egen byggnad (id = OSM-id × 10 + 2), så form och höjd stämmer. En uppskattning, **inte** uppgift om ägande. ODbL |
 

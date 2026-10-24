@@ -26,17 +26,19 @@
   .titel { display: flex; flex-direction: column; margin-right: 4px; line-height: 1.2; }
   .titel b { font-size: 14px; letter-spacing: .01em; white-space: nowrap; }
   .titel span { font-size: 10px; color: #ffd27a; white-space: nowrap; }
-  #ind { max-width: 210px; }
+  #ind { max-width: 190px; }
   .textknapp { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 13px; padding: 5px 4px; text-decoration: none; white-space: nowrap; }
   .textknapp:hover { color: var(--text); }
   .falt { display: flex; align-items: center; gap: 6px; }
-  .falt label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .falt label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  optgroup { color: var(--muted); font-style: normal; background: var(--panel-solid); }
+  optgroup option { color: var(--text); }
   input[type=search], select { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 6px;
                                padding: 5px 8px; color: var(--text); }
   select option { background: var(--panel-solid); }
-  #sok { width: 150px; }
+  #sok { width: 130px; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-  .seg button { background: none; border: 0; padding: 5px 10px; cursor: pointer; font-size: 13px; }
+  .seg button { background: none; border: 0; padding: 5px 9px; cursor: pointer; font-size: 13px; }
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button.on { background: var(--accent); color: #0d1117; font-weight: 600; }
   .knapp { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px;
@@ -105,11 +107,12 @@
   <div class="seg" id="omrval" role="group" aria-label="Affärsområde">
     <button data-o="" class="on">Alla</button><button data-o="Stationer">Stationer</button><button data-o="Depåer och kombiterminaler">Depåer</button>
   </div>
-  <div class="falt"><select id="ind" aria-label="Färga punkterna efter" title="Färga punkterna efter"></select></div>
   <div class="seg" id="kartval" role="group" aria-label="Bakgrundskarta">
     <button data-k="mork" class="on">Mörk</button><button data-k="ljus">Ljus</button><button data-k="detalj" title="Vanlig karta med alla detaljer">Standard</button><button data-k="foto">Flygfoto</button>
   </div>
-  <button class="knapp on" id="sparknapp" aria-pressed="true">Spår</button>
+  <button class="knapp on" id="sparknapp" aria-pressed="true"
+    title="Järnvägsnätet: huvud- och bandelar i hela landet. Inzoomat (från ca zoom 14) visas alla spår, även bangårdar, sidospår och industrispår.">Järnväg</button>
+  <div class="falt" title="Välj vilken uppgift punkterna på kartan färgas efter"><label for="ind">Färga efter</label><select id="ind"></select></div>
   <div class="hoger">
     <div class="seg" role="group" aria-label="Vy">
       <button id="platt" title="Räta upp kartan här: ingen lutning, norr uppåt, samma zoom">⟂ Platt</button>
@@ -164,24 +167,25 @@ const RAMP = ["#c7e9f1", "#7fcbe0", "#3ea6cf", "#1f78b4", "#0b3d6e"];
 const SAKNAS = "#7a828f";
 const OMR = { "Stationer": "--station", "Depåer och kombiterminaler": "--depa" };
 const jaNej = (v, ja = "#ff6b6b") => ({ "Ja": ja, "Nej": "#5b6472" });
+// grupp = rubrik i menyn
 const IND = {
-  omr:     { namn: "Affärsområde", kat: p => p["Affärsområde"], farger: () => Object.fromEntries(Object.entries(OMR).map(([k, v]) => [k, css(v)])) },
-  tag:     { namn: "Tågavgångar per vardag", num: p => p.trafik?.avgangar.tag, kalla: "Trafiklab" },
-  tagtim:  { namn: "Flest tåg under en timme", num: p => p.trafik?.tag_max_per_timme, kalla: "Trafiklab" },
-  buss:    { namn: "Bussavgångar per vardag", num: p => p.trafik?.avgangar.buss, kalla: "Trafiklab" },
-  bef:     { namn: "Invånare inom 1 km", num: p => p.befolkning?.inom_1km, kalla: "SCB" },
-  syss:    { namn: "Sysselsättningsgrad (DeSO)", num: p => p.demografi?.sysselsattning_20_64, kalla: "SCB", enhet: "%" },
-  ink:     { namn: "Nettoinkomst (DeSO)", num: p => p.demografi?.nettoinkomst_tkr, kalla: "SCB", enhet: "tkr" },
-  service: { namn: "Butiker, mat och service inom 500 m", num: p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), kalla: "OpenStreetMap" },
-  spar:    { namn: "Spårlängd inom 300 m", num: p => p.spar?.totalt_m, kalla: "OpenStreetMap", enhet: "m" },
-  temp:    { namn: "Årsmedeltemperatur", num: p => p.klimat?.arsmedel_temp, kalla: "SMHI", enhet: "°C" },
-  neder:   { namn: "Årsnederbörd", num: p => p.klimat?.arsnederbord_mm, kalla: "SMHI", enhet: "mm" },
-  flod:    { namn: "Översvämning inom 100 m", kat: p => p.risk ? (p.risk.q100 ? "100-årsflöde" : p.risk.bhf ? "Bara högsta flöde" : "Nej") : null,
+  omr:     { grupp: "Fastigheten", namn: "Affärsområde", kat: p => p["Affärsområde"], farger: () => Object.fromEntries(Object.entries(OMR).map(([k, v]) => [k, css(v)])) },
+  tag:     { grupp: "Trafik", namn: "Tågavgångar per vardag", num: p => p.trafik?.avgangar.tag, kalla: "Trafiklab" },
+  tagtim:  { grupp: "Trafik", namn: "Flest tåg under en timme", num: p => p.trafik?.tag_max_per_timme, kalla: "Trafiklab" },
+  buss:    { grupp: "Trafik", namn: "Bussavgångar per vardag", num: p => p.trafik?.avgangar.buss, kalla: "Trafiklab" },
+  bef:     { grupp: "Befolkning och omgivning", namn: "Invånare inom 1 km", num: p => p.befolkning?.inom_1km, kalla: "SCB" },
+  syss:    { grupp: "Befolkning och omgivning", namn: "Sysselsättningsgrad (DeSO)", num: p => p.demografi?.sysselsattning_20_64, kalla: "SCB", enhet: "%" },
+  ink:     { grupp: "Befolkning och omgivning", namn: "Nettoinkomst (DeSO)", num: p => p.demografi?.nettoinkomst_tkr, kalla: "SCB", enhet: "tkr" },
+  service: { grupp: "Befolkning och omgivning", namn: "Butiker, mat och service inom 500 m", num: p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), kalla: "OpenStreetMap" },
+  spar:    { grupp: "Fastigheten", namn: "Spårlängd inom 300 m", num: p => p.spar?.totalt_m, kalla: "OpenStreetMap", enhet: "m" },
+  temp:    { grupp: "Klimat", namn: "Årsmedeltemperatur", num: p => p.klimat?.arsmedel_temp, kalla: "SMHI", enhet: "°C" },
+  neder:   { grupp: "Klimat", namn: "Årsnederbörd", num: p => p.klimat?.arsnederbord_mm, kalla: "SMHI", enhet: "mm" },
+  flod:    { grupp: "Risker och natur", namn: "Översvämning inom 100 m", kat: p => p.risk ? (p.risk.q100 ? "100-årsflöde" : p.risk.bhf ? "Bara högsta flöde" : "Nej") : null,
              farger: () => ({ "100-årsflöde": "#ff6b6b", "Bara högsta flöde": "#f5a524", "Nej": "#5b6472" }), kalla: "MCF" },
-  skred:   { namn: "Skred/stabilitet inom 100 m", kat: p => p.risk ? ((p.risk.sgu_skred !== null || p.risk.stabilitet) ? "Ja" : "Nej") : null, farger: () => jaNej(), kalla: "SGU, MCF" },
-  natur:   { namn: "Skyddad natur inom 500 m", kat: p => p.skyddad_natur ? (p.skyddad_natur.omraden.length ? "Ja" : "Nej") : null, farger: () => jaNej("#4ade80"), kalla: "Naturvårdsverket" },
-  lamn:    { namn: "Kulturhistoriska lämningar inom 250 m", num: p => p.kulturmiljo?.antal_lamningar, kalla: "RAÄ" },
-  bminne:  { namn: "Byggnadsminne inom 250 m", kat: p => p.kulturmiljo ? (p.kulturmiljo.byggnadsminnen.length ? "Ja" : "Nej") : null, farger: () => jaNej("#e9a873"), kalla: "RAÄ" },
+  skred:   { grupp: "Risker och natur", namn: "Skred/stabilitet inom 100 m", kat: p => p.risk ? ((p.risk.sgu_skred !== null || p.risk.stabilitet) ? "Ja" : "Nej") : null, farger: () => jaNej(), kalla: "SGU, MCF" },
+  natur:   { grupp: "Risker och natur", namn: "Skyddad natur inom 500 m", kat: p => p.skyddad_natur ? (p.skyddad_natur.omraden.length ? "Ja" : "Nej") : null, farger: () => jaNej("#4ade80"), kalla: "Naturvårdsverket" },
+  lamn:    { grupp: "Kulturmiljö", namn: "Kulturhistoriska lämningar inom 250 m", num: p => p.kulturmiljo?.antal_lamningar, kalla: "RAÄ" },
+  bminne:  { grupp: "Kulturmiljö", namn: "Byggnadsminne inom 250 m", kat: p => p.kulturmiljo ? (p.kulturmiljo.byggnadsminnen.length ? "Ja" : "Nej") : null, farger: () => jaNej("#e9a873"), kalla: "RAÄ" },
 };
 let ind = "omr", brytpunkter = [], minVarde = 0;
 function beraknaBryt() {
@@ -203,7 +207,7 @@ function ritaLegend() {
   const f = x => heltal ? Math.round(x).toLocaleString("sv-SE") : Number(x).toLocaleString("sv-SE", { maximumFractionDigits: 1 });
   const e = I.enhet ? " " + I.enhet : "";
   const sw = c => `<span class="sw" style="background:${c}"></span>`;
-  let h = `<div style="color:var(--text);font-weight:600;margin-bottom:4px">${esc(I.namn)}</div>`;
+  let h = `<div style="margin-bottom:2px">Punkterna färgas efter</div><div style="color:var(--text);font-weight:600;margin-bottom:4px">${esc(I.namn)}</div>`;
   h += I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
     : [minVarde, ...brytpunkter].map((fr, i) => {
         const till = i < brytpunkter.length ? brytpunkter[i] : null;
@@ -211,7 +215,7 @@ function ritaLegend() {
         return `<div>${sw(klassFarg(i))}${t}</div>`; }).join("");
   if (ind !== "omr") h += `<div>${sw(SAKNAS)}Uppgift saknas</div><div style="margin-top:3px">Källa: ${esc(I.kalla)}</div>`;
   h += `<div style="margin-top:8px">Punktens storlek visar lokalarean.</div>`;
-  h += `<div style="margin-top:4px"><span class="rail"></span>Järnväg, huvud- och bandelar (OSM)</div>`;
+  h += `<div style="margin-top:4px"><span class="rail"></span>Järnväg: huvud- och bandelar; inzoomat alla spår, även bangårdar och sidospår (OSM)</div>`;
   h += `<div><span class="sw" style="background:var(--accent);border-radius:2px"></span>Byggnad kopplad till fastigheten (OSM)</div>`;
   document.getElementById("legend").innerHTML = h;
 }
@@ -243,6 +247,16 @@ function egnaLager() {
                "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
                "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0] } });
   }
+  // Alla spår, även bangårdar, sidospår och industrispår, från bakgrundskartans vektordata (OpenMapTiles
+  // transportation, class=rail). Vektorrutorna har servicespåren först från ca zoom 14.
+  if (map.getSource("openmaptiles")) {
+    const service = ["has", "service"];
+    map.addLayer({ id: "spar-alla", type: "line", source: "openmaptiles", "source-layer": "transportation", minzoom: 12,
+      filter: ["==", ["get", "class"], "rail"],
+      layout: { "line-cap": "round", "line-join": "round", visibility: sparPa ? "visible" : "none" },
+      paint: { "line-color": K.rail, "line-opacity": ["case", service, 0.75, 0.95],
+               "line-width": ["interpolate", ["linear"], ["zoom"], 12, ["case", service, 0.6, 1.2], 17, ["case", service, 1.8, 3]] } });
+  }
   map.addSource("jarnvag", { type: "geojson", data: dataJarnvag });
   const huvud = ["case", ["==", ["get", "usage"], "main"], 1, 0.6];
   const bredd = (a, b) => ["interpolate", ["linear"], ["zoom"], 4, ["*", huvud, a], 10, ["*", huvud, b], 15, ["*", huvud, b * 2.5]];
@@ -252,8 +266,11 @@ function egnaLager() {
   map.addLayer({ id: "jarnvag", type: "line", source: "jarnvag", layout: { "line-cap": "round", "line-join": "round", visibility: synl },
     paint: { "line-color": K.rail, "line-opacity": ["case", ["==", ["get", "usage"], "main"], 0.95, 0.6], "line-width": bredd(0.9, 2.2) } });
   map.addSource("fast", { type: "geojson", data: data });
-  const radie = ["interpolate", ["linear"], ["zoom"], 4, ["+", 3, ["/", ["sqrt", ["get", "Lokalarea Summa"]], 40]],
-                 12, ["+", 6, ["/", ["sqrt", ["get", "Lokalarea Summa"]], 18]]];
+  // Storlek efter lokalarea. Vid zoom 8 samma skala som den tidigare 2D-kartan (5 + √LOA/18 px),
+  // något mindre över hela Sverige så att städerna inte blir en klump, och större inzoomat.
+  const rot = ["sqrt", ["get", "Lokalarea Summa"]];
+  const radie = ["interpolate", ["linear"], ["zoom"],
+                 4, ["+", 4, ["/", rot, 24]], 8, ["+", 5, ["/", rot, 18]], 13, ["+", 7, ["/", rot, 14]], 17, ["+", 9, ["/", rot, 11]]];
   map.addLayer({ id: "fast", type: "circle", source: "fast", paint: {
     "circle-radius": radie, "circle-color": ["get", "_farg"], "circle-opacity": 0.95,
     "circle-stroke-color": ["case", ["==", ["get", "id"], valdId || ""], "#ffffff", "rgba(255,255,255,.65)"],
@@ -276,7 +293,11 @@ map.on("style.load", async () => {
     [dataJarnvag, dataBygg, data] = await Promise.all(["jarnvag.geojson", "byggnader.geojson", "karta.geojson"]
       .map(u => fetch(u, { cache: "no-cache" }).then(r => r.json())));
     valdaBasId = dataBygg.features.map(b => ({ id: b.properties.basid, f: b.properties.fastighet }));
-    document.getElementById("ind").innerHTML = Object.entries(IND).map(([k, I]) => `<option value="${k}">Färga: ${esc(I.namn)}</option>`).join("");
+    // Menyn grupperad efter ämne, i den ordning grupperna först förekommer
+    const grp = [...new Set(Object.values(IND).map(I => I.grupp))];
+    document.getElementById("ind").innerHTML = grp.map(g => `<optgroup label="${esc(g)}">` +
+      Object.entries(IND).filter(([, I]) => I.grupp === g).map(([k, I]) => `<option value="${k}">${esc(I.namn)}</option>`).join("") +
+      `</optgroup>`).join("");
     fargaPunkter();
     visaOm();
   }
@@ -348,7 +369,7 @@ document.querySelectorAll("#kartval button").forEach(b => b.onclick = () => {
 document.getElementById("sparknapp").onclick = e => {
   sparPa = !sparPa;
   e.currentTarget.classList.toggle("on", sparPa); e.currentTarget.setAttribute("aria-pressed", sparPa);
-  for (const id of ["jarnvag", "jarnvag-glod"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", sparPa ? "visible" : "none");
+  for (const id of ["jarnvag", "jarnvag-glod", "spar-alla"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", sparPa ? "visible" : "none");
 };
 // Platt: räta upp där man är (samma centrum och zoom). Hela Sverige: platt översikt.
 document.getElementById("platt").onclick = () => map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });

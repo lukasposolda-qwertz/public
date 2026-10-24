@@ -10,8 +10,11 @@ fastighetsförteckning per 2025-12-31.
 
 | Fil | Innehåll |
 |---|---|
-| `index.html` | Kartan: en statisk sida med Leaflet och OpenStreetMap |
-| `fastigheter.geojson` | En punkt per fastighet med uppgifterna från förteckningen |
+| `index.html` | Kartan: en statisk sida med MapLibre GL JS och vektorkartor, platt som standard och 3D när en fastighet väljs |
+| `jamforelse.html` | Jämförelsetabell över alla fastigheter |
+| `fastigheter.geojson` | Alla 143 fastigheter med uppgifterna, används av jämförelsetabellen |
+| `3d/fastigheter3d.geojson` | De fastigheter som har läge, används av kartan |
+| `3d/byggnader.geojson`, `3d/jarnvag.geojson` | Kopplade byggnader och järnvägsnätet |
 | `LICENSE` | MIT-licens för koden |
 
 ## Källor och licenser
@@ -22,7 +25,6 @@ fastighetsförteckning per 2025-12-31.
 | Lägen (koordinater) | Adressen i förteckningen sökt i [OpenStreetMap](https://www.openstreetmap.org) via [Nominatim](https://nominatim.org) | © OpenStreetMap-bidragsgivare, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) |
 | Byggnad på adressen, närmaste station, service inom 500 m | OpenStreetMap via [Overpass API](https://overpass-api.de) | © OpenStreetMap-bidragsgivare, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) |
 | Kollektivtrafik inom 500 m | [GTFS Sverige 2](https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/), Samtrafiken i Sverige AB via Trafiklab (version 2026-10-01) | CC0 1.0. Källa: Trafiklab |
-| Punktlighet och inställda tåg | [Trafikverket, API Öppna Data](https://data.trafikverket.se/) (TrainAnnouncement) | CC0 1.0. Källa: Trafikverket |
 | Befolkning inom 1 km | [SCB, öppna geodata](https://www.scb.se/vara-tjanster/oppna-data/oppna-geodata/): befolkning per 1 km-ruta, 2025-12-31 | Öppna data. Källa: SCB |
 | Skyddad natur inom 500 m | [Naturvårdsverket, Naturvårdsregistret](https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/) | CC0. Källa: Naturvårdsverket |
 | Översvämning och stabilitet | [MCF](https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/) (Myndigheten för civilt försvar), översvämningskarteringar (100-, 200-årsflöde, BHF), områden med betydande översvämningsrisk och stabilitetskarteringar, öppen WFS | Ingen avgift, inga åtkomstbegränsningar. Källa: MCF |
@@ -71,7 +73,6 @@ anrop i taget, och svaren cachades.
 | Uppgift | Hur den räknas |
 |---|---|
 | Kollektivtrafik inom 500 m | Planerade avgångar tisdagen 2026-11-10 från alla hållplatser inom 500 m, per trafikslag. En tur som stannar vid flera hållplatser räknas en gång, och tåg som slutar vid hållplatsen räknas inte. Dessutom flest tåg under en timme, första och sista tåg samt tågoperatörer. |
-| Punktlighet | Alla annonserade avgångar de tre senaste hela dygnen (så långt bakåt som API:t sparar data) från en Trafikverket-station: i första hand den station vars namn står i fastighetsbeskrivningen (inom 3 km), annars närmaste station inom 500 m. I tid = högst 5 minuter efter tidtabell. Andelen räknas på avgångna och inställda tåg. Tre dygn är ett kort fönster, så siffrorna kan svänga mycket. |
 | Invånare inom 1 km | Summan av SCB:s 1 km-rutor, där varje ruta viktas med hur stor del av den som ligger inom 1 km från punkten. En uppskattning. |
 | Service inom 500 m | Antal objekt i OpenStreetMap inom 500 m fågelvägen: butiker (`shop`), restauranger och kaféer, övrig service (apotek, bank, vård, skola m.m.), busshållplatser och cykelparkeringar. OSM är inte heltäckande, så siffrorna är ett minimum. |
 | Kulturmiljö inom 250 m | Lämningar, inventerad bebyggelse och byggnadsminnen hos RAÄ vars geometri ligger inom 250 m från punkten. Varje objekt länkar till RAÄ:s objektsida. RAÄ påpekar att kvaliteten kan variera och att länsstyrelsen ska kontaktas inför planering eller markarbeten. |
@@ -86,23 +87,25 @@ uppgifter delas i fem lika stora grupper.
 
 ## Jämförelsetabell (`jamforelse.html`)
 
-Samma mått för alla fastigheter i en sorterbar tabell: lokalarea, trafikutbud, punktlighet,
+Samma mått för alla fastigheter i en sorterbar tabell: lokalarea, trafikutbud,
 befolkning, service, kulturmiljö, skyddad natur, översvämning, skred, jordart och lägesmetod.
 Kan laddas ner som CSV.
 
-## 3D-vy: tio största (`3d/`)
+## Kartan
 
-En proof of concept med [MapLibre GL JS](https://maplibre.org) 4.7.1 (BSD-3-Clause) och vektorkartor från
-[OpenFreeMap](https://openfreemap.org) (© OpenMapTiles, data från OpenStreetMap). Visar de tio största
-fastigheterna (lokalarea) som har ett läge. Den största, Örebro CV, saknar läge och är därför inte med.
+En enda karta byggd med [MapLibre GL JS](https://maplibre.org) 4.7.1 (BSD-3-Clause) och vektorkartor från
+[OpenFreeMap](https://openfreemap.org) (© OpenMapTiles, data från OpenStreetMap). Den är platt i mörkt läge
+med tända spår som standard. När en fastighet väljs flyger kameran in och lutar till 3D; **Platt vy** tar en
+tillbaka. Menyerna ligger överst: sök, affärsområde, vad punkterna färgas efter, bakgrundskarta, spår av/på.
+Den tidigare adressen `3d/` leder hit.
 
 | Lager | Källa |
 |---|---|
-| Bakgrund Mörk, Ljus, Färg | [OpenFreeMap](https://openfreemap.org) stilarna Dark, Positron och Liberty. © OpenMapTiles, data från OpenStreetMap |
+| Bakgrund Mörk, Ljus, Detaljerad karta | [OpenFreeMap](https://openfreemap.org) stilarna Dark, Positron och Liberty. © OpenMapTiles, data från OpenStreetMap |
 | Bakgrund Flygfoto | [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9). Källa: Esri, Maxar, Earthstar Geographics och GIS-användarsamfundet. Visas enligt Esris användarvillkor |
 | Järnvägsnätet (huvud- och bandelar), synligt över hela Sverige | OpenStreetMap `railway=rail` + `usage=main/branch`, förenklat med 25 m tolerans. ODbL |
 | Alla byggnader i 3D | OpenFreeMap/OpenMapTiles, höjd från `render_height` |
-| Byggnader på järnvägsmark (turkos) | OSM-byggnader inom 600 m som ligger på `landuse=railway` eller är märkta som stations- eller trafikbyggnader. Höjd från OSM, annars 8 m. Visar järnvägsmiljön, **inte** vilka byggnader Jernhusen äger. ODbL |
+| Kopplade byggnader (turkos) | OSM-byggnader som kopplats till fastigheten: byggnaden på adressen, byggnader med samma namn som fastigheten, stations-/trafikbyggnader inom 150 m och, för depåer, byggnader på järnvägs- eller depåmark inom 300 m. Färgen läggs på bakgrundskartans egen byggnad (id = OSM-id × 10 + 2), så form och höjd stämmer. En uppskattning, **inte** uppgift om ägande. ODbL |
 
 ## Det som inte finns med
 

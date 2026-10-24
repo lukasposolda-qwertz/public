@@ -20,6 +20,9 @@ fastighetsförteckning per 2025-12-31.
 |---|---|---|
 | Fastigheter, lokalarea och lokaltyper | Jernhusen AB, [Fastighetsförteckning per 2025-12-31](https://www.datocms-assets.com/163536/1772552927-fastighetsforteckning-2025-1.pdf), publicerad på [jernhusen.se](https://www.jernhusen.se/om-jernhusen/finansiell-information/finansiella-rapporter/) | © Jernhusen AB. Återgiven med källhänvisning; omfattas inte av MIT-licensen. |
 | Lägen (koordinater) | Adressen i förteckningen sökt i [OpenStreetMap](https://www.openstreetmap.org) via [Nominatim](https://nominatim.org) | © OpenStreetMap-bidragsgivare, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) |
+| Byggnad på adressen, närmaste station, service inom 500 m | OpenStreetMap via [Overpass API](https://overpass-api.de) | © OpenStreetMap-bidragsgivare, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) |
+| Befolkning inom 1 km | [SCB, öppna geodata](https://www.scb.se/vara-tjanster/oppna-data/oppna-geodata/): befolkning per 1 km-ruta, 2025-12-31 | Öppna data. Källa: SCB |
+| Skyddad natur inom 500 m | [Naturvårdsverket, Naturvårdsregistret](https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/) | CC0. Källa: Naturvårdsverket |
 | Bakgrundskarta | OpenStreetMap | © [OpenStreetMap-bidragsgivare](https://www.openstreetmap.org/copyright) |
 | Kartbibliotek | [Leaflet](https://leafletjs.com) 1.9.4 | BSD-2-Clause |
 | Kod | Lukas Posolda | MIT, se `LICENSE` |
@@ -34,6 +37,32 @@ Metoden visas för varje fastighet i kartan.
 
 Punkterna är ungefärliga lägen, inte fastighetsgränser. Fastigheter utan
 godkänd träff saknar punkt och visas bara i listan.
+
+## Byggnader och stationer
+
+För fastigheter där läget kommer från en adress med husnummer visas den
+byggnad i OpenStreetMap som adresspunkten ligger i, om den är entydig. Det är
+inte fastighetens gräns och inte nödvändigtvis alla byggnader på fastigheten.
+För alla fastigheter med läge visas närmaste järnvägsstation eller hållplats
+(`railway=station/halt`) inom 500 m. Uppgifterna hämtades med Overpass API, ett
+anrop i taget, och svaren cachades.
+
+## Omgivning
+
+| Uppgift | Hur den räknas |
+|---|---|
+| Invånare inom 1 km | Summan av SCB:s 1 km-rutor, där varje ruta viktas med hur stor del av den som ligger inom 1 km från punkten. En uppskattning. |
+| Service inom 500 m | Antal objekt i OpenStreetMap inom 500 m fågelvägen: butiker (`shop`), restauranger och kaféer, övrig service (apotek, bank, vård, skola m.m.), busshållplatser och cykelparkeringar. OSM är inte heltäckande, så siffrorna är ett minimum. |
+| Skyddad natur inom 500 m | Gällande skyddade områden i Naturvårdsregistret vars gräns ligger inom 500 m från punkten. |
+
+Kartan kan färgas efter varje uppgift (meny **Färga efter**). Numeriska
+uppgifter delas i fem lika stora grupper.
+
+## Det som inte finns med
+
+Fastighetsgränser (Lantmäteriet) och energideklarationer (Boverket) finns inte
+i den här demon. Båda kräver avtal eller juridisk prövning, och villkoren
+tillåter inte att uppgifterna publiceras öppet.
 
 Nominatims [användningsvillkor](https://operations.osmfoundation.org/policies/nominatim/)
 följdes: högst ett anrop per sekund, identifierande User-Agent, och varje

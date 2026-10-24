@@ -4,441 +4,477 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jernhusens fastigheter – inofficiell karta</title>
-<meta name="description" content="Inofficiell karta över Jernhusens fastighetsbestånd, byggd på den publicerade fastighetsförteckningen och OpenStreetMap.">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta name="description" content="Inofficiell karta över Jernhusens fastighetsbestånd och det svenska järnvägsnätet, byggd på öppna data.">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
   :root {
-    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2430; --muted: #5d6676; --line: #e2e5ea;
-    --accent: #0b5cad; --stationer: #1f6feb; --depaer: #c2410c; --warn-bg: #fff7e0; --warn-line: #e0b84a;
+    --bg: #0d1117; --panel: rgba(16, 20, 28, .94); --panel-solid: #10141c; --line: rgba(255,255,255,.10);
+    --text: #e8ecf2; --muted: #8b95a5; --rail: #f5a524; --accent: #3ee0c5; --depa: #ff7a59; --station: #6aa8ff;
+    --risk: #ff6b6b; --hover: rgba(255,255,255,.06);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-               color: var(--text); background: var(--bg); }
-  #app { display: grid; grid-template-columns: 290px minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
-  header { grid-column: 1 / -1; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px;
-           padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
-  header .sub { color: var(--muted); font-size: 13px; }
-  header .inoff { margin-left: auto; font-size: 12px; background: var(--warn-bg); border: 1px solid var(--warn-line);
-                  padding: 2px 8px; border-radius: 4px; }
-  aside { background: var(--panel); overflow: auto; min-width: 0; min-height: 0; }
-  #filters { border-right: 1px solid var(--line); }
-  #detail { border-left: 1px solid var(--line); }
-  .section { padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  .section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
-                margin: 0 0 8px; font-weight: 600; }
-  label { display: block; margin: 2px 0; cursor: pointer; }
-  select, input[type=search] { width: 100%; padding: 5px; font: inherit; border: 1px solid var(--line); border-radius: 4px; }
-  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px;
-            border: 1px solid rgba(0,0,0,.15); }
-  #lista { list-style: none; margin: 0; padding: 0; }
-  #lista li { padding: 6px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
-  #lista li:hover, #lista li.vald { background: #eef4fb; }
-  .liten { color: var(--muted); font-size: 12px; }
-  .nopos { color: #b45309; font-size: 11px; }
-  #mapwrap { position: relative; min-width: 0; min-height: 0; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+               font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
   #map { position: absolute; inset: 0; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  td, th { text-align: left; padding: 3px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-weight: 500; width: 55%; }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .kalla { color: var(--muted); font-size: 12px; margin-top: 8px; }
-  .notice { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
   a { color: var(--accent); }
-  .muted { color: var(--muted); }
+  button, select, input { font: inherit; color: inherit; }
+
+  /* Toppmeny */
+  #topp { position: absolute; z-index: 5; top: 0; left: 0; right: 0; display: flex; flex-wrap: wrap; align-items: center;
+          gap: 8px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
+  .titel { display: flex; flex-direction: column; margin-right: 4px; line-height: 1.2; }
+  .titel b { font-size: 14px; letter-spacing: .01em; white-space: nowrap; }
+  .titel span { font-size: 10px; color: #ffd27a; white-space: nowrap; }
+  #ind { max-width: 210px; }
+  .textknapp { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 13px; padding: 5px 4px; text-decoration: none; white-space: nowrap; }
+  .textknapp:hover { color: var(--text); }
+  .falt { display: flex; align-items: center; gap: 6px; }
+  .falt label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  input[type=search], select { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 6px;
+                               padding: 5px 8px; color: var(--text); }
+  select option { background: var(--panel-solid); }
+  #sok { width: 150px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { background: none; border: 0; padding: 5px 10px; cursor: pointer; font-size: 13px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: #0d1117; font-weight: 600; }
+  .knapp { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px;
+           cursor: pointer; font-size: 13px; white-space: nowrap; }
+  .knapp:hover, .seg button:hover:not(.on) { background: var(--hover); }
+  .knapp.on { border-color: var(--rail); color: var(--rail); }
+  .knapp:disabled { opacity: .45; cursor: default; }
+  .hoger { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  /* Paneler */
+  .panel { position: absolute; z-index: 3; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+           backdrop-filter: blur(6px); overflow: auto; }
+  #lista { left: 12px; width: 300px; }
+  #kort { right: 12px; width: 380px; display: none; }
+  #legend { left: 12px; bottom: 12px; width: 300px; padding: 10px 12px; font-size: 12px; color: var(--muted); }
+  .phuvud { padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; }
+  .phuvud b { font-size: 13px; }
+  ol { list-style: none; margin: 0; padding: 4px 0; }
+  li { display: grid; grid-template-columns: 26px 1fr; gap: 2px 8px; padding: 6px 14px; cursor: pointer; }
+  li:hover, li.vald { background: var(--hover); }
+  .nr { font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; font-size: 12px; padding-top: 1px; }
+  .meta { grid-column: 2; color: var(--muted); font-size: 12px; }
+  .stapel { grid-column: 2; height: 3px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .stapel span { display: block; height: 100%; }
+  .utan { color: var(--muted); font-size: 12px; padding: 8px 14px; border-top: 1px solid var(--line); }
+  .sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+  .rail { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px;
+          background: var(--rail); box-shadow: 0 0 6px var(--rail); }
+
+  /* Kort */
+  .sektion { padding: 11px 14px; border-bottom: 1px solid var(--line); }
+  .sektion h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 7px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-weight: 400; color: var(--muted); padding: 2px 0; vertical-align: top; }
+  td { text-align: right; padding: 2px 0 2px 8px; font-variant-numeric: tabular-nums; vertical-align: top; }
+  .stor { font-size: 22px; font-weight: 650; }
+  .kalla { color: var(--muted); font-size: 11px; margin-top: 6px; }
+  .liten { color: var(--muted); font-size: 11px; }
+  .ja { color: var(--risk); font-weight: 600; }
+  .notis { background: rgba(255,210,122,.08); border: 1px solid rgba(255,210,122,.35); border-radius: 6px; padding: 8px 10px; }
+
+  .maplibregl-ctrl-attrib { background: rgba(16,20,28,.85) !important; color: var(--muted); font-size: 11px; }
+  .maplibregl-ctrl-attrib a { color: var(--text); }
+  .maplibregl-ctrl-group { background: var(--panel-solid); } .maplibregl-ctrl-group button span { filter: invert(1); }
+
   @media (max-width: 900px) {
-    #app { grid-template-columns: 1fr; grid-template-rows: auto 60vh auto auto; height: auto; }
-    #mapwrap { grid-row: 2; }
-    #filters, #detail { border: 0; }
-    #lista { max-height: 40vh; overflow: auto; }
+    /* En rad som scrollar i sidled i stället för fem staplade rader */
+    #topp { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    #topp::-webkit-scrollbar { display: none; }
+    #topp > * { flex: 0 0 auto; }
+    .hoger { margin-left: 0; }
+    #sok { width: 130px; }
+    #lista { width: auto; right: 12px; max-height: 30vh !important; top: auto !important; bottom: 12px; }
+    #legend { display: none; }
+    #kort { left: 12px; right: 12px; width: auto; max-height: 55vh !important; }
   }
 </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <h1>Jernhusens fastigheter</h1>
-    <span class="sub">enligt fastighetsförteckningen per 2025-12-31</span>
-    <a href="3d/" style="font-size:13px">Tio största i 3D →</a>
-    <a href="jamforelse.html" style="font-size:13px">Jämförelsetabell →</a>
-    <span class="inoff">Inofficiell demo, inte en tjänst från Jernhusen AB</span>
-  </header>
+<div id="map"></div>
 
-  <aside id="filters">
-    <div class="section">
-      <h2>Sök</h2>
-      <input type="search" id="fSok" placeholder="Kommun, beteckning eller namn">
-    </div>
-    <div class="section">
-      <h2>Kommun</h2>
-      <select id="fKommun"><option value="">Alla kommuner</option></select>
-    </div>
-    <div class="section">
-      <h2>Färga efter</h2>
-      <select id="fInd"></select>
-      <div id="legend" style="margin-top:8px"></div>
-    </div>
-    <div class="section">
-      <h2>Affärsområde</h2>
-      <div id="fOmr"></div>
-      <div class="liten" style="margin-top:6px">Punktens storlek visar lokalarean.</div>
-    </div>
-    <div class="section" style="padding-bottom:4px"><h2 id="antal">Fastigheter</h2></div>
-    <ul id="lista"></ul>
-  </aside>
-
-  <div id="mapwrap"><div id="map"></div></div>
-
-  <aside id="detail"></aside>
+<div id="topp">
+  <div class="titel" title="Inofficiell demo, inte en tjänst från Jernhusen AB"><b>Jernhusens fastigheter</b><span>Inofficiell demo</span></div>
+  <div class="falt"><input id="sok" type="search" placeholder="Sök kommun, namn" aria-label="Sök"></div>
+  <div class="seg" id="omrval" role="group" aria-label="Affärsområde">
+    <button data-o="" class="on">Alla</button><button data-o="Stationer">Stationer</button><button data-o="Depåer och kombiterminaler">Depåer</button>
+  </div>
+  <div class="falt"><select id="ind" aria-label="Färga punkterna efter" title="Färga punkterna efter"></select></div>
+  <div class="seg" id="kartval" role="group" aria-label="Bakgrundskarta">
+    <button data-k="mork" class="on">Mörk</button><button data-k="ljus">Ljus</button><button data-k="detalj">Detaljerad karta</button><button data-k="foto">Flygfoto</button>
+  </div>
+  <button class="knapp on" id="sparknapp" aria-pressed="true">Spår</button>
+  <div class="hoger">
+    <button class="knapp" id="platt" disabled title="Tillbaka till platt vy">Platt vy</button>
+    <button class="knapp" id="sverige">Hela Sverige</button>
+    <a class="textknapp" href="jamforelse.html">Jämförelse</a>
+    <button class="textknapp" id="omknapp">Om och källor</button>
+  </div>
 </div>
 
+<div id="lista" class="panel">
+  <div class="phuvud"><b>Fastigheter</b><span class="liten" id="antal"></span></div>
+  <ol id="fastlista"></ol>
+</div>
+<div id="kort" class="panel"></div>
+<div id="legend" class="panel"></div>
+
 <script>
-const OMR = { "Stationer": "--stationer", "Depåer och kombiterminaler": "--depaer" };
-const TYPER = ["Handel/Butik", "Hotell", "Industri/Depå", "Kontor", "Lager/Förråd", "Restaurang/Café", "Stationsverksamhet", "Övrigt"];
+// ---- hjälp ---------------------------------------------------------------------------
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const kvm = v => v === null || v === undefined ? '<span class="muted">–</span>' : v.toLocaleString("sv-SE");
-
-let data, valdId = null;
-const map = L.map("map").setView([62, 16], 5);
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-bidragsgivare'
-}).addTo(map);
-const lager = L.layerGroup().addTo(map);
-const byggLager = L.layerGroup();      // OSM-byggnader, visas från zoom 15
-map.on("zoomend", () => map.getZoom() >= 15 ? map.addLayer(byggLager) : map.removeLayer(byggLager));
-const osmLank = (id, text) => `<a href="https://www.openstreetmap.org/${esc(id)}" target="_blank" rel="noopener">${esc(text || id)}</a>`;
+const n = v => v === null || v === undefined || Number.isNaN(v) ? "–" : Number(v).toLocaleString("sv-SE", { maximumFractionDigits: 1 });
+const rad = (k, v) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`;
 const ODBL = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bidragsgivare, ODbL';
-const radie = p => 5 + Math.sqrt(p["Lokalarea Summa"] || 0) / 18;
+const osmLank = (id, text) => `<a href="https://www.openstreetmap.org/${esc(id)}" target="_blank" rel="noopener">${esc(text || id)}</a>`;
+const PDF_URL = "https://www.datocms-assets.com/163536/1772552927-fastighetsforteckning-2025-1.pdf";
+const SVERIGE = { center: [16.5, 62.3], zoom: 4.3, pitch: 0, bearing: 0 };
+const TYPER = ["Handel/Butik", "Hotell", "Industri/Depå", "Kontor", "Lager/Förråd", "Restaurang/Café", "Stationsverksamhet", "Övrigt"];
 
-// Indikatorer för färgläggning. Numeriska delas i fem lika stora grupper (kvintiler).
-const RAMP = ["#dbe9f6", "#9ecae1", "#5ba3cf", "#2171b5", "#08306b"];
-const SAKNAS = "#b8bec8";
-const INDIKATORER = {
+// ---- bakgrundskartor -----------------------------------------------------------------
+const OFM = "https://tiles.openfreemap.org";
+const FLYGFOTO = {
+  version: 8, glyphs: `${OFM}/fonts/{fontstack}/{range}.pbf`,
+  sources: {
+    esri: { type: "raster", tileSize: 256, maxzoom: 19,
+            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+            attribution: 'Flygfoto: <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>, Maxar, Earthstar Geographics och GIS-användarsamfundet' },
+    openmaptiles: { type: "vector", url: `${OFM}/planet` },
+  },
+  layers: [{ id: "flygfoto", type: "raster", source: "esri" }],
+};
+const KARTOR = {
+  mork:   { stil: `${OFM}/styles/dark`,     hus: "#3a4250", rail: "#f5a524", text: "#e8ecf2", halo: "#0d1117" },
+  ljus:   { stil: `${OFM}/styles/positron`, hus: "#d5dae1", rail: "#d97706", text: "#1d2430", halo: "#ffffff" },
+  detalj: { stil: `${OFM}/styles/liberty`,  hus: "#d9d0c9", rail: "#c2410c", text: "#1d2430", halo: "#ffffff" },
+  foto:   { stil: FLYGFOTO,                 hus: null,      rail: "#ffb703", text: "#ffffff", halo: "#000000" },
+};
+let karta = "mork", sparPa = true;
+
+// ---- indikatorer för färgläggning ------------------------------------------------------
+const RAMP = ["#c7e9f1", "#7fcbe0", "#3ea6cf", "#1f78b4", "#0b3d6e"];
+const SAKNAS = "#7a828f";
+const OMR = { "Stationer": "--station", "Depåer och kombiterminaler": "--depa" };
+const jaNej = (v, ja = "#ff6b6b") => ({ "Ja": ja, "Nej": "#5b6472" });
+const IND = {
   omr:     { namn: "Affärsområde", kat: p => p["Affärsområde"], farger: () => Object.fromEntries(Object.entries(OMR).map(([k, v]) => [k, css(v)])) },
-  tag:     { namn: "Tågavgångar per vardag inom 500 m", num: p => p.trafik?.avgangar.tag, kalla: "Trafiklab, GTFS Sverige 2" },
-  tagtim:  { namn: "Flest tåg under en timme", num: p => p.trafik?.tag_max_per_timme, kalla: "Trafiklab, GTFS Sverige 2" },
-  punkt:   { namn: "Avgångar i tid (högst 5 min sena)", num: p => p.punktlighet?.andel_i_tid, kalla: "Trafikverket", omvand: true, enhet: "%" },
-  inst:    { namn: "Inställda avgångar", num: p => p.punktlighet?.andel_installda, kalla: "Trafikverket", enhet: "%" },
-  kollbuss:{ namn: "Bussavgångar per vardag inom 500 m", num: p => p.trafik?.avgangar.buss, kalla: "Trafiklab, GTFS Sverige 2" },
-  syss:    { namn: "Sysselsättningsgrad 20–64 år (DeSO)", num: p => p.demografi?.sysselsattning_20_64, kalla: "SCB 2024", enhet: "%" },
-  ink:     { namn: "Nettoinkomst, medel (DeSO)", num: p => p.demografi?.nettoinkomst_tkr, kalla: "SCB 2024" },
-  temp:    { namn: "Årsmedeltemperatur 1991–2020", num: p => p.klimat?.arsmedel_temp, kalla: "SMHI", enhet: "°C" },
-  neder:   { namn: "Årsnederbörd 1991–2020", num: p => p.klimat?.arsnederbord_mm, kalla: "SMHI" },
-  sparl:   { namn: "Spårlängd inom 300 m", num: p => p.spar?.totalt_m, kalla: "OpenStreetMap" },
-  bef:     { namn: "Invånare inom 1 km", num: p => p.befolkning?.inom_1km, kalla: "SCB 2025" },
+  tag:     { namn: "Tågavgångar per vardag", num: p => p.trafik?.avgangar.tag, kalla: "Trafiklab" },
+  tagtim:  { namn: "Flest tåg under en timme", num: p => p.trafik?.tag_max_per_timme, kalla: "Trafiklab" },
+  buss:    { namn: "Bussavgångar per vardag", num: p => p.trafik?.avgangar.buss, kalla: "Trafiklab" },
+  bef:     { namn: "Invånare inom 1 km", num: p => p.befolkning?.inom_1km, kalla: "SCB" },
+  syss:    { namn: "Sysselsättningsgrad (DeSO)", num: p => p.demografi?.sysselsattning_20_64, kalla: "SCB", enhet: "%" },
+  ink:     { namn: "Nettoinkomst (DeSO)", num: p => p.demografi?.nettoinkomst_tkr, kalla: "SCB", enhet: "tkr" },
   service: { namn: "Butiker, mat och service inom 500 m", num: p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), kalla: "OpenStreetMap" },
-  buss:    { namn: "Busshållplatser inom 500 m", num: p => p.service_500m?.busshallplatser, kalla: "OpenStreetMap" },
-  cykel:   { namn: "Cykelparkeringar inom 500 m", num: p => p.service_500m?.cykelparkering, kalla: "OpenStreetMap" },
-  natur:   { namn: "Skyddad natur inom 500 m", kat: p => p.skyddad_natur ? (p.skyddad_natur.omraden.length ? "Ja" : "Nej") : null,
-             farger: () => ({ "Ja": "#15803d", "Nej": "#d6dbe1" }), kalla: "Naturvårdsverket" },
-  lamn:    { namn: "Kulturhistoriska lämningar inom 250 m", num: p => p.kulturmiljo?.antal_lamningar, kalla: "Riksantikvarieämbetet" },
-  bminne:  { namn: "Byggnadsminne inom 250 m", kat: p => p.kulturmiljo ? (p.kulturmiljo.byggnadsminnen.length ? "Ja" : "Nej") : null,
-             farger: () => ({ "Ja": "#9a3412", "Nej": "#d6dbe1" }), kalla: "Riksantikvarieämbetet" },
-  flod:    { namn: "Översvämning (100-årsflöde) inom 100 m", kat: p => p.risk ? (p.risk.q100 !== null ? "Ja" : (p.risk.bhf !== null ? "Bara vid högsta flöde" : "Nej")) : null,
-             farger: () => ({ "Ja": "#b91c1c", "Bara vid högsta flöde": "#f59e0b", "Nej": "#d6dbe1" }), kalla: "MCF" },
-  skred:   { namn: "Skred eller stabilitetsrisk inom 100 m", kat: p => p.risk ? ((p.risk.sgu_skred !== null || p.risk.stabilitet !== null) ? "Ja" : "Nej") : null,
-             farger: () => ({ "Ja": "#7c2d12", "Nej": "#d6dbe1" }), kalla: "SGU, MCF" },
-  station: { namn: "Järnvägsstation inom 500 m", kat: p => p.osm_station ? "Ja" : (p.befolkning ? "Nej" : null),
-             farger: () => ({ "Ja": "#1f6feb", "Nej": "#d6dbe1" }), kalla: "OpenStreetMap" },
+  spar:    { namn: "Spårlängd inom 300 m", num: p => p.spar?.totalt_m, kalla: "OpenStreetMap", enhet: "m" },
+  temp:    { namn: "Årsmedeltemperatur", num: p => p.klimat?.arsmedel_temp, kalla: "SMHI", enhet: "°C" },
+  neder:   { namn: "Årsnederbörd", num: p => p.klimat?.arsnederbord_mm, kalla: "SMHI", enhet: "mm" },
+  flod:    { namn: "Översvämning inom 100 m", kat: p => p.risk ? (p.risk.q100 ? "100-årsflöde" : p.risk.bhf ? "Bara högsta flöde" : "Nej") : null,
+             farger: () => ({ "100-årsflöde": "#ff6b6b", "Bara högsta flöde": "#f5a524", "Nej": "#5b6472" }), kalla: "MCF" },
+  skred:   { namn: "Skred/stabilitet inom 100 m", kat: p => p.risk ? ((p.risk.sgu_skred !== null || p.risk.stabilitet) ? "Ja" : "Nej") : null, farger: () => jaNej(), kalla: "SGU, MCF" },
+  natur:   { namn: "Skyddad natur inom 500 m", kat: p => p.skyddad_natur ? (p.skyddad_natur.omraden.length ? "Ja" : "Nej") : null, farger: () => jaNej("#4ade80"), kalla: "Naturvårdsverket" },
+  lamn:    { namn: "Kulturhistoriska lämningar inom 250 m", num: p => p.kulturmiljo?.antal_lamningar, kalla: "RAÄ" },
+  bminne:  { namn: "Byggnadsminne inom 250 m", kat: p => p.kulturmiljo ? (p.kulturmiljo.byggnadsminnen.length ? "Ja" : "Nej") : null, farger: () => jaNej("#e9a873"), kalla: "RAÄ" },
 };
 let ind = "omr", brytpunkter = [], minVarde = 0;
-
-function beraknaBrytpunkter() {
-  const I = INDIKATORER[ind];
-  if (!I.num) { brytpunkter = []; return; }
+function beraknaBryt() {
+  const I = IND[ind]; brytpunkter = [];
+  if (!I.num) return;
   const v = data.features.map(f => I.num(f.properties)).filter(x => x !== null && x !== undefined).sort((a, b) => a - b);
   minVarde = v[0];
-  // Kvintiler, men dubbletter tas bort så att skeva fördelningar (många nollor) ger färre, giltiga klasser
   brytpunkter = [...new Set([1, 2, 3, 4].map(i => v[Math.floor(i * v.length / 5)]))].filter(b => b > minVarde);
 }
 const klassFarg = i => RAMP[brytpunkter.length ? Math.round(i * 4 / brytpunkter.length) : 2];
 function farg(p) {
-  const I = INDIKATORER[ind];
+  const I = IND[ind];
   if (I.kat) { const k = I.kat(p); return k === null || k === undefined ? SAKNAS : (I.farger()[k] || SAKNAS); }
   const x = I.num(p);
-  if (x === null || x === undefined) return SAKNAS;
-  return klassFarg(brytpunkter.filter(b => x >= b).length);
+  return x === null || x === undefined ? SAKNAS : klassFarg(brytpunkter.filter(b => x >= b).length);
 }
 function ritaLegend() {
-  const I = INDIKATORER[ind], fmt = n => Math.round(n).toLocaleString("sv-SE");
-  const sw = c => `<span class="swatch" style="background:${c}"></span>`;
-  let h = I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
-    : [minVarde, ...brytpunkter].map((fran, i) => {
-        // Heltal (antal): "8–17". Andelar i procent: gränsen är "under nästa brytpunkt".
-        const pct = I.enhet === "%" || I.enhet === "°C";       // decimaltal: gräns = "under nästa brytpunkt"
-        const fmt = n => pct ? Number(n).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) : Math.round(n).toLocaleString("sv-SE");
-        const till = i < brytpunkter.length ? (pct ? brytpunkter[i] : brytpunkter[i] - 1) : null;
-        const e = " " + I.enhet;
-        const text = pct
-          ? (till === null ? fmt(fran) + e + " och mer" : i === 0 ? "under " + fmt(till) + e : fmt(fran) + " till under " + fmt(till) + e)
-          : till === null ? fmt(fran) + " och fler" : fran === till ? fmt(fran) : fmt(fran) + "–" + fmt(till);
-        return `<div>${sw(klassFarg(i))}${text}</div>`;
-      }).join("");
-  if (ind !== "omr") h += `<div>${sw(SAKNAS)}Uppgift saknas</div><div class="liten" style="margin-top:4px">Källa: ${esc(I.kalla)}</div>`;
+  const I = IND[ind], heltal = !I.enhet || I.enhet === "m" || I.enhet === "mm";
+  const f = x => heltal ? Math.round(x).toLocaleString("sv-SE") : Number(x).toLocaleString("sv-SE", { maximumFractionDigits: 1 });
+  const e = I.enhet ? " " + I.enhet : "";
+  const sw = c => `<span class="sw" style="background:${c}"></span>`;
+  let h = `<div style="color:var(--text);font-weight:600;margin-bottom:4px">${esc(I.namn)}</div>`;
+  h += I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
+    : [minVarde, ...brytpunkter].map((fr, i) => {
+        const till = i < brytpunkter.length ? brytpunkter[i] : null;
+        const t = till === null ? f(fr) + e + " och mer" : heltal ? (fr === till - 1 ? f(fr) : f(fr) + "–" + f(till - 1)) + e : f(fr) + " till under " + f(till) + e;
+        return `<div>${sw(klassFarg(i))}${t}</div>`; }).join("");
+  if (ind !== "omr") h += `<div>${sw(SAKNAS)}Uppgift saknas</div><div style="margin-top:3px">Källa: ${esc(I.kalla)}</div>`;
+  h += `<div style="margin-top:8px">Punktens storlek visar lokalarean.</div>`;
+  h += `<div style="margin-top:4px"><span class="rail"></span>Järnväg, huvud- och bandelar (OSM)</div>`;
+  h += `<div><span class="sw" style="background:var(--accent);border-radius:2px"></span>Byggnad kopplad till fastigheten (OSM)</div>`;
   document.getElementById("legend").innerHTML = h;
 }
 
-function om() {
-  const m = data.metadata;
-  return `<div class="section"><h2>Om kartan</h2>
-    <p class="notice">Det här är en <b>inofficiell demo</b>, gjord som ett privat projekt. Den är inte framtagen av
-    eller för Jernhusen AB och ersätter inte bolagets egna uppgifter.</p>
-    <p>Kartan visar fastigheterna i Jernhusens publicerade
-    <a href="${esc(m.kalla_url)}" target="_blank" rel="noopener">fastighetsförteckning per 2025-12-31</a>.
-    Lokalarea (LOA) och lokaltyper är återgivna som i förteckningen.</p>
-    <p>Punkterna är <b>ungefärliga lägen</b>. De är framtagna genom att adressen i förteckningen har sökts i
-    OpenStreetMap (Nominatim). Punkten är alltså inte fastighetens gräns eller en exakt position.
-    Fastigheter vars adress inte gick att hitta i rätt kommun saknar punkt och visas bara i listan.</p>
-    <p>När punkten ligger i en byggnad i OpenStreetMap visas byggnaden (zooma in). Varje fastighet visar också
-    närmaste järnvägsstation inom 500 m, befolkningen inom 1 km, kollektivtrafiken inom 500 m en vanlig vardag, punktligheten vid närmaste station de senaste tre dygnen,service inom 500 m, skyddad natur inom 500 m och kulturmiljö (lämningar, inventerad bebyggelse och byggnadsminnen) inom 250 m.
-    Välj under <b>Färga efter</b> vilken uppgift punkterna ska färgas efter. Alla avstånd räknas från punkten.</p>
-    <p class="liten">Fastighetsgränser och energideklarationer finns inte med. De kommer från Lantmäteriet och
-    Boverket, vars villkor inte tillåter att uppgifterna publiceras öppet.</p></div>
-    <div class="section"><h2>Källor och licenser</h2>
-    <ul style="padding-left:18px;margin:0">
-      <li>Fastighetsdata: ${esc(m.kalla)}. © Jernhusen AB.</li>
-      <li>Lägen (koordinater): © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bidragsgivare,
-          via Nominatim. Licens <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">ODbL 1.0</a>.</li>
-      <li>Byggnader och stationer: © OpenStreetMap-bidragsgivare, via
-          <a href="https://overpass-api.de" target="_blank" rel="noopener">Overpass API</a>. Licens ODbL 1.0.</li>
-      <li>Service inom 500 m: © OpenStreetMap-bidragsgivare, via Overpass API. Licens ODbL 1.0.</li>
-      <li>Befolkning: <a href="https://www.scb.se/vara-tjanster/oppna-data/oppna-geodata/" target="_blank" rel="noopener">SCB</a>,
-          befolkning per 1 km-ruta 2025 (öppna geodata). Källa: SCB.</li>
-      <li>Skyddad natur: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket</a>,
-          Naturvårdsregistret. Licens CC0. Källa: Naturvårdsverket.</li>
-      <li>Kollektivtrafik: <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">GTFS Sverige 2</a>,
-          Samtrafiken i Sverige AB via Trafiklab. Licens CC0 1.0. Källa: Trafiklab.</li>
-      <li>Punktlighet och inställda tåg: <a href="https://data.trafikverket.se/" target="_blank" rel="noopener">Trafikverket</a>,
-          API Öppna Data (TrainAnnouncement). Licens CC0 1.0. Källa: Trafikverket.</li>
-      <li>Befolkning per DeSO (sysselsättning, inkomst, ekonomisk standard): <a href="https://www.statistikdatabasen.scb.se" target="_blank" rel="noopener">SCB</a>,
-          Statistikdatabasen och DeSO 2025. Källa: SCB.</li>
-      <li>Klimat: <a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>, meteorologiska observationer, normalperiod 1991–2020.
-          Licens CC BY 4.0. Källa: SMHI (bearbetad).</li>
-      <li>Spår: © OpenStreetMap-bidragsgivare (railway=rail), via Overpass. ODbL.</li>
-      <li>Naturrisker: <a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF</a>
-          (översvämnings- och stabilitetskarteringar, öppen WFS) och <a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a>
-          (skred i finkornig jordart, CC0; jordarter). Källa: MCF, SGU.</li>
-      <li>Kulturmiljö: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>,
-          kulturhistoriska lämningar, kulturhistoriskt inventerad bebyggelse och byggnadsminnen. Licens CC0/CC BY. Källa: Riksantikvarieämbetet.</li>
-      <li>Bakgrundskarta: © OpenStreetMap-bidragsgivare.</li>
-      <li>Kartbibliotek: <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> (BSD-2-Clause).</li>
-      <li>Kod: MIT-licens, © 2026 Lukas Posolda.</li>
-    </ul>
-    <p class="kalla">Data sammanställd ${esc(m.skapad)}.</p></div>`;
-}
+// ---- karta -----------------------------------------------------------------------------
+const map = new maplibregl.Map({
+  container: "map", style: KARTOR[karta].stil, ...SVERIGE, maxPitch: 75,
+  attributionControl: { compact: true, customAttribution:
+    'Fastigheter: Jernhusen AB, fastighetsförteckning 2025-12-31 · © OpenStreetMap-bidragsgivare (ODbL) · fler källor under "Om och källor"' },
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
-function filtrerade() {
-  const k = document.getElementById("fKommun").value;
-  const s = document.getElementById("fSok").value.trim().toLowerCase();
-  const omr = [...document.querySelectorAll("#fOmr input:checked")].map(i => i.value);
-  return data.features.filter(({ properties: p }) =>
-    (!k || p.Kommun === k) && omr.includes(p["Affärsområde"]) &&
-    (!s || [p.Kommun, p.Fastighetsbeteckning, p.Fastighetsbeskrivning, p.Adress].join(" ").toLowerCase().includes(s)));
-}
+let data, dataJarnvag, dataBygg, valdId = null, omrFilter = "";
+let valdaBasId = [];             // bakgrundskartans byggnads-id för byggnader kopplade till fastigheterna
 
-function rita() {
-  lager.clearLayers(); byggLager.clearLayers();
-  const fs = filtrerade();
-  for (const f of fs) {
-    if (!f.geometry) continue;
-    const p = f.properties, [lon, lat] = f.geometry.coordinates, vald = p.id === valdId;
-    if (p.osm_byggnad) {
-      L.geoJSON(p.osm_byggnad.geometry, { style: { color: css(OMR[p["Affärsområde"]]), weight: vald ? 3 : 1.5,
-        fillColor: css(OMR[p["Affärsområde"]]), fillOpacity: .2 } })
-        .bindTooltip(`Byggnad på adressen (OSM)`).on("click", () => valj(p.id)).addTo(byggLager);
-    }
-    L.circleMarker([lat, lon], { radius: radie(p), color: vald ? "#000" : "#fff", weight: vald ? 3 : 1.5,
-      fillColor: farg(p), fillOpacity: .9 })
-      .bindTooltip(`${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}<br><span class="liten">${esc(p.Kommun)} ${esc(p.Fastighetsbeteckning)}</span>`)
-      .on("click", () => valj(p.id)).addTo(lager);
+function egnaLager() {
+  const K = KARTOR[karta];
+  document.documentElement.style.setProperty("--rail", K.rail);
+  // Bakgrundens byggnader i 3D. Kopplade byggnader färgas i bakgrundens EGEN byggnad (id = OSM-id*10+2),
+  // så att form och höjd blir exakt rätt. "Detaljerad karta" har egna 3D-hus som tas bort och ersätts.
+  if (map.getLayer("building-3d")) map.removeLayer("building-3d");
+  if (map.getSource("openmaptiles")) {
+    const vald = ["in", ["id"], ["literal", valdaBasId.filter(x => x.f === valdId).map(x => x.id)]];
+    const kopplad = ["in", ["id"], ["literal", valdaBasId.map(x => x.id)]];
+    map.addLayer({ id: "hus-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 13,
+      ...(K.hus ? {} : { filter: kopplad }),           // över flygfoto ritas bara de kopplade byggnaderna
+      paint: { "fill-extrusion-color": ["case", vald, "#a7fff0", kopplad, css("--accent"), K.hus || "#ffffff"],
+               "fill-extrusion-opacity": 0.9,
+               "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+               "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0] } });
   }
-  ritaLegend();
-  document.getElementById("antal").textContent = `Fastigheter (${fs.length} av ${data.features.length})`;
-  const ul = document.getElementById("lista");
-  ul.innerHTML = fs.map(({ geometry, properties: p }) => `<li data-id="${esc(p.id)}" class="${p.id === valdId ? "vald" : ""}">
-    <span class="swatch" style="background:${farg(p)}"></span>${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}
-    <div class="liten">${esc(p.Kommun)} ${esc(p.Fastighetsbeteckning)}</div>
-    ${geometry ? "" : '<div class="nopos">Saknar läge på kartan</div>'}</li>`).join("");
-  ul.querySelectorAll("li").forEach(li => li.onclick = () => valj(li.dataset.id, true));
-  return fs.filter(f => f.geometry).map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+  map.addSource("jarnvag", { type: "geojson", data: dataJarnvag });
+  const huvud = ["case", ["==", ["get", "usage"], "main"], 1, 0.6];
+  const bredd = (a, b) => ["interpolate", ["linear"], ["zoom"], 4, ["*", huvud, a], 10, ["*", huvud, b], 15, ["*", huvud, b * 2.5]];
+  const synl = sparPa ? "visible" : "none";
+  map.addLayer({ id: "jarnvag-glod", type: "line", source: "jarnvag", layout: { "line-cap": "round", "line-join": "round", visibility: synl },
+    paint: { "line-color": K.rail, "line-opacity": 0.25, "line-blur": 3, "line-width": bredd(4, 9) } });
+  map.addLayer({ id: "jarnvag", type: "line", source: "jarnvag", layout: { "line-cap": "round", "line-join": "round", visibility: synl },
+    paint: { "line-color": K.rail, "line-opacity": ["case", ["==", ["get", "usage"], "main"], 0.95, 0.6], "line-width": bredd(0.9, 2.2) } });
+  map.addSource("fast", { type: "geojson", data: data });
+  const radie = ["interpolate", ["linear"], ["zoom"], 4, ["+", 3, ["/", ["sqrt", ["get", "Lokalarea Summa"]], 40]],
+                 12, ["+", 6, ["/", ["sqrt", ["get", "Lokalarea Summa"]], 18]]];
+  map.addLayer({ id: "fast", type: "circle", source: "fast", paint: {
+    "circle-radius": radie, "circle-color": ["get", "_farg"], "circle-opacity": 0.95,
+    "circle-stroke-color": ["case", ["==", ["get", "id"], valdId || ""], "#ffffff", "rgba(255,255,255,.65)"],
+    "circle-stroke-width": ["case", ["==", ["get", "id"], valdId || ""], 3, 1.2] } });
+  map.addLayer({ id: "fast-namn", type: "symbol", source: "fast", minzoom: 9, layout: {
+    "text-field": ["get", "Fastighetsbeskrivning"], "text-font": ["Noto Sans Regular"], "text-size": 12,
+    "text-offset": [0, 1.3], "text-anchor": "top", "text-optional": true },
+    paint: { "text-color": K.text, "text-halo-color": K.halo, "text-halo-width": 1.5 } });
 }
 
-function osmSektioner(p) {
-  const b = p.osm_byggnad, s = p.osm_station;
-  const rad = (k, v) => v ? `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>` : "";
-  const typ = { yes: "Ospecificerad", train_station: "Stationsbyggnad", commercial: "Kommersiell", office: "Kontor",
-                industrial: "Industri", retail: "Handel", warehouse: "Lager", parking: "Parkeringshus", hotel: "Hotell" };
-  return `<div class="section"><h2>Byggnad på adressen</h2>` + (b
-    ? `<table>${rad("Byggnadstyp (OSM)", typ[b.building] || b.building)}${rad("Namn", b.name)}${rad("Våningar", b["building:levels"])}
-        ${rad("Byggår", b.start_date)}${rad("Adress i OSM", [b["addr:street"], b["addr:housenumber"]].filter(Boolean).join(" "))}</table>
-       <div class="kalla">Den byggnad i OpenStreetMap som adresspunkten ligger i. Visar inte fastighetens gräns och inte
-       nödvändigtvis alla byggnader på fastigheten. ${osmLank(b.osm, "Visa i OSM")}. Hämtad ${esc(b.hamtad)} via Overpass. ${ODBL}.</div>`
-    : `<div class="muted">Ingen entydig byggnad i OpenStreetMap på adressen${(p.lage_metod || "").startsWith("Adress (husnummer)") ? "" : " (läget är inte en exakt adress)"}.</div>`) +
-    `</div><div class="section"><h2>Närmaste järnvägsstation</h2>` + (s
-    ? `<table>${rad("Namn", s.namn)}${rad("Typ", s.typ === "halt" ? "Hållplats" : "Station")}${rad("Avstånd", "ca " + s.avstand_m + " m")}${rad("Operatör", s.operator)}</table>
-       <div class="kalla">${osmLank(s.osm, "Visa i OSM")}${s.wikidata ? ` · <a href="https://www.wikidata.org/wiki/${esc(s.wikidata)}" target="_blank" rel="noopener">Wikidata</a>` : ""}.
-       Hämtad ${esc(s.hamtad)} via Overpass. ${ODBL}.</div>`
-    : `<div class="muted">Ingen station eller hållplats inom 500 m i OpenStreetMap.</div>`) + `</div>` + omgivning(p);
+function fargaPunkter() {
+  beraknaBryt();
+  for (const f of data.features) f.properties._farg = farg(f.properties);
+  if (map.getSource("fast")) map.getSource("fast").setData(data);
+  ritaLegend(); ritaLista();
 }
 
-function omgivning(p) {
-  const n = v => v === null || v === undefined ? '<span class="muted">–</span>' : Number(v).toLocaleString("sv-SE");
-  const rad = (k, v) => `<tr><th>${esc(k)}</th><td class="num">${v}</td></tr>`;
-  const b = p.befolkning, s = p.service_500m, nat = p.skyddad_natur, tr = p.trafik;
-  let h = "";
-  if (tr) h += `<div class="section"><h2>Kollektivtrafik inom 500 m</h2><table>
-      ${rad("Tågavgångar per vardag", "<b>" + n(tr.avgangar.tag) + "</b>")}
-      ${tr.avgangar.tag ? rad("Flest tåg under en timme", n(tr.tag_max_per_timme)) + rad("Första och sista tåg", esc(tr.tag_forsta) + " – " + esc(tr.tag_sista)) : ""}
-      ${rad("Bussavgångar per vardag", n(tr.avgangar.buss))}${rad("Spårvagn och tunnelbana", n(tr.avgangar.sparvag_tunnelbana))}
-      ${tr.avgangar.bat ? rad("Båt", n(tr.avgangar.bat)) : ""}${rad("Hållplatser inom 500 m", n(tr.hallplatser))}</table>
-      ${tr.tag_operatorer.length ? `<div class="liten" style="margin-top:4px">Tågoperatörer: ${esc(tr.tag_operatorer.join(", "))}</div>` : ""}
-      <div class="kalla">Planerad trafik ${esc(tr.referensdag)} (en vanlig tisdag) enligt
-      <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">GTFS Sverige 2</a>
-      från Samtrafiken via Trafiklab, version ${esc(tr.gtfs_version)} (CC0). En tur som stannar vid flera hållplatser inom
-      500 m räknas en gång; tåg som slutar här räknas inte som avgångar.</div></div>`;
-  const pk = p.punktlighet;
-  if (pk) h += `<div class="section"><h2>Punktlighet, ${esc(pk.station)}</h2><table>
-      ${rad("Avgångar i tid (högst " + pk.grans_min + " min sena)", "<b>" + n(pk.andel_i_tid) + " %</b>")}
-      ${rad("Inställda avgångar", n(pk.installda) + " (" + n(pk.andel_installda) + " %)")}
-      ${rad("Medelförsening, avgångna tåg", n(pk.medelforsening_min) + " min")}
-      ${rad("Annonserade avgångar", n(pk.avgangar))}${pk.utan_utfall ? rad("Utan registrerad avgångstid", n(pk.utan_utfall)) : ""}</table>
-      <div class="kalla">${esc(pk.period_fran)} – ${esc(pk.period_till)}: alla annonserade avgångar från ${esc(pk.station)}
-      (${esc(pk.koppling.toLowerCase())}, ca ${n(pk.avstand_m)} m från punkten). Andelen i tid räknas på avgångna och inställda tåg.
-      Ett kort fönster på tre dygn, så siffrorna kan svänga mycket. Källa:
-      <a href="https://data.trafikverket.se/" target="_blank" rel="noopener">Trafikverket, API Öppna Data</a> (TrainAnnouncement), CC0 1.0.
-      Hämtad ${esc(pk.hamtad)}.</div></div>`;
-  if (b) h += `<div class="section"><h2>Befolkning inom 1 km</h2><table>
-      ${rad("Invånare (ca)", "<b>" + n(b.inom_1km) + "</b>")}${rad("0–19 år", n(b.alder_0_19))}${rad("20–64 år", n(b.alder_20_64))}${rad("65 år och äldre", n(b.alder_65_plus))}</table>
-      <div class="kalla">Uppskattning från SCB:s befolkning per 1 km-ruta per ${esc(b.referenstid)}, viktad med hur stor del av
-      varje ruta som ligger inom 1 km från punkten. Källa: <a href="https://www.scb.se/vara-tjanster/oppna-data/oppna-geodata/" target="_blank" rel="noopener">SCB, öppna geodata</a>.
-      Hämtad ${esc(b.hamtad)}.</div></div>`;
-  if (s) h += `<div class="section"><h2>Service inom 500 m</h2><table>
-      ${rad("Butiker", n(s.butiker))}${rad("Restauranger, kaféer, barer", n(s.mat_dryck))}
-      ${rad("Apotek, bank, vård, skola m.m.", n(s.service))}${rad("Busshållplatser", n(s.busshallplatser))}${rad("Cykelparkeringar", n(s.cykelparkering))}</table>
-      <div class="kalla">Antal objekt i OpenStreetMap inom 500 m fågelvägen. OSM är inte heltäckande, så siffrorna är
-      ett minimum. Hämtad ${esc(s.hamtad)} via Overpass. ${ODBL}.</div></div>`;
-  if (nat) h += `<div class="section"><h2>Skyddad natur inom 500 m</h2>` + (nat.omraden.length
-      ? `<table>${nat.omraden.map(o => `<tr><th>${esc(o.namn)}<div class="liten">${esc(o.skyddstyp)}</div></th>
-          <td class="num">${o.avstand_m === 0 ? "Punkten ligger i området" : "ca " + n(o.avstand_m) + " m"}</td></tr>`).join("")}</table>`
-      : `<div class="muted">Inga gällande skyddade områden inom 500 m.</div>`) +
-      `<div class="kalla">Källa: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket, Naturvårdsregistret</a> (CC0).
-      Hämtad ${esc(nat.hamtad)}. Avståndet räknas från punkten, inte från fastighetens gräns.</div></div>`;
-  const dm = p.demografi;
-  if (dm) h += `<div class="section"><h2>Befolkning i DeSO-området</h2><table>
-      ${rad("Sysselsättningsgrad 20–64 år", n(dm.sysselsattning_20_64) + " %")}
-      ${rad("Nettoinkomst, medel", n(dm.nettoinkomst_tkr) + " tkr")}
-      ${rad("… kommunen / riket", n(dm.nettoinkomst_kommun_tkr) + " / " + n(dm.nettoinkomst_riket_tkr) + " tkr")}
-      ${rad("Låg ekonomisk standard", n(dm.lag_ek_standard) + " % (kommunen " + n(dm.lag_ek_standard_kommun) + " %)")}
-      ${rad("Hög ekonomisk standard", n(dm.hog_ek_standard) + " %")}</table>
-      <div class="kalla">DeSO ${esc(dm.deso)} (DeSO 2025), år ${esc(dm.ar)}. Beskriver de som bor i området, inte de som arbetar där.
-      Källa: <a href="https://www.statistikdatabasen.scb.se" target="_blank" rel="noopener">SCB, Statistikdatabasen</a> (TAB6680, TAB6683, TAB6685)
-      och SCB:s DeSO-indelning. Hämtad ${esc(dm.hamtad)}.</div></div>`;
+map.on("style.load", async () => {
+  if (!data) {
+    [dataJarnvag, dataBygg, data] = await Promise.all(["3d/jarnvag.geojson", "3d/byggnader.geojson", "3d/fastigheter3d.geojson"]
+      .map(u => fetch(u, { cache: "no-cache" }).then(r => r.json())));
+    valdaBasId = dataBygg.features.map(b => ({ id: b.properties.basid, f: b.properties.fastighet }));
+    document.getElementById("ind").innerHTML = Object.entries(IND).map(([k, I]) => `<option value="${k}">Färga: ${esc(I.namn)}</option>`).join("");
+    fargaPunkter();
+    visaOm();
+  }
+  egnaLager();
+  filtrera();
+  placeraPaneler();
+});
+map.on("click", "fast", e => valj(e.features[0].properties.id));
+map.on("mouseenter", "fast", () => map.getCanvas().style.cursor = "pointer");
+map.on("mouseleave", "fast", () => map.getCanvas().style.cursor = "");
+map.on("pitchend", () => { document.getElementById("platt").disabled = map.getPitch() < 1 && Math.abs(map.getBearing()) < 1; });
+
+function markeraVald() {
+  if (map.getLayer("fast")) {
+    map.setPaintProperty("fast", "circle-stroke-color", ["case", ["==", ["get", "id"], valdId || ""], "#ffffff", "rgba(255,255,255,.65)"]);
+    map.setPaintProperty("fast", "circle-stroke-width", ["case", ["==", ["get", "id"], valdId || ""], 3, 1.2]);
+  }
+  if (map.getLayer("hus-3d")) {
+    const K = KARTOR[karta];
+    const vald = ["in", ["id"], ["literal", valdaBasId.filter(x => x.f === valdId).map(x => x.id)]];
+    const kopplad = ["in", ["id"], ["literal", valdaBasId.map(x => x.id)]];
+    map.setPaintProperty("hus-3d", "fill-extrusion-color", ["case", vald, "#a7fff0", kopplad, css("--accent"), K.hus || "#ffffff"]);
+  }
+}
+
+// ---- lista och filter ------------------------------------------------------------------
+function urval() {
+  const s = document.getElementById("sok").value.trim().toLowerCase();
+  return data.features.filter(({ properties: p }) => (!omrFilter || p["Affärsområde"] === omrFilter) &&
+    (!s || [p.Kommun, p.Fastighetsbeskrivning, p.Fastighetsbeteckning, p.Adress].join(" ").toLowerCase().includes(s)));
+}
+function ritaLista() {
+  const fs = urval(), maxLoa = Math.max(...data.features.map(f => f.properties["Lokalarea Summa"] || 0));
+  document.getElementById("antal").textContent = `${fs.length} av ${data.features.length} med läge`;
+  const s = document.getElementById("sok").value.trim();
+  document.getElementById("fastlista").innerHTML = fs.map(({ properties: p }) => `
+    <li data-id="${esc(p.id)}" class="${p.id === valdId ? "vald" : ""}"><span class="nr">${p.rank}</span>
+      <span><span class="sw" style="background:${p._farg}"></span>${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}</span>
+      <span class="meta">${esc(p.Kommun)} · ${n(p["Lokalarea Summa"])} kvm</span>
+      <span class="stapel"><span style="width:${100 * (p["Lokalarea Summa"] || 0) / maxLoa}%;background:${css(OMR[p["Affärsområde"]])}"></span></span></li>`).join("") +
+    (data.utan_lage?.length && !s && !omrFilter ? `<li class="utan" style="display:block;cursor:default">Saknar läge och visas inte på kartan:
+      ${data.utan_lage.map(u => esc(u.namn || u.beteckning) + " (" + esc(u.kommun) + ")").join(", ")}.</li>` : "");
+  document.querySelectorAll("#fastlista li[data-id]").forEach(li => li.onclick = () => valj(li.dataset.id));
+}
+function filtrera() {
+  ritaLista();
+  if (!map.getLayer("fast")) return;
+  const f = ["in", ["get", "id"], ["literal", urval().map(f => f.properties.id)]];
+  map.setFilter("fast", f); map.setFilter("fast-namn", f);
+}
+document.getElementById("sok").oninput = filtrera;
+document.querySelectorAll("#omrval button").forEach(b => b.onclick = () => {
+  omrFilter = b.dataset.o;
+  document.querySelectorAll("#omrval button").forEach(x => x.classList.toggle("on", x === b));
+  filtrera();
+});
+document.getElementById("ind").onchange = e => { ind = e.target.value; fargaPunkter(); filtrera(); };
+// Kort indikatornamn i menyn ("Färga: …"), hela namnet i teckenförklaringen
+
+// ---- knappar ---------------------------------------------------------------------------
+document.querySelectorAll("#kartval button").forEach(b => b.onclick = () => {
+  if (b.dataset.k === karta) return;
+  karta = b.dataset.k;
+  document.querySelectorAll("#kartval button").forEach(x => x.classList.toggle("on", x === b));
+  map.setStyle(KARTOR[karta].stil, { diff: false });
+});
+document.getElementById("sparknapp").onclick = e => {
+  sparPa = !sparPa;
+  e.currentTarget.classList.toggle("on", sparPa); e.currentTarget.setAttribute("aria-pressed", sparPa);
+  for (const id of ["jarnvag", "jarnvag-glod"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", sparPa ? "visible" : "none");
+};
+document.getElementById("platt").onclick = () => map.easeTo({ pitch: 0, bearing: 0, duration: 1200 });
+document.getElementById("sverige").onclick = () => {
+  valdId = null; markeraVald(); ritaLista(); visaOm();
+  map.flyTo({ ...SVERIGE, duration: 2500 });
+};
+document.getElementById("omknapp").onclick = () => { valdId = null; markeraVald(); ritaLista(); visaOm(); };
+
+// Panelerna börjar under toppmenyn, vars höjd beror på fönsterbredden
+function placeraPaneler() {
+  const h = document.getElementById("topp").getBoundingClientRect().height + 12;
+  const leg = document.getElementById("legend");
+  const legH = getComputedStyle(leg).display === "none" ? 0 : leg.getBoundingClientRect().height + 24;
+  const lista = document.getElementById("lista"), kort = document.getElementById("kort");
+  lista.style.top = h + "px"; lista.style.maxHeight = `calc(100% - ${h + legH}px)`;
+  kort.style.top = h + "px"; kort.style.maxHeight = `calc(100% - ${h + 12}px)`;
+}
+window.addEventListener("resize", placeraPaneler);
+
+// ---- kort: om och källor ---------------------------------------------------------------
+function visaOm() {
+  const k = document.getElementById("kort");
+  k.innerHTML = `<div class="phuvud"><b>Om kartan</b><button class="knapp" id="stang">Stäng</button></div>
+    <div class="sektion"><p class="notis" style="margin-top:0">Inofficiell demo, gjord som ett privat projekt. Inte framtagen av eller för
+      Jernhusen AB och ersätter inte bolagets egna uppgifter.</p>
+    <p>Kartan visar fastigheterna i Jernhusens publicerade <a href="${PDF_URL}" target="_blank" rel="noopener">fastighetsförteckning
+      per 2025-12-31</a>. Varje punkt är ett ungefärligt läge, framtaget från adressen i förteckningen och förbättrat med
+      Trafikverkets stationslägen och namngivna depåer i OpenStreetMap. Punkten är inte fastighetens gräns.</p>
+    <p>Klicka på en fastighet för att se uppgifterna och flyga in i 3D. <b>Platt vy</b> tar dig tillbaka. Under <b>Färga</b> väljer du
+      vilken uppgift punkterna färgas efter. Alla avstånd räknas från punkten.</p>
+    <p class="liten">Fastighetsgränser och energideklarationer finns inte med: Lantmäteriets och Boverkets villkor tillåter inte att de
+      publiceras öppet. Turkosa byggnader är byggnader i OpenStreetMap som kopplats till fastigheten (på adressen, med samma namn,
+      stationsbyggnader intill eller byggnader på depåmark). Det är en uppskattning, inte uppgift om ägande.</p></div>
+    <div class="sektion"><h2>Källor och licenser</h2><ul style="padding-left:18px;margin:0" class="liten">
+      <li>Fastighetsdata: Jernhusen AB, fastighetsförteckning 2025-12-31. © Jernhusen AB.</li>
+      <li>Lägen, byggnader, stationer, service, spår, järnvägsnät: © OpenStreetMap-bidragsgivare (Nominatim, Overpass). ODbL 1.0.</li>
+      <li>Stationslägen: Trafikverket, stationsregister. CC0.</li>
+      <li>Kollektivtrafik: GTFS Sverige 2, Samtrafiken via <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">Trafiklab</a>. CC0.</li>
+      <li>Befolkning (1 km-rutor) och DeSO-statistik: <a href="https://www.scb.se" target="_blank" rel="noopener">SCB</a>. Källa: SCB.</li>
+      <li>Klimat 1991–2020: <a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>. CC BY 4.0, bearbetad.</li>
+      <li>Skyddad natur: Naturvårdsverket, Naturvårdsregistret. CC0.</li>
+      <li>Översvämning och stabilitet: <a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF</a>. Skred och jordart: <a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a>, CC0.</li>
+      <li>Kulturmiljö: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>. CC0/CC BY.</li>
+      <li>Bakgrundskartor: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> (© OpenMapTiles, data från OpenStreetMap); flygfoto: Esri.</li>
+      <li>Kartbibliotek: <a href="https://maplibre.org" target="_blank" rel="noopener">MapLibre GL JS</a> (BSD-3). Kod: MIT, © 2026 Lukas Posolda.</li>
+    </ul><p class="kalla">Metoder och detaljer i <a href="README.md">README</a>. Data sammanställd ${esc(data?.metadata?.skapad || "")}.</p></div>`;
+  k.style.display = "block"; k.scrollTop = 0;
+  document.getElementById("stang").onclick = () => { k.style.display = "none"; };
+}
+
+// ---- kort: fastighet ---------------------------------------------------------------------
+function valj(id) {
+  const f = data.features.find(x => x.properties.id === id), p = f.properties;
+  valdId = id; markeraVald(); ritaLista();
+  map.flyTo({ center: f.geometry.coordinates, zoom: 16, pitch: 60, bearing: ((p.rank * 37) % 120) - 60, duration: 3000, essential: true });
+  document.getElementById("platt").disabled = false;
+  const k = document.getElementById("kort");
+  k.innerHTML = kortHtml(p); k.style.display = "block"; k.scrollTop = 0;
+  document.getElementById("stang").onclick = () => { k.style.display = "none"; };
+}
+
+function kortHtml(p) {
+  const typer = TYPER.filter(t => p[t]).map(t => rad(t, n(p[t]) + " kvm")).join("");
+  const byg = dataBygg.features.filter(b => b.properties.fastighet === p.id);
+  const urv = { adress: "byggnaden på adressen", namn: "samma namn", station: "stationsbyggnad intill", jarnvagsmark: "på depåmark" };
+  let h = `<div class="phuvud" style="display:block"><div class="liten">#${p.rank} · ${esc(p["Affärsområde"])}</div>
+    <div style="font-size:19px;font-weight:650;margin:2px 0">${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}</div>
+    <div class="liten">${esc(p.Kommun)} ${esc(p.Fastighetsbeteckning)}${p.Adress ? " · " + esc(p.Adress) : ""}</div>
+    <div style="margin-top:8px"><button class="knapp" id="stang">Stäng</button></div></div>`;
+  h += `<div class="sektion"><h2>Lokalarea</h2><div class="stor">${n(p["Lokalarea Summa"])} kvm</div>
+    <table style="margin-top:6px">${typer}</table>
+    <div class="kalla">Jernhusens <a href="${PDF_URL}" target="_blank" rel="noopener">fastighetsförteckning 2025-12-31</a>, sida ${esc(p.pdf_sida)}.</div></div>`;
+  h += `<div class="sektion"><h2>Byggnader (${byg.length})</h2>` + (byg.length
+    ? `<table>${byg.map(b => rad(b.properties.namn || "Byggnad", `${osmLank(b.properties.osm, "OSM")} · ${esc(urv[b.properties.urval] || "")}`)).join("")}</table>`
+    : `<div class="liten">Ingen byggnad kunde kopplas till fastigheten.</div>`) +
+    `<div class="kalla">Byggnader i OpenStreetMap kopplade till fastigheten, turkosa på kartan. En uppskattning, inte uppgift om ägande. ${ODBL}.</div></div>`;
+  const t = p.trafik;
+  if (t) h += `<div class="sektion"><h2>Kollektivtrafik inom 500 m, en vardag</h2><table>
+    ${rad("Tågavgångar", "<b>" + n(t.avgangar.tag) + "</b>")}${t.avgangar.tag ? rad("Flest tåg på en timme", n(t.tag_max_per_timme)) + rad("Första / sista tåg", esc(t.tag_forsta) + " – " + esc(t.tag_sista)) : ""}
+    ${rad("Bussavgångar", n(t.avgangar.buss))}${rad("Spårvagn och tunnelbana", n(t.avgangar.sparvag_tunnelbana))}${t.avgangar.bat ? rad("Båt", n(t.avgangar.bat)) : ""}</table>
+    ${t.tag_operatorer.length ? `<div class="liten" style="margin-top:4px">Tågoperatörer: ${esc(t.tag_operatorer.join(", "))}</div>` : ""}
+    <div class="kalla">Planerad trafik ${esc(t.referensdag)}, GTFS Sverige 2 (version ${esc(t.gtfs_version)}), Samtrafiken via Trafiklab, CC0.
+    En tur räknas en gång även om den stannar vid flera hållplatser.</div></div>`;
+  const s = p.osm_station;
+  h += `<div class="sektion"><h2>Närmaste järnvägsstation</h2>` + (s
+    ? `<table>${rad(s.namn, "ca " + n(s.avstand_m) + " m")}</table><div class="kalla">${osmLank(s.osm, "Visa i OSM")}. ${ODBL}.</div>`
+    : `<div class="liten">Ingen station inom 500 m i OpenStreetMap.</div>`) + `</div>`;
+  const b = p.befolkning, dm = p.demografi, sv = p.service_500m;
+  if (b || dm || sv) h += `<div class="sektion"><h2>Omgivning</h2><table>
+    ${b ? rad("Invånare inom 1 km (ca)", n(b.inom_1km)) : ""}
+    ${dm ? rad("Sysselsättningsgrad 20–64 år, DeSO", n(dm.sysselsattning_20_64) + " %") + rad("Nettoinkomst, medel, DeSO", n(dm.nettoinkomst_tkr) + " tkr")
+         + rad("… kommunen / riket", n(dm.nettoinkomst_kommun_tkr) + " / " + n(dm.nettoinkomst_riket_tkr) + " tkr")
+         + rad("Låg / hög ekonomisk standard", n(dm.lag_ek_standard) + " / " + n(dm.hog_ek_standard) + " %") : ""}
+    ${sv ? rad("Butiker / mat och dryck inom 500 m", n(sv.butiker) + " / " + n(sv.mat_dryck)) + rad("Busshållplatser / cykelparkering", n(sv.busshallplatser) + " / " + n(sv.cykelparkering)) : ""}</table>
+    <div class="kalla">SCB: 1 km-rutor 2025 och DeSO ${esc(dm?.deso || "")} år ${esc(dm?.ar || "")} (de boende, inte de som arbetar där).
+    Service: OpenStreetMap, ett minimum. ${ODBL}.</div></div>`;
   const kl = p.klimat;
-  if (kl) h += `<div class="section"><h2>Klimat ${esc(kl.period)}</h2><table>
-      ${rad("Årsmedeltemperatur", n(kl.arsmedel_temp) + " °C")}${rad("Januari / juli", n(kl.jan_temp) + " / " + n(kl.jul_temp) + " °C")}
-      ${rad("Årsnederbörd", n(kl.arsnederbord_mm) + " mm")}</table>
-      <div class="kalla">Normalvärden beräknade ur SMHI:s kvalitetskontrollerade månadsvärden. Temperatur: ${esc(kl.temp_station || "–")};
-      nederbörd: ${esc(kl.neder_station || "–")}. Källa: <a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>,
-      CC BY 4.0, bearbetad. Hämtad ${esc(kl.hamtad)}.</div></div>`;
+  if (kl) h += `<div class="sektion"><h2>Klimat ${esc(kl.period)}</h2><table>
+    ${rad("Årsmedeltemperatur", n(kl.arsmedel_temp) + " °C")}${rad("Januari / juli", n(kl.jan_temp) + " / " + n(kl.jul_temp) + " °C")}${rad("Årsnederbörd", n(kl.arsnederbord_mm) + " mm")}</table>
+    <div class="kalla">Normalvärden ur SMHI:s månadsvärden. Temperatur: ${esc(kl.temp_station || "–")}; nederbörd: ${esc(kl.neder_station || "–")}.
+    SMHI, CC BY 4.0, bearbetad.</div></div>`;
   const sp = p.spar;
-  if (sp) h += `<div class="section"><h2>Spår inom ${n(sp.radie_m)} m</h2><table>
-      ${rad("Spår totalt", "<b>" + n(sp.totalt_m) + " m</b>")}${rad("Huvudspår", n(sp.huvudspar) + " m")}${rad("Bangård", n(sp.bangard) + " m")}
-      ${rad("Sidospår", n(sp.sidospar) + " m")}${rad("Anslutnings-/industrispår", n(sp.anslutningsspar) + " m")}
-      ${rad("Varav elektrifierat", n(sp.elektrifierat_m) + " m")}</table>
-      <div class="kalla">Spårlängd i OpenStreetMap (railway=rail) inom ${n(sp.radie_m)} m, uppdelad efter OSM:s spårtyp. Spårtyperna är
-      frivilligt taggade och OSM är inte heltäckande; Trafikverkets järnvägsnät är den officiella källan. Hämtad ${esc(sp.hamtad)}
-      via Overpass. ${ODBL}.</div></div>`;
+  if (sp) h += `<div class="sektion"><h2>Spår inom ${n(sp.radie_m)} m</h2><table>
+    ${rad("Totalt", "<b>" + n(sp.totalt_m) + " m</b>")}${rad("Huvudspår / bangård", n(sp.huvudspar) + " / " + n(sp.bangard) + " m")}
+    ${rad("Sidospår / anslutningsspår", n(sp.sidospar) + " / " + n(sp.anslutningsspar) + " m")}${rad("Elektrifierat", n(sp.elektrifierat_m) + " m")}</table>
+    <div class="kalla">OpenStreetMap railway=rail, spårtyp enligt OSM:s taggning. ${ODBL}.</div></div>`;
   const rk = p.risk;
   if (rk) {
-    // MCF-lager: true = karterat område inom 100 m. SGU-skred: avstånd i meter.
-    const avst = m => m === null || m === undefined ? "Nej" : m === true ? "<b>Ja</b>, inom 100 m"
-      : m === 0 ? "<b>Ja, punkten ligger i området</b>" : "<b>Ja</b>, ca " + n(m) + " m";
-    h += `<div class="section"><h2>Naturrisker inom 100 m</h2><table>
-      ${rad("Översvämning, 100-årsflöde", avst(rk.q100))}${rad("Översvämning, 200-årsflöde", avst(rk.q200))}
-      ${rad("Översvämning, beräknat högsta flöde", avst(rk.bhf))}
-      ${rad("Område med betydande översvämningsrisk", avst(rk.apsfr))}
-      ${rad("Stabilitetskartering (skred/ras), MCF", avst(rk.stabilitet))}
-      ${rad("Aktsamhetsområde för skred, SGU", avst(rk.sgu_skred))}
-      ${rad("Jordart vid punkten", esc(rk.jordart || "–"))}</table>
-      <div class="kalla">Källor: <a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF, översvämnings-
-      och stabilitetskarteringar</a> · <a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a>, förutsättningar för skred i finkornig jordart (CC0)
-      och jordarter 1:25 000–1:100 000. Hämtad ${esc(rk.hamtad)}. Karteringarna täcker inte hela Sverige, så "Nej" betyder att
-      inget område är karterat inom 100 m, inte att risk saknas. Räknat från punkten, inte från fastighetsgränsen.</div></div>`;
+    const j = v => v === null || v === undefined || v === false ? "Nej" : `<span class="ja">Ja</span>`;
+    h += `<div class="sektion"><h2>Naturrisker inom 100 m</h2><table>
+      ${rad("Översvämning, 100-årsflöde", j(rk.q100))}${rad("Översvämning, 200-årsflöde", j(rk.q200))}${rad("Översvämning, högsta flöde", j(rk.bhf))}
+      ${rad("Stabilitetskartering (MCF)", j(rk.stabilitet))}${rad("Aktsamhetsområde skred (SGU)", j(rk.sgu_skred))}${rad("Jordart", esc(rk.jordart || "–"))}</table>
+      <div class="kalla">MCF och SGU (CC0). "Nej" betyder att inget är karterat inom 100 m, inte att risk saknas.</div></div>`;
   }
+  const nat = p.skyddad_natur;
+  if (nat) h += `<div class="sektion"><h2>Skyddad natur inom 500 m</h2>` + (nat.omraden.length
+    ? `<table>${nat.omraden.map(o => rad(o.namn + " (" + o.skyddstyp + ")", o.avstand_m === 0 ? "i området" : "ca " + n(o.avstand_m) + " m")).join("")}</table>`
+    : `<div class="liten">Inga gällande skyddade områden.</div>`) + `<div class="kalla">Naturvårdsverket, Naturvårdsregistret, CC0.</div></div>`;
   const km = p.kulturmiljo;
   if (km) {
-    const raaLank = (url, text) => url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text)}</a>` : esc(text);
-    const avst = m => m === 0 ? "i objektet" : "ca " + n(m) + " m";
-    h += `<div class="section"><h2>Kulturmiljö inom 250 m</h2>`;
-    h += km.byggnadsminnen.length ? `<div style="margin-bottom:6px"><b>Byggnadsminnen</b><table>${km.byggnadsminnen.map(b =>
-        `<tr><th>${raaLank(b.url, b.namn)}<div class="liten">${esc(b.skydd)}${b.beslutsdatum ? ", beslut " + esc(b.beslutsdatum) : ""}</div></th><td class="num">${avst(b.avstand_m)}</td></tr>`).join("")}</table></div>` : "";
-    h += `<div style="margin-bottom:6px"><b>Kulturhistoriskt inventerad bebyggelse (${n(km.antal_bebyggelse)})</b>` + (km.bebyggelse.length
-        ? `<table>${km.bebyggelse.map(b => `<tr><th>${raaLank(b.url, b.namn || b.nummer)}<div class="liten">${esc([b.andamal, b.skydd, b.tillkomst].filter(Boolean).join(" · "))}</div></th>
-            <td class="num">${avst(b.avstand_m)}</td></tr>`).join("")}</table>${km.antal_bebyggelse > km.bebyggelse.length ? `<div class="liten">Visar de ${km.bebyggelse.length} närmaste.</div>` : ""}`
-        : `<div class="muted">Ingen registrerad.</div>`) + `</div>`;
-    h += `<div><b>Kulturhistoriska lämningar (${n(km.antal_lamningar)}, varav ${n(km.antal_fornlamningar)} fornlämningar)</b>` + (km.lamningar.length
-        ? `<table>${km.lamningar.map(l => `<tr><th>${raaLank(l.url, l.namn || l.typ)}<div class="liten">${esc([l.bedomning, l.raa_nummer || l.nummer].filter(Boolean).join(" · "))}</div></th>
-            <td class="num">${avst(l.avstand_m)}</td></tr>`).join("")}</table>${km.antal_lamningar > km.lamningar.length ? `<div class="liten">Visar de ${km.lamningar.length} närmaste.</div>` : ""}`
-        : `<div class="muted">Inga registrerade.</div>`) + `</div>`;
-    h += `<div class="kalla">Källa: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet, öppna data</a>
-      (Kulturmiljöregistret och Bebyggelseregistret, CC0/CC BY). Hämtad ${esc(km.hamtad)}. Avstånd från punkten.
-      RAÄ påpekar att kvaliteten kan variera; inför planering eller markarbeten ska länsstyrelsen kontaktas.</div></div>`;
+    const lank = (u, t) => u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>` : esc(t);
+    h += `<div class="sektion"><h2>Kulturmiljö inom 250 m</h2><table>
+      ${km.byggnadsminnen.map(x => rad("Byggnadsminne", lank(x.url, x.namn))).join("")}
+      ${rad("Inventerad bebyggelse", n(km.antal_bebyggelse))}${rad("Kulturhistoriska lämningar", n(km.antal_lamningar) + " (varav " + n(km.antal_fornlamningar) + " fornlämningar)")}</table>
+      <div class="kalla">Riksantikvarieämbetet, öppna data. Kvaliteten kan variera; kontakta länsstyrelsen inför markarbeten.</div></div>`;
   }
+  h += `<div class="sektion"><h2>Läge</h2><div>${esc(p.lage_metod)}</div>
+    <div class="kalla">${p.lage_flyttad_m !== undefined ? `Adressen träffade bara gatan, så punkten flyttades ca ${n(p.lage_flyttad_m)} m. ` : ""}
+    Punkten är ungefärlig och visar inte fastighetens gräns.</div></div>`;
   return h;
 }
-
-function valj(id, zooma) {
-  valdId = id;
-  const f = data.features.find(x => x.properties.id === id), p = f.properties;
-  rita();
-  if (zooma && f.geometry) map.setView([f.geometry.coordinates[1], f.geometry.coordinates[0]], 16);
-  const rad = (k, v) => `<tr><th>${esc(k)}</th><td class="num">${v}</td></tr>`;
-  document.getElementById("detail").innerHTML = `<div class="section">
-    <h2>${esc(p["Affärsområde"])}</h2>
-    <div style="font-size:18px;font-weight:600">${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}</div>
-    <div class="muted">${esc(p.Kommun)} ${esc(p.Fastighetsbeteckning)}</div>
-    <table style="margin-top:8px">
-      <tr><th>Adress</th><td>${p.Adress ? esc(p.Adress) : '<span class="muted">–</span>'}</td></tr>
-      ${rad("Lokalarea, summa (kvm)", "<b>" + kvm(p["Lokalarea Summa"]) + "</b>")}
-      ${TYPER.map(t => rad(t + " (kvm)", kvm(p[t]))).join("")}
-    </table>
-    <div class="kalla">Källa: <a href="${esc(data.metadata.kalla_url)}" target="_blank" rel="noopener">${esc(data.metadata.kalla)}</a>, sida ${esc(p.pdf_sida)}.
-      Tomma värden är tomma i förteckningen.</div></div>
-    <div class="section"><h2>Läge på kartan</h2>
-    ${f.geometry ? `<div>${esc(p.lage_metod)}</div><div class="kalla">${p.lage_flyttad_m !== undefined
-      ? `Adressen träffade bara gatan (${esc(p.lage_osm)}), så punkten flyttades ca ${kvm(p.lage_flyttad_m)} m. ` : `Träff i OpenStreetMap: ${esc(p.lage_osm)}. `}
-      Hämtad ${esc(p.lage_hamtad)} via Nominatim${(p.lage_metod || "").startsWith("Trafikverket") ? " och Trafikverkets stationsregister (CC0)" : ""}.
-      © OpenStreetMap-bidragsgivare, ODbL.</div>`
-      : `<div class="muted">Adressen kunde inte hittas i OpenStreetMap i rätt kommun, så fastigheten saknar punkt.</div>`}
-    </div>
-    ${f.geometry ? osmSektioner(p) : ""}
-    <div class="section"><a href="#" id="tillbaka">← Om kartan, källor och licenser</a></div>`;
-  document.getElementById("tillbaka").onclick = e => { e.preventDefault(); valdId = null; rita(); document.getElementById("detail").innerHTML = om(); };
-}
-
-// no-cache: kontrollera alltid mot servern, så att nya dataversioner syns direkt
-fetch("fastigheter.geojson", { cache: "no-cache" }).then(r => r.json()).then(d => {
-  data = d;
-  const kommuner = [...new Set(d.features.map(f => f.properties.Kommun))].sort((a, b) => a.localeCompare(b, "sv"));
-  document.getElementById("fKommun").innerHTML += kommuner.map(k => `<option>${esc(k)}</option>`).join("");
-  document.getElementById("fOmr").innerHTML = Object.entries(OMR).map(([k, v]) =>
-    `<label><input type="checkbox" value="${esc(k)}" checked> <span class="swatch" style="background:${css(v)}"></span>${esc(k)}
-     <span class="muted">(${d.features.filter(f => f.properties["Affärsområde"] === k).length})</span></label>`).join("");
-  document.getElementById("detail").innerHTML = om();
-  document.querySelectorAll("#fOmr input, #fKommun").forEach(el => el.onchange = () => {
-    const pts = rita();
-    if (el.id === "fKommun" && pts.length) map.fitBounds(pts, { maxZoom: 14, padding: [40, 40] });
-  });
-  document.getElementById("fSok").oninput = rita;
-  const sel = document.getElementById("fInd");
-  sel.innerHTML = Object.entries(INDIKATORER).map(([k, I]) => `<option value="${k}">${esc(I.namn)}</option>`).join("");
-  sel.onchange = () => { ind = sel.value; beraknaBrytpunkter(); rita(); };
-  const pts = rita();
-  if (pts.length) map.fitBounds(pts, { padding: [20, 20] });
-}).catch(() => document.getElementById("detail").innerHTML =
-  '<div class="section">Kunde inte läsa fastigheter.geojson. Sidan måste öppnas via en webbserver, t.ex. GitHub Pages.</div>');
 </script>
 </body>
 </html>

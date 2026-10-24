@@ -115,6 +115,9 @@ const RAMP = ["#dbe9f6", "#9ecae1", "#5ba3cf", "#2171b5", "#08306b"];
 const SAKNAS = "#b8bec8";
 const INDIKATORER = {
   omr:     { namn: "Affärsområde", kat: p => p["Affärsområde"], farger: () => Object.fromEntries(Object.entries(OMR).map(([k, v]) => [k, css(v)])) },
+  tag:     { namn: "Tågavgångar per vardag inom 500 m", num: p => p.trafik?.avgangar.tag, kalla: "Trafiklab, GTFS Sverige 2" },
+  tagtim:  { namn: "Flest tåg under en timme", num: p => p.trafik?.tag_max_per_timme, kalla: "Trafiklab, GTFS Sverige 2" },
+  kollbuss:{ namn: "Bussavgångar per vardag inom 500 m", num: p => p.trafik?.avgangar.buss, kalla: "Trafiklab, GTFS Sverige 2" },
   bef:     { namn: "Invånare inom 1 km", num: p => p.befolkning?.inom_1km, kalla: "SCB 2025" },
   service: { namn: "Butiker, mat och service inom 500 m", num: p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), kalla: "OpenStreetMap" },
   buss:    { namn: "Busshållplatser inom 500 m", num: p => p.service_500m?.busshallplatser, kalla: "OpenStreetMap" },
@@ -170,7 +173,7 @@ function om() {
     OpenStreetMap (Nominatim). Punkten är alltså inte fastighetens gräns eller en exakt position.
     Fastigheter vars adress inte gick att hitta i rätt kommun saknar punkt och visas bara i listan.</p>
     <p>När punkten ligger i en byggnad i OpenStreetMap visas byggnaden (zooma in). Varje fastighet visar också
-    närmaste järnvägsstation inom 500 m, befolkningen inom 1 km, service inom 500 m, skyddad natur inom 500 m och kulturmiljö (lämningar, inventerad bebyggelse och byggnadsminnen) inom 250 m.
+    närmaste järnvägsstation inom 500 m, befolkningen inom 1 km, kollektivtrafiken inom 500 m en vanlig vardag, service inom 500 m, skyddad natur inom 500 m och kulturmiljö (lämningar, inventerad bebyggelse och byggnadsminnen) inom 250 m.
     Välj under <b>Färga efter</b> vilken uppgift punkterna ska färgas efter. Alla avstånd räknas från punkten.</p>
     <p class="liten">Fastighetsgränser och energideklarationer finns inte med. De kommer från Lantmäteriet och
     Boverket, vars villkor inte tillåter att uppgifterna publiceras öppet.</p></div>
@@ -186,7 +189,9 @@ function om() {
           befolkning per 1 km-ruta 2025 (öppna geodata). Källa: SCB.</li>
       <li>Skyddad natur: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket</a>,
           Naturvårdsregistret. Licens CC0. Källa: Naturvårdsverket.</li>
-      <li>Kulturmiljö: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>,
+      <li>Kollektivtrafik: <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">GTFS Sverige 2</a>,
+          Samtrafiken i Sverige AB via Trafiklab. Licens CC0 1.0. Källa: Trafiklab.</li>
+      <li>Kulturmiljö:<a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>,
           kulturhistoriska lämningar, kulturhistoriskt inventerad bebyggelse och byggnadsminnen. Licens CC0/CC BY. Källa: Riksantikvarieämbetet.</li>
       <li>Bakgrundskarta: © OpenStreetMap-bidragsgivare.</li>
       <li>Kartbibliotek: <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> (BSD-2-Clause).</li>
@@ -252,8 +257,18 @@ function osmSektioner(p) {
 function omgivning(p) {
   const n = v => v === null || v === undefined ? '<span class="muted">–</span>' : Number(v).toLocaleString("sv-SE");
   const rad = (k, v) => `<tr><th>${esc(k)}</th><td class="num">${v}</td></tr>`;
-  const b = p.befolkning, s = p.service_500m, nat = p.skyddad_natur;
+  const b = p.befolkning, s = p.service_500m, nat = p.skyddad_natur, tr = p.trafik;
   let h = "";
+  if (tr) h += `<div class="section"><h2>Kollektivtrafik inom 500 m</h2><table>
+      ${rad("Tågavgångar per vardag", "<b>" + n(tr.avgangar.tag) + "</b>")}
+      ${tr.avgangar.tag ? rad("Flest tåg under en timme", n(tr.tag_max_per_timme)) + rad("Första och sista tåg", esc(tr.tag_forsta) + " – " + esc(tr.tag_sista)) : ""}
+      ${rad("Bussavgångar per vardag", n(tr.avgangar.buss))}${rad("Spårvagn och tunnelbana", n(tr.avgangar.sparvag_tunnelbana))}
+      ${tr.avgangar.bat ? rad("Båt", n(tr.avgangar.bat)) : ""}${rad("Hållplatser inom 500 m", n(tr.hallplatser))}</table>
+      ${tr.tag_operatorer.length ? `<div class="liten" style="margin-top:4px">Tågoperatörer: ${esc(tr.tag_operatorer.join(", "))}</div>` : ""}
+      <div class="kalla">Planerad trafik ${esc(tr.referensdag)} (en vanlig tisdag) enligt
+      <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">GTFS Sverige 2</a>
+      från Samtrafiken via Trafiklab, version ${esc(tr.gtfs_version)} (CC0). En tur som stannar vid flera hållplatser inom
+      500 m räknas en gång; tåg som slutar här räknas inte som avgångar.</div></div>`;
   if (b) h += `<div class="section"><h2>Befolkning inom 1 km</h2><table>
       ${rad("Invånare (ca)", "<b>" + n(b.inom_1km) + "</b>")}${rad("0–19 år", n(b.alder_0_19))}${rad("20–64 år", n(b.alder_20_64))}${rad("65 år och äldre", n(b.alder_65_plus))}</table>
       <div class="kalla">Uppskattning från SCB:s befolkning per 1 km-ruta per ${esc(b.referenstid)}, viktad med hur stor del av

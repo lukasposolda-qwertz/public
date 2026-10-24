@@ -117,6 +117,8 @@ const INDIKATORER = {
   omr:     { namn: "Affärsområde", kat: p => p["Affärsområde"], farger: () => Object.fromEntries(Object.entries(OMR).map(([k, v]) => [k, css(v)])) },
   tag:     { namn: "Tågavgångar per vardag inom 500 m", num: p => p.trafik?.avgangar.tag, kalla: "Trafiklab, GTFS Sverige 2" },
   tagtim:  { namn: "Flest tåg under en timme", num: p => p.trafik?.tag_max_per_timme, kalla: "Trafiklab, GTFS Sverige 2" },
+  punkt:   { namn: "Avgångar i tid (högst 5 min sena)", num: p => p.punktlighet?.andel_i_tid, kalla: "Trafikverket", omvand: true, enhet: "%" },
+  inst:    { namn: "Inställda avgångar", num: p => p.punktlighet?.andel_installda, kalla: "Trafikverket", enhet: "%" },
   kollbuss:{ namn: "Bussavgångar per vardag inom 500 m", num: p => p.trafik?.avgangar.buss, kalla: "Trafiklab, GTFS Sverige 2" },
   bef:     { namn: "Invånare inom 1 km", num: p => p.befolkning?.inom_1km, kalla: "SCB 2025" },
   service: { namn: "Butiker, mat och service inom 500 m", num: p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), kalla: "OpenStreetMap" },
@@ -153,8 +155,13 @@ function ritaLegend() {
   const sw = c => `<span class="swatch" style="background:${c}"></span>`;
   let h = I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
     : [minVarde, ...brytpunkter].map((fran, i) => {
-        const till = i < brytpunkter.length ? brytpunkter[i] - 1 : null;
-        const text = till === null ? fmt(fran) + " och fler" : fran === till ? fmt(fran) : fmt(fran) + "–" + fmt(till);
+        // Heltal (antal): "8–17". Andelar i procent: gränsen är "under nästa brytpunkt".
+        const pct = I.enhet === "%";
+        const fmt = n => pct ? Number(n).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) : Math.round(n).toLocaleString("sv-SE");
+        const till = i < brytpunkter.length ? (pct ? brytpunkter[i] : brytpunkter[i] - 1) : null;
+        const text = pct
+          ? (till === null ? fmt(fran) + " % och mer" : i === 0 ? "under " + fmt(till) + " %" : fmt(fran) + " till under " + fmt(till) + " %")
+          : till === null ? fmt(fran) + " och fler" : fran === till ? fmt(fran) : fmt(fran) + "–" + fmt(till);
         return `<div>${sw(klassFarg(i))}${text}</div>`;
       }).join("");
   if (ind !== "omr") h += `<div>${sw(SAKNAS)}Uppgift saknas</div><div class="liten" style="margin-top:4px">Källa: ${esc(I.kalla)}</div>`;
@@ -173,7 +180,7 @@ function om() {
     OpenStreetMap (Nominatim). Punkten är alltså inte fastighetens gräns eller en exakt position.
     Fastigheter vars adress inte gick att hitta i rätt kommun saknar punkt och visas bara i listan.</p>
     <p>När punkten ligger i en byggnad i OpenStreetMap visas byggnaden (zooma in). Varje fastighet visar också
-    närmaste järnvägsstation inom 500 m, befolkningen inom 1 km, kollektivtrafiken inom 500 m en vanlig vardag, service inom 500 m, skyddad natur inom 500 m och kulturmiljö (lämningar, inventerad bebyggelse och byggnadsminnen) inom 250 m.
+    närmaste järnvägsstation inom 500 m, befolkningen inom 1 km, kollektivtrafiken inom 500 m en vanlig vardag, punktligheten vid närmaste station de senaste tre dygnen,service inom 500 m, skyddad natur inom 500 m och kulturmiljö (lämningar, inventerad bebyggelse och byggnadsminnen) inom 250 m.
     Välj under <b>Färga efter</b> vilken uppgift punkterna ska färgas efter. Alla avstånd räknas från punkten.</p>
     <p class="liten">Fastighetsgränser och energideklarationer finns inte med. De kommer från Lantmäteriet och
     Boverket, vars villkor inte tillåter att uppgifterna publiceras öppet.</p></div>
@@ -191,7 +198,9 @@ function om() {
           Naturvårdsregistret. Licens CC0. Källa: Naturvårdsverket.</li>
       <li>Kollektivtrafik: <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">GTFS Sverige 2</a>,
           Samtrafiken i Sverige AB via Trafiklab. Licens CC0 1.0. Källa: Trafiklab.</li>
-      <li>Kulturmiljö:<a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>,
+      <li>Punktlighet och inställda tåg: <a href="https://data.trafikverket.se/" target="_blank" rel="noopener">Trafikverket</a>,
+          API Öppna Data (TrainAnnouncement). Licens CC0 1.0. Källa: Trafikverket.</li>
+      <li>Kulturmiljö: <ahref="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>,
           kulturhistoriska lämningar, kulturhistoriskt inventerad bebyggelse och byggnadsminnen. Licens CC0/CC BY. Källa: Riksantikvarieämbetet.</li>
       <li>Bakgrundskarta: © OpenStreetMap-bidragsgivare.</li>
       <li>Kartbibliotek: <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> (BSD-2-Clause).</li>
@@ -269,6 +278,17 @@ function omgivning(p) {
       <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">GTFS Sverige 2</a>
       från Samtrafiken via Trafiklab, version ${esc(tr.gtfs_version)} (CC0). En tur som stannar vid flera hållplatser inom
       500 m räknas en gång; tåg som slutar här räknas inte som avgångar.</div></div>`;
+  const pk = p.punktlighet;
+  if (pk) h += `<div class="section"><h2>Punktlighet, ${esc(pk.station)}</h2><table>
+      ${rad("Avgångar i tid (högst " + pk.grans_min + " min sena)", "<b>" + n(pk.andel_i_tid) + " %</b>")}
+      ${rad("Inställda avgångar", n(pk.installda) + " (" + n(pk.andel_installda) + " %)")}
+      ${rad("Medelförsening, avgångna tåg", n(pk.medelforsening_min) + " min")}
+      ${rad("Annonserade avgångar", n(pk.avgangar))}${pk.utan_utfall ? rad("Utan registrerad avgångstid", n(pk.utan_utfall)) : ""}</table>
+      <div class="kalla">${esc(pk.period_fran)} – ${esc(pk.period_till)}: alla annonserade avgångar från ${esc(pk.station)}
+      (${esc(pk.koppling.toLowerCase())}, ca ${n(pk.avstand_m)} m från punkten). Andelen i tid räknas på avgångna och inställda tåg.
+      Ett kort fönster på tre dygn, så siffrorna kan svänga mycket. Källa:
+      <a href="https://data.trafikverket.se/" target="_blank" rel="noopener">Trafikverket, API Öppna Data</a> (TrainAnnouncement), CC0 1.0.
+      Hämtad ${esc(pk.hamtad)}.</div></div>`;
   if (b) h += `<div class="section"><h2>Befolkning inom 1 km</h2><table>
       ${rad("Invånare (ca)", "<b>" + n(b.inom_1km) + "</b>")}${rad("0–19 år", n(b.alder_0_19))}${rad("20–64 år", n(b.alder_20_64))}${rad("65 år och äldre", n(b.alder_65_plus))}</table>
       <div class="kalla">Uppskattning från SCB:s befolkning per 1 km-ruta per ${esc(b.referenstid)}, viktad med hur stor del av

@@ -13,8 +13,8 @@ fastighetsförteckning per 2025-12-31.
 | `index.html` | Kartan: en statisk sida med MapLibre GL JS och vektorkartor, platt som standard och 3D när en fastighet väljs |
 | `jamforelse.html` | Jämförelsetabell över alla fastigheter |
 | `fastigheter.geojson` | Alla 143 fastigheter med uppgifterna, används av jämförelsetabellen |
-| `3d/fastigheter3d.geojson` | De fastigheter som har läge, används av kartan |
-| `3d/byggnader.geojson`, `3d/jarnvag.geojson` | Kopplade byggnader och järnvägsnätet |
+| `karta.geojson` | De fastigheter som har läge, används av kartan |
+| `byggnader.geojson`, `jarnvag.geojson` | Kopplade byggnader och järnvägsnätet |
 | `LICENSE` | MIT-licens för koden |
 
 ## Källor och licenser
@@ -95,13 +95,13 @@ Kan laddas ner som CSV.
 
 En enda karta byggd med [MapLibre GL JS](https://maplibre.org) 4.7.1 (BSD-3-Clause) och vektorkartor från
 [OpenFreeMap](https://openfreemap.org) (© OpenMapTiles, data från OpenStreetMap). Den är platt i mörkt läge
-med tända spår som standard. När en fastighet väljs flyger kameran in och lutar till 3D; **Platt vy** tar en
-tillbaka. Menyerna ligger överst: sök, affärsområde, vad punkterna färgas efter, bakgrundskarta, spår av/på.
-Den tidigare adressen `3d/` leder hit.
+med tända spår som standard. När en fastighet väljs flyger kameran in och lutar till 3D; **Platt** tar en
+tillbaka. Menyerna ligger överst: sök, affärsområde, vad punkterna färgas efter, bakgrundskarta, spår av/på,
+**Platt** (rätar upp kartan där man är) och **Hela Sverige** (platt översikt).
 
 | Lager | Källa |
 |---|---|
-| Bakgrund Mörk, Ljus, Detaljerad karta | [OpenFreeMap](https://openfreemap.org) stilarna Dark, Positron och Liberty. © OpenMapTiles, data från OpenStreetMap |
+| Bakgrund Mörk, Ljus, Standard | [OpenFreeMap](https://openfreemap.org) stilarna Dark, Positron och Liberty. © OpenMapTiles, data från OpenStreetMap |
 | Bakgrund Flygfoto | [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9). Källa: Esri, Maxar, Earthstar Geographics och GIS-användarsamfundet. Visas enligt Esris användarvillkor |
 | Järnvägsnätet (huvud- och bandelar), synligt över hela Sverige | OpenStreetMap `railway=rail` + `usage=main/branch`, förenklat med 25 m tolerans. ODbL |
 | Alla byggnader i 3D | OpenFreeMap/OpenMapTiles, höjd från `render_height` |

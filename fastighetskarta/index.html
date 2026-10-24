@@ -121,30 +121,39 @@ const INDIKATORER = {
   cykel:   { namn: "Cykelparkeringar inom 500 m", num: p => p.service_500m?.cykelparkering, kalla: "OpenStreetMap" },
   natur:   { namn: "Skyddad natur inom 500 m", kat: p => p.skyddad_natur ? (p.skyddad_natur.omraden.length ? "Ja" : "Nej") : null,
              farger: () => ({ "Ja": "#15803d", "Nej": "#d6dbe1" }), kalla: "Naturvårdsverket" },
+  lamn:    { namn: "Kulturhistoriska lämningar inom 250 m", num: p => p.kulturmiljo?.antal_lamningar, kalla: "Riksantikvarieämbetet" },
+  bminne:  { namn: "Byggnadsminne inom 250 m", kat: p => p.kulturmiljo ? (p.kulturmiljo.byggnadsminnen.length ? "Ja" : "Nej") : null,
+             farger: () => ({ "Ja": "#9a3412", "Nej": "#d6dbe1" }), kalla: "Riksantikvarieämbetet" },
   station: { namn: "Järnvägsstation inom 500 m", kat: p => p.osm_station ? "Ja" : (p.befolkning ? "Nej" : null),
              farger: () => ({ "Ja": "#1f6feb", "Nej": "#d6dbe1" }), kalla: "OpenStreetMap" },
 };
-let ind = "omr", brytpunkter = [];
+let ind = "omr", brytpunkter = [], minVarde = 0;
 
 function beraknaBrytpunkter() {
   const I = INDIKATORER[ind];
   if (!I.num) { brytpunkter = []; return; }
   const v = data.features.map(f => I.num(f.properties)).filter(x => x !== null && x !== undefined).sort((a, b) => a - b);
-  brytpunkter = [1, 2, 3, 4].map(i => v[Math.floor(i * v.length / 5)]);
+  minVarde = v[0];
+  // Kvintiler, men dubbletter tas bort så att skeva fördelningar (många nollor) ger färre, giltiga klasser
+  brytpunkter = [...new Set([1, 2, 3, 4].map(i => v[Math.floor(i * v.length / 5)]))].filter(b => b > minVarde);
 }
+const klassFarg = i => RAMP[brytpunkter.length ? Math.round(i * 4 / brytpunkter.length) : 2];
 function farg(p) {
   const I = INDIKATORER[ind];
   if (I.kat) { const k = I.kat(p); return k === null || k === undefined ? SAKNAS : (I.farger()[k] || SAKNAS); }
   const x = I.num(p);
   if (x === null || x === undefined) return SAKNAS;
-  return RAMP[brytpunkter.filter(b => x >= b).length];
+  return klassFarg(brytpunkter.filter(b => x >= b).length);
 }
 function ritaLegend() {
   const I = INDIKATORER[ind], fmt = n => Math.round(n).toLocaleString("sv-SE");
   const sw = c => `<span class="swatch" style="background:${c}"></span>`;
   let h = I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
-    : RAMP.map((c, i) => `<div>${sw(c)}${i === 0 ? "under " + fmt(brytpunkter[0])
-        : i === 4 ? fmt(brytpunkter[3]) + " och fler" : fmt(brytpunkter[i - 1]) + "–" + fmt(brytpunkter[i] - 1)}</div>`).join("");
+    : [minVarde, ...brytpunkter].map((fran, i) => {
+        const till = i < brytpunkter.length ? brytpunkter[i] - 1 : null;
+        const text = till === null ? fmt(fran) + " och fler" : fran === till ? fmt(fran) : fmt(fran) + "–" + fmt(till);
+        return `<div>${sw(klassFarg(i))}${text}</div>`;
+      }).join("");
   if (ind !== "omr") h += `<div>${sw(SAKNAS)}Uppgift saknas</div><div class="liten" style="margin-top:4px">Källa: ${esc(I.kalla)}</div>`;
   document.getElementById("legend").innerHTML = h;
 }
@@ -161,7 +170,7 @@ function om() {
     OpenStreetMap (Nominatim). Punkten är alltså inte fastighetens gräns eller en exakt position.
     Fastigheter vars adress inte gick att hitta i rätt kommun saknar punkt och visas bara i listan.</p>
     <p>När punkten ligger i en byggnad i OpenStreetMap visas byggnaden (zooma in). Varje fastighet visar också
-    närmaste järnvägsstation inom 500 m, befolkningen inom 1 km, service inom 500 m och skyddad natur inom 500 m.
+    närmaste järnvägsstation inom 500 m, befolkningen inom 1 km, service inom 500 m, skyddad natur inom 500 m och kulturmiljö (lämningar, inventerad bebyggelse och byggnadsminnen) inom 250 m.
     Välj under <b>Färga efter</b> vilken uppgift punkterna ska färgas efter. Alla avstånd räknas från punkten.</p>
     <p class="liten">Fastighetsgränser och energideklarationer finns inte med. De kommer från Lantmäteriet och
     Boverket, vars villkor inte tillåter att uppgifterna publiceras öppet.</p></div>
@@ -177,6 +186,8 @@ function om() {
           befolkning per 1 km-ruta 2025 (öppna geodata). Källa: SCB.</li>
       <li>Skyddad natur: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket</a>,
           Naturvårdsregistret. Licens CC0. Källa: Naturvårdsverket.</li>
+      <li>Kulturmiljö: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>,
+          kulturhistoriska lämningar, kulturhistoriskt inventerad bebyggelse och byggnadsminnen. Licens CC0/CC BY. Källa: Riksantikvarieämbetet.</li>
       <li>Bakgrundskarta: © OpenStreetMap-bidragsgivare.</li>
       <li>Kartbibliotek: <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> (BSD-2-Clause).</li>
       <li>Kod: MIT-licens, © 2026 Lukas Posolda.</li>
@@ -259,6 +270,25 @@ function omgivning(p) {
       : `<div class="muted">Inga gällande skyddade områden inom 500 m.</div>`) +
       `<div class="kalla">Källa: <a href="https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/" target="_blank" rel="noopener">Naturvårdsverket, Naturvårdsregistret</a> (CC0).
       Hämtad ${esc(nat.hamtad)}. Avståndet räknas från punkten, inte från fastighetens gräns.</div></div>`;
+  const km = p.kulturmiljo;
+  if (km) {
+    const raaLank = (url, text) => url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text)}</a>` : esc(text);
+    const avst = m => m === 0 ? "i objektet" : "ca " + n(m) + " m";
+    h += `<div class="section"><h2>Kulturmiljö inom 250 m</h2>`;
+    h += km.byggnadsminnen.length ? `<div style="margin-bottom:6px"><b>Byggnadsminnen</b><table>${km.byggnadsminnen.map(b =>
+        `<tr><th>${raaLank(b.url, b.namn)}<div class="liten">${esc(b.skydd)}${b.beslutsdatum ? ", beslut " + esc(b.beslutsdatum) : ""}</div></th><td class="num">${avst(b.avstand_m)}</td></tr>`).join("")}</table></div>` : "";
+    h += `<div style="margin-bottom:6px"><b>Kulturhistoriskt inventerad bebyggelse (${n(km.antal_bebyggelse)})</b>` + (km.bebyggelse.length
+        ? `<table>${km.bebyggelse.map(b => `<tr><th>${raaLank(b.url, b.namn || b.nummer)}<div class="liten">${esc([b.andamal, b.skydd, b.tillkomst].filter(Boolean).join(" · "))}</div></th>
+            <td class="num">${avst(b.avstand_m)}</td></tr>`).join("")}</table>${km.antal_bebyggelse > km.bebyggelse.length ? `<div class="liten">Visar de ${km.bebyggelse.length} närmaste.</div>` : ""}`
+        : `<div class="muted">Ingen registrerad.</div>`) + `</div>`;
+    h += `<div><b>Kulturhistoriska lämningar (${n(km.antal_lamningar)}, varav ${n(km.antal_fornlamningar)} fornlämningar)</b>` + (km.lamningar.length
+        ? `<table>${km.lamningar.map(l => `<tr><th>${raaLank(l.url, l.namn || l.typ)}<div class="liten">${esc([l.bedomning, l.raa_nummer || l.nummer].filter(Boolean).join(" · "))}</div></th>
+            <td class="num">${avst(l.avstand_m)}</td></tr>`).join("")}</table>${km.antal_lamningar > km.lamningar.length ? `<div class="liten">Visar de ${km.lamningar.length} närmaste.</div>` : ""}`
+        : `<div class="muted">Inga registrerade.</div>`) + `</div>`;
+    h += `<div class="kalla">Källa: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet, öppna data</a>
+      (Kulturmiljöregistret och Bebyggelseregistret, CC0/CC BY). Hämtad ${esc(km.hamtad)}. Avstånd från punkten.
+      RAÄ påpekar att kvaliteten kan variera; inför planering eller markarbeten ska länsstyrelsen kontaktas.</div></div>`;
+  }
   return h;
 }
 

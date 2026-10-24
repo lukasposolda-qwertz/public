@@ -27,6 +27,9 @@ fastighetsförteckning per 2025-12-31.
 | Skyddad natur inom 500 m | [Naturvårdsverket, Naturvårdsregistret](https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/) | CC0. Källa: Naturvårdsverket |
 | Översvämning och stabilitet | [MCF](https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/) (Myndigheten för civilt försvar), översvämningskarteringar (100-, 200-årsflöde, BHF), områden med betydande översvämningsrisk och stabilitetskarteringar, öppen WFS | Ingen avgift, inga åtkomstbegränsningar. Källa: MCF |
 | Skred och jordart | [SGU](https://www.sgu.se): förutsättningar för skred i finkornig jordart (OGC API) och jordarter 1:25 000–1:100 000 (WMS) | CC0 1.0. Källa: SGU |
+| Befolkning per DeSO | [SCB, Statistikdatabasen](https://www.statistikdatabasen.scb.se): TAB6680 (arbetsmarknadsstatus), TAB6683 (nettoinkomst), TAB6685 (ekonomisk standard), år 2024, samt DeSO 2025-indelningen (öppen WFS) | Öppna data. Källa: SCB |
+| Klimat 1991–2020 | [SMHI](https://www.smhi.se/data), meteorologiska observationer (metobs), månadsmedeltemperatur och månadsnederbörd | CC BY 4.0. Källa: SMHI. Bearbetad: normalvärden beräknade av projektet |
+| Spår inom 300 m | OpenStreetMap `railway=rail`, uppdelat efter `service` | © OpenStreetMap-bidragsgivare, ODbL |
 | Stationslägen | Trafikverket, stationsregister (TrainStation) | CC0 1.0. Källa: Trafikverket |
 | Kulturmiljö inom 250 m | [Riksantikvarieämbetet, öppna data](https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/): kulturhistoriska lämningar, kulturhistoriskt inventerad bebyggelse, byggnadsminnen (OGC API Features) | CC0 / CC BY. Källa: Riksantikvarieämbetet |
 | Bakgrundskarta | OpenStreetMap | © [OpenStreetMap-bidragsgivare](https://www.openstreetmap.org/copyright) |
@@ -72,6 +75,9 @@ anrop i taget, och svaren cachades.
 | Invånare inom 1 km | Summan av SCB:s 1 km-rutor, där varje ruta viktas med hur stor del av den som ligger inom 1 km från punkten. En uppskattning. |
 | Service inom 500 m | Antal objekt i OpenStreetMap inom 500 m fågelvägen: butiker (`shop`), restauranger och kaféer, övrig service (apotek, bank, vård, skola m.m.), busshållplatser och cykelparkeringar. OSM är inte heltäckande, så siffrorna är ett minimum. |
 | Kulturmiljö inom 250 m | Lämningar, inventerad bebyggelse och byggnadsminnen hos RAÄ vars geometri ligger inom 250 m från punkten. Varje objekt länkar till RAÄ:s objektsida. RAÄ påpekar att kvaliteten kan variera och att länsstyrelsen ska kontaktas inför planering eller markarbeten. |
+| Befolkning i DeSO-området | Det DeSO-område (SCB:s minsta statistikområde) som punkten ligger i: sysselsättningsgrad 20–64 år, medelnettoinkomst (med kommun och riket som jämförelse) och andel med låg/hög ekonomisk standard, år 2024. Beskriver de boende, inte de som arbetar där. |
+| Klimat 1991–2020 | Normalvärden beräknade ur SMHI:s kvalitetskontrollerade månadsvärden vid närmaste station med minst 300 av 360 månader, högst 60 km bort. Station och avstånd anges. |
+| Spår inom 300 m | Spårlängd i OSM inom 300 m: huvudspår, bangård, sidospår och anslutningsspår, samt elektrifierad längd. Spårtyperna är frivilligt taggade i OSM. Trafikverkets järnvägsnät (Lastkajen) är den officiella källan. |
 | Naturrisker inom 100 m | Om ett karterat översvämnings-, stabilitets- eller skredområde ligger inom 100 m från punkten. Karteringarna täcker inte hela Sverige, så "nej" betyder att inget är karterat där, inte att risk saknas. Jordart avläses i punkten. |
 | Skyddad natur inom 500 m | Gällande skyddade områden i Naturvårdsregistret vars gräns ligger inom 500 m från punkten. |
 

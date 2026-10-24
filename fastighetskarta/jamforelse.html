@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jernhusens fastigheter – jämförelse</title>
-<meta name="description" content="Inofficiell jämförelsetabell över Jernhusens fastigheter med trafik, punktlighet, omgivning, kulturmiljö och risker från öppna data.">
+<meta name="description" content="Inofficiell jämförelsetabell över Jernhusens fastigheter med trafik, omgivning, kulturmiljö och risker från öppna data.">
 <style>
   :root { --bg: #f6f7f9; --panel: #fff; --text: #1d2430; --muted: #5d6676; --line: #e2e5ea; --accent: #0b5cad;
           --stationer: #1f6feb; --depaer: #c2410c; --warn-bg: #fff7e0; --warn-line: #e0b84a; --risk: #b91c1c; }
@@ -38,7 +38,7 @@
 <header>
   <h1>Jernhusens fastigheter – jämförelse</h1>
   <span class="sub">samma mått för alla fastigheter, från öppna data</span>
-  <a href="./" style="font-size:13px">← Kartan</a><a href="3d/" style="font-size:13px">3D</a>
+  <a href="./" style="font-size:13px">← Kartan</a>
   <span class="inoff">Inofficiell demo, inte en tjänst från Jernhusen AB</span>
 </header>
 <div class="verktyg">
@@ -52,7 +52,7 @@
 <div class="kallor">
   Klicka på en kolumnrubrik för att sortera. "–" betyder att uppgift saknas. Alla avstånd räknas från fastighetens ungefärliga punkt,
   inte från fastighetsgränsen. Källor: Jernhusen AB, fastighetsförteckning 2025-12-31 · Trafiklab/Samtrafiken, GTFS Sverige 2 (CC0) ·
-  Trafikverket, API Öppna Data (CC0) · SCB, befolkning per 1 km-ruta 2025 · © OpenStreetMap-bidragsgivare (ODbL) ·
+  SCB, befolkning per 1 km-ruta 2025 · © OpenStreetMap-bidragsgivare (ODbL) ·
   Riksantikvarieämbetet (CC0/CC BY) · Naturvårdsverket, Naturvårdsregistret (CC0) · MCF, översvämnings- och stabilitetskarteringar ·
   SGU, skred och jordarter (CC0) · SCB, DeSO-statistik 2024 · SMHI, klimat 1991–2020 (CC BY 4.0, bearbetad) ·
   OpenStreetMap, spår (ODbL). Fullständiga källor och metoder i <a href="README.md">README</a>.
@@ -70,8 +70,6 @@ const KOL = [
   ["Tåg/vardag", "inom 500 m", p => p.trafik?.avgangar.tag, "num"],
   ["Max tåg/h", "", p => p.trafik?.tag_max_per_timme, "num"],
   ["Buss/vardag", "inom 500 m", p => p.trafik?.avgangar.buss, "num"],
-  ["I tid", "%, ≤ 5 min", p => p.punktlighet?.andel_i_tid, "num"],
-  ["Inställda", "%", p => p.punktlighet?.andel_installda, "num"],
   ["Invånare", "inom 1 km", p => p.befolkning?.inom_1km, "num"],
   ["Sysselsättning", "%, DeSO 20–64 år", p => p.demografi?.sysselsattning_20_64, "num"],
   ["Nettoinkomst", "tkr, DeSO", p => p.demografi?.nettoinkomst_tkr, "num"],

@@ -54,7 +54,8 @@
   inte från fastighetsgränsen. Källor: Jernhusen AB, fastighetsförteckning 2025-12-31 · Trafiklab/Samtrafiken, GTFS Sverige 2 (CC0) ·
   Trafikverket, API Öppna Data (CC0) · SCB, befolkning per 1 km-ruta 2025 · © OpenStreetMap-bidragsgivare (ODbL) ·
   Riksantikvarieämbetet (CC0/CC BY) · Naturvårdsverket, Naturvårdsregistret (CC0) · MCF, översvämnings- och stabilitetskarteringar ·
-  SGU, skred och jordarter (CC0). Fullständiga källor och metoder i <a href="README.md">README</a>.
+  SGU, skred och jordarter (CC0) · SCB, DeSO-statistik 2024 · SMHI, klimat 1991–2020 (CC BY 4.0, bearbetad) ·
+  OpenStreetMap, spår (ODbL). Fullständiga källor och metoder i <a href="README.md">README</a>.
 </div>
 <script>
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -72,6 +73,11 @@ const KOL = [
   ["I tid", "%, ≤ 5 min", p => p.punktlighet?.andel_i_tid, "num"],
   ["Inställda", "%", p => p.punktlighet?.andel_installda, "num"],
   ["Invånare", "inom 1 km", p => p.befolkning?.inom_1km, "num"],
+  ["Sysselsättning", "%, DeSO 20–64 år", p => p.demografi?.sysselsattning_20_64, "num"],
+  ["Nettoinkomst", "tkr, DeSO", p => p.demografi?.nettoinkomst_tkr, "num"],
+  ["Årsmedeltemp.", "°C, 1991–2020", p => p.klimat?.arsmedel_temp, "num"],
+  ["Årsnederbörd", "mm", p => p.klimat?.arsnederbord_mm, "num"],
+  ["Spår", "m inom 300 m", p => p.spar?.totalt_m, "num"],
   ["Service", "inom 500 m", p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), "num"],
   ["Lämningar", "inom 250 m", p => p.kulturmiljo?.antal_lamningar, "num"],
   ["Byggnadsminne", "inom 250 m", p => p.kulturmiljo ? jaNej(p.kulturmiljo.byggnadsminnen.length) : null, "flagga"],

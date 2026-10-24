@@ -289,7 +289,8 @@ function valj(id, zooma) {
   document.getElementById("tillbaka").onclick = e => { e.preventDefault(); valdId = null; rita(); document.getElementById("detail").innerHTML = om(); };
 }
 
-fetch("fastigheter.geojson").then(r => r.json()).then(d => {
+// no-cache: kontrollera alltid mot servern, så att nya dataversioner syns direkt
+fetch("fastigheter.geojson", { cache: "no-cache" }).then(r => r.json()).then(d => {
   data = d;
   const kommuner = [...new Set(d.features.map(f => f.properties.Kommun))].sort((a, b) => a.localeCompare(b, "sv"));
   document.getElementById("fKommun").innerHTML += kommuner.map(k => `<option>${esc(k)}</option>`).join("");

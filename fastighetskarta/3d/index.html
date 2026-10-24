@@ -44,6 +44,10 @@
   .knapp { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 6px; padding: 4px 10px;
            font: inherit; font-size: 12px; cursor: pointer; }
   .legend { padding: 10px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
+  .seg { display: flex; margin-top: 4px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { flex: 1; background: none; border: 0; color: var(--text); padding: 5px 0; font: inherit; font-size: 12px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: #0d1117; font-weight: 600; }
   .legend i { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
   .legend b { display: inline-block; width: 10px; height: 10px; vertical-align: -1px; margin-right: 6px; border-radius: 2px; }
   .mark { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px;
@@ -67,6 +71,10 @@
   </div>
   <ol id="topp"></ol>
   <div class="legend">
+    <div style="margin-bottom:8px">Bakgrund
+      <div id="kartval" class="seg">
+        <button data-k="mork" class="on">Mörk</button><button data-k="ljus">Ljus</button><button data-k="farg">Färg</button><button data-k="foto">Flygfoto</button>
+      </div></div>
     <div><i style="background:var(--rail);box-shadow:0 0 6px var(--rail)"></i>Järnväg, huvud- och bandelar (OSM)</div>
     <div><b style="background:var(--accent)"></b>Byggnader på järnvägsmark vid fastigheten (OSM)</div>
     <div><b style="background:#3a4250"></b>Övriga byggnader</div>
@@ -84,24 +92,49 @@ const n = v => v === null || v === undefined ? "–" : Number(v).toLocaleString(
 const farg = p => p["Affärsområde"] === "Stationer" ? css("--station") : css("--depa");
 const SVERIGE = { center: [16.5, 62.3], zoom: 4.3, pitch: 0, bearing: 0 };
 
+// Bakgrundskartor. Egna lager (järnväg, byggnader) läggs till igen efter varje byte.
+const OFM = "https://tiles.openfreemap.org";
+const FLYGFOTO = {
+  version: 8, glyphs: `${OFM}/fonts/{fontstack}/{range}.pbf`,
+  sources: {
+    esri: { type: "raster", tileSize: 256, maxzoom: 19,
+            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+            attribution: 'Flygfoto: <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>, Maxar, Earthstar Geographics och GIS-användarsamfundet' },
+    openmaptiles: { type: "vector", url: `${OFM}/planet` },
+  },
+  layers: [{ id: "flygfoto", type: "raster", source: "esri" }],
+};
+const KARTOR = {
+  mork:  { namn: "Mörk",     stil: `${OFM}/styles/dark`,     hus: "#3a4250", rail: "#f5a524", ui: "dark" },
+  ljus:  { namn: "Ljus",     stil: `${OFM}/styles/positron`, hus: "#d5dae1", rail: "#d97706", ui: "light" },
+  farg:  { namn: "Färg",     stil: `${OFM}/styles/liberty`,  hus: null,      rail: "#c2410c", ui: "light" },  // har egna 3D-hus
+  foto:  { namn: "Flygfoto", stil: FLYGFOTO,                 hus: null,      rail: "#ffb703", ui: "dark" },   // hus skulle dölja fotot
+};
+let karta = "mork";
+
 const map = new maplibregl.Map({
-  container: "map", style: "https://tiles.openfreemap.org/styles/dark", ...SVERIGE, maxPitch: 75,
+  container: "map", style: KARTOR[karta].stil, ...SVERIGE, maxPitch: 75,
   attributionControl: { compact: true, customAttribution:
     'Fastigheter: Jernhusen AB, fastighetsförteckning 2025-12-31 · Järnväg, byggnader, lägen: © OpenStreetMap-bidragsgivare (ODbL) · ' +
     'Trafik: Trafiklab/Samtrafiken (CC0), Trafikverket (CC0) · Kulturmiljö: RAÄ · Befolkning: SCB · Kod: MIT, Lukas Posolda' },
 });
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
-let topp;
-map.on("load", async () => {
-  // Basstilens byggnader i 3D (OpenMapTiles render_height), dämpade
-  map.addLayer({ id: "hus-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 13,
-    paint: { "fill-extrusion-color": "#3a4250", "fill-extrusion-opacity": 0.85,
-             "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
-             "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0] } });
+let topp, dataJarnvag, dataBygg, markorerSkapade = false;
+
+function egnaLager() {
+  const K = KARTOR[karta];
+  if (K.hus) {
+    // Basstilens byggnader i 3D (OpenMapTiles render_height), dämpade
+    map.addLayer({ id: "hus-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 13,
+      paint: { "fill-extrusion-color": K.hus, "fill-extrusion-opacity": 0.85,
+               "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+               "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0] } });
+  }
+  document.documentElement.style.setProperty("--rail", K.rail);
 
   // Järnvägsnätet: glöd + kärna, syns från landsvy
-  map.addSource("jarnvag", { type: "geojson", data: "jarnvag.geojson" });
+  map.addSource("jarnvag", { type: "geojson", data: dataJarnvag });
   // zoom måste ligga överst i uttrycket; huvudbanor görs bredare i varje steg
   const huvud = ["case", ["==", ["get", "usage"], "main"], 1, 0.6];
   const bredd = (a, b) => ["interpolate", ["linear"], ["zoom"], 4, ["*", huvud, a], 10, ["*", huvud, b], 15, ["*", huvud, b * 2.5]];
@@ -112,11 +145,30 @@ map.on("load", async () => {
              "line-width": bredd(0.9, 2.2) } });
 
   // Byggnader på järnvägsmark vid topp 10, framhävda
-  map.addSource("bygg", { type: "geojson", data: "byggnader.geojson" });
+  map.addSource("bygg", { type: "geojson", data: dataBygg });
   map.addLayer({ id: "bygg-3d", type: "fill-extrusion", source: "bygg", minzoom: 12,
     paint: { "fill-extrusion-color": css("--accent"), "fill-extrusion-opacity": 0.9,
              "fill-extrusion-height": ["get", "hojd"], "fill-extrusion-base": 0 } });
+}
 
+// Egna lager läggs till varje gång en stil laddats klart (första gången och efter byte)
+map.on("style.load", async () => {
+  if (!dataJarnvag) {
+    [dataJarnvag, dataBygg] = await Promise.all(["jarnvag.geojson", "byggnader.geojson"]
+      .map(u => fetch(u, { cache: "no-cache" }).then(r => r.json())));
+  }
+  egnaLager();
+  if (!markorerSkapade) { markorerSkapade = true; await skapaTopp(); }
+});
+
+function bytKarta(k) {
+  if (k === karta) return;
+  karta = k;
+  document.querySelectorAll("#kartval button").forEach(b => b.classList.toggle("on", b.dataset.k === k));
+  map.setStyle(KARTOR[k].stil, { diff: false });
+}
+
+async function skapaTopp() {
   topp = await fetch("topp10.geojson", { cache: "no-cache" }).then(r => r.json());
   const maxLoa = Math.max(...topp.features.map(f => f.properties["Lokalarea Summa"]));
   document.getElementById("topp").innerHTML = topp.features.map(f => { const p = f.properties; return `
@@ -131,7 +183,7 @@ map.on("load", async () => {
     el.onclick = () => valj(f.properties.id);
     new maplibregl.Marker({ element: el }).setLngLat(f.geometry.coordinates).addTo(map);
   }
-});
+}
 
 function valj(id) {
   const f = topp.features.find(x => x.properties.id === id), p = f.properties;
@@ -171,6 +223,7 @@ function valj(id) {
   const kort = document.getElementById("kort"); kort.style.display = "block"; kort.scrollTop = 0;
   document.getElementById("stang").onclick = () => { kort.style.display = "none"; };
 }
+document.querySelectorAll("#kartval button").forEach(b => b.onclick = () => bytKarta(b.dataset.k));
 document.getElementById("sverige").onclick = () => {
   document.getElementById("kort").style.display = "none";
   document.querySelectorAll("#topp li").forEach(li => li.classList.remove("vald"));

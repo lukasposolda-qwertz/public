@@ -270,6 +270,11 @@ function valj(id) {
       ${rad("Skred/stabilitet", (p.risk.sgu_skred !== null || p.risk.stabilitet !== null) ? "<b>Ja</b>" : "Nej")}
       ${rad("Jordart", esc(p.risk.jordart || "–"))}</table>
       <div class="kalla">MCF och SGU. "Nej" = inget karterat inom 100 m, inte att risk saknas.</div></div>` : ""}
+    ${p.demografi || p.klimat || p.spar ? `<div class="sektion"><h2>Område, klimat och spår</h2><table>
+      ${p.demografi ? rad("Sysselsättning 20–64 år (DeSO)", n(p.demografi.sysselsattning_20_64) + " %") + rad("Nettoinkomst, medel (DeSO)", n(p.demografi.nettoinkomst_tkr) + " tkr") : ""}
+      ${p.klimat ? rad("Årsmedeltemperatur 1991–2020", n(p.klimat.arsmedel_temp) + " °C") + rad("Årsnederbörd", n(p.klimat.arsnederbord_mm) + " mm") : ""}
+      ${p.spar ? rad("Spår inom 300 m", n(p.spar.totalt_m) + " m") + rad("varav bangård / anslutningsspår", n(p.spar.bangard) + " / " + n(p.spar.anslutningsspar) + " m") : ""}</table>
+      <div class="kalla">SCB 2024 (DeSO) · SMHI, CC BY 4.0, bearbetad · OpenStreetMap, ODbL.</div></div>` : ""}
     <div class="sektion"><h2>Läge</h2><div>${esc(p.lage_metod)}</div>
       <div class="kalla">${p.lage_flyttad_m !== undefined ? `Adressen träffade bara gatan, så punkten flyttades ca ${n(p.lage_flyttad_m)} m. ` : ""}
       Punkten är ungefärlig och visar inte fastighetens gräns.</div></div>`;

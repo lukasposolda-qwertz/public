@@ -23,6 +23,7 @@ fastighetsförteckning per 2025-12-31.
 | Byggnad på adressen, närmaste station, service inom 500 m | OpenStreetMap via [Overpass API](https://overpass-api.de) | © OpenStreetMap-bidragsgivare, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) |
 | Befolkning inom 1 km | [SCB, öppna geodata](https://www.scb.se/vara-tjanster/oppna-data/oppna-geodata/): befolkning per 1 km-ruta, 2025-12-31 | Öppna data. Källa: SCB |
 | Skyddad natur inom 500 m | [Naturvårdsverket, Naturvårdsregistret](https://geodata.naturvardsverket.se/nedladdning/naturvardsregistret/) | CC0. Källa: Naturvårdsverket |
+| Kulturmiljö inom 250 m | [Riksantikvarieämbetet, öppna data](https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/): kulturhistoriska lämningar, kulturhistoriskt inventerad bebyggelse, byggnadsminnen (OGC API Features) | CC0 / CC BY. Källa: Riksantikvarieämbetet |
 | Bakgrundskarta | OpenStreetMap | © [OpenStreetMap-bidragsgivare](https://www.openstreetmap.org/copyright) |
 | Kartbibliotek | [Leaflet](https://leafletjs.com) 1.9.4 | BSD-2-Clause |
 | Kod | Lukas Posolda | MIT, se `LICENSE` |
@@ -53,6 +54,7 @@ anrop i taget, och svaren cachades.
 |---|---|
 | Invånare inom 1 km | Summan av SCB:s 1 km-rutor, där varje ruta viktas med hur stor del av den som ligger inom 1 km från punkten. En uppskattning. |
 | Service inom 500 m | Antal objekt i OpenStreetMap inom 500 m fågelvägen: butiker (`shop`), restauranger och kaféer, övrig service (apotek, bank, vård, skola m.m.), busshållplatser och cykelparkeringar. OSM är inte heltäckande, så siffrorna är ett minimum. |
+| Kulturmiljö inom 250 m | Lämningar, inventerad bebyggelse och byggnadsminnen hos RAÄ vars geometri ligger inom 250 m från punkten. Varje objekt länkar till RAÄ:s objektsida. RAÄ påpekar att kvaliteten kan variera och att länsstyrelsen ska kontaktas inför planering eller markarbeten. |
 | Skyddad natur inom 500 m | Gällande skyddade områden i Naturvårdsregistret vars gräns ligger inom 500 m från punkten. |
 
 Kartan kan färgas efter varje uppgift (meny **Färga efter**). Numeriska

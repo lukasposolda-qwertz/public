@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jernhusens tio största – 3D</title>
+<meta name="description" content="Inofficiell 3D-karta över Jernhusens tio största fastigheter och det svenska järnvägsnätet, byggd på öppna data.">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --panel: rgba(16, 20, 28, .92); --line: rgba(255,255,255,.09);
+    --text: #e8ecf2; --muted: #8b95a5; --rail: #f5a524; --accent: #3ee0c5; --depa: #ff7a59; --station: #6aa8ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+               font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #map { position: absolute; inset: 0; }
+  .panel { position: absolute; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+           backdrop-filter: blur(6px); }
+  #lista { top: 16px; left: 16px; width: 300px; max-height: calc(100% - 32px); overflow: auto; }
+  #kort { top: 16px; right: 16px; width: 360px; max-height: calc(100% - 32px); overflow: auto; display: none; }
+  .huvud { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 16px; margin: 0 0 2px; font-weight: 650; letter-spacing: .01em; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .inoff { display: inline-block; margin-top: 6px; font-size: 11px; color: #ffd27a; border: 1px solid rgba(255,210,122,.4);
+           border-radius: 4px; padding: 1px 6px; }
+  ol { list-style: none; margin: 0; padding: 4px 0; }
+  li { display: grid; grid-template-columns: 26px 1fr; gap: 2px 8px; padding: 7px 16px; cursor: pointer; }
+  li:hover, li.vald { background: rgba(255,255,255,.06); }
+  .nr { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; text-align: right; }
+  .namn { font-weight: 550; }
+  .meta { grid-column: 2; color: var(--muted); font-size: 12px; }
+  .stapel { grid-column: 2; height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .stapel span { display: block; height: 100%; }
+  .sektion { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .sektion h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-weight: 400; color: var(--muted); padding: 2px 0; }
+  td { text-align: right; padding: 2px 0; font-variant-numeric: tabular-nums; }
+  .stor { font-size: 22px; font-weight: 650; }
+  .kalla { color: var(--muted); font-size: 11px; margin-top: 6px; }
+  a { color: var(--accent); }
+  .knapp { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 6px; padding: 4px 10px;
+           font: inherit; font-size: 12px; cursor: pointer; }
+  .legend { padding: 10px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
+  .legend i { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+  .legend b { display: inline-block; width: 10px; height: 10px; vertical-align: -1px; margin-right: 6px; border-radius: 2px; }
+  .mark { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px;
+          color: #0d1117; border: 2px solid rgba(255,255,255,.85); cursor: pointer; box-shadow: 0 0 14px rgba(0,0,0,.6); }
+  .maplibregl-ctrl-attrib { background: rgba(16,20,28,.8) !important; color: var(--muted); }
+  .maplibregl-ctrl-attrib a { color: var(--text); }
+  @media (max-width: 760px) {
+    #lista { top: auto; bottom: 8px; left: 8px; right: 8px; width: auto; max-height: 38vh; }
+    #kort { top: 8px; left: 8px; right: 8px; width: auto; max-height: 50vh; }
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="lista" class="panel">
+  <div class="huvud">
+    <h1>Jernhusens tio största fastigheter</h1>
+    <div class="sub">efter lokalarea, enligt fastighetsförteckningen 2025-12-31</div>
+    <span class="inoff">Inofficiell demo · inte en tjänst från Jernhusen AB</span>
+  </div>
+  <ol id="topp"></ol>
+  <div class="legend">
+    <div><i style="background:var(--rail);box-shadow:0 0 6px var(--rail)"></i>Järnväg, huvud- och bandelar (OSM)</div>
+    <div><b style="background:var(--accent)"></b>Byggnader på järnvägsmark vid fastigheten (OSM)</div>
+    <div><b style="background:#3a4250"></b>Övriga byggnader</div>
+    <div style="margin-top:8px"><button class="knapp" id="sverige">Hela Sverige</button>
+      <a href="../" style="margin-left:8px;font-size:12px">← 2D-kartan med alla fastigheter</a></div>
+  </div>
+</div>
+
+<div id="kort" class="panel"></div>
+
+<script>
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const n = v => v === null || v === undefined ? "–" : Number(v).toLocaleString("sv-SE");
+const farg = p => p["Affärsområde"] === "Stationer" ? css("--station") : css("--depa");
+const SVERIGE = { center: [16.5, 62.3], zoom: 4.3, pitch: 0, bearing: 0 };
+
+const map = new maplibregl.Map({
+  container: "map", style: "https://tiles.openfreemap.org/styles/dark", ...SVERIGE, maxPitch: 75,
+  attributionControl: { compact: true, customAttribution:
+    'Fastigheter: Jernhusen AB, fastighetsförteckning 2025-12-31 · Järnväg, byggnader, lägen: © OpenStreetMap-bidragsgivare (ODbL) · ' +
+    'Trafik: Trafiklab/Samtrafiken (CC0), Trafikverket (CC0) · Kulturmiljö: RAÄ · Befolkning: SCB · Kod: MIT, Lukas Posolda' },
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+
+let topp;
+map.on("load", async () => {
+  // Basstilens byggnader i 3D (OpenMapTiles render_height), dämpade
+  map.addLayer({ id: "hus-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 13,
+    paint: { "fill-extrusion-color": "#3a4250", "fill-extrusion-opacity": 0.85,
+             "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+             "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0] } });
+
+  // Järnvägsnätet: glöd + kärna, syns från landsvy
+  map.addSource("jarnvag", { type: "geojson", data: "jarnvag.geojson" });
+  // zoom måste ligga överst i uttrycket; huvudbanor görs bredare i varje steg
+  const huvud = ["case", ["==", ["get", "usage"], "main"], 1, 0.6];
+  const bredd = (a, b) => ["interpolate", ["linear"], ["zoom"], 4, ["*", huvud, a], 10, ["*", huvud, b], 15, ["*", huvud, b * 2.5]];
+  map.addLayer({ id: "jarnvag-glod", type: "line", source: "jarnvag", layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": css("--rail"), "line-opacity": 0.25, "line-blur": 3, "line-width": bredd(4, 9) } });
+  map.addLayer({ id: "jarnvag", type: "line", source: "jarnvag", layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": css("--rail"), "line-opacity": ["case", ["==", ["get", "usage"], "main"], 0.95, 0.6],
+             "line-width": bredd(0.9, 2.2) } });
+
+  // Byggnader på järnvägsmark vid topp 10, framhävda
+  map.addSource("bygg", { type: "geojson", data: "byggnader.geojson" });
+  map.addLayer({ id: "bygg-3d", type: "fill-extrusion", source: "bygg", minzoom: 12,
+    paint: { "fill-extrusion-color": css("--accent"), "fill-extrusion-opacity": 0.9,
+             "fill-extrusion-height": ["get", "hojd"], "fill-extrusion-base": 0 } });
+
+  topp = await fetch("topp10.geojson", { cache: "no-cache" }).then(r => r.json());
+  const maxLoa = Math.max(...topp.features.map(f => f.properties["Lokalarea Summa"]));
+  document.getElementById("topp").innerHTML = topp.features.map(f => { const p = f.properties; return `
+    <li data-id="${esc(p.id)}"><span class="nr">${p.rank}</span><span class="namn">${esc(p.Fastighetsbeskrivning)}</span>
+      <span class="meta">${esc(p.Kommun)} · ${n(p["Lokalarea Summa"])} kvm · ${esc(p["Affärsområde"])}</span>
+      <span class="stapel"><span style="width:${100 * p["Lokalarea Summa"] / maxLoa}%;background:${farg(p)}"></span></span></li>`; }).join("");
+  document.querySelectorAll("#topp li").forEach(li => li.onclick = () => valj(li.dataset.id));
+  for (const f of topp.features) {
+    const el = document.createElement("div");
+    el.className = "mark"; el.textContent = f.properties.rank; el.style.background = farg(f.properties);
+    el.title = f.properties.Fastighetsbeskrivning;
+    el.onclick = () => valj(f.properties.id);
+    new maplibregl.Marker({ element: el }).setLngLat(f.geometry.coordinates).addTo(map);
+  }
+});
+
+function valj(id) {
+  const f = topp.features.find(x => x.properties.id === id), p = f.properties;
+  document.querySelectorAll("#topp li").forEach(li => li.classList.toggle("vald", li.dataset.id === id));
+  map.flyTo({ center: f.geometry.coordinates, zoom: 16, pitch: 62, bearing: (p.rank * 37) % 360 - 60, duration: 3500, essential: true });
+  const t = p.trafik, pk = p.punktlighet, km = p.kulturmiljo;
+  const rad = (k, v) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`;
+  const typer = ["Handel/Butik", "Hotell", "Industri/Depå", "Kontor", "Lager/Förråd", "Restaurang/Café", "Stationsverksamhet", "Övrigt"]
+    .filter(k => p[k]).map(k => rad(k, n(p[k]) + " kvm")).join("");
+  document.getElementById("kort").innerHTML = `
+    <div class="huvud"><div class="sub">#${p.rank} · ${esc(p["Affärsområde"])}</div>
+      <h1 style="font-size:19px">${esc(p.Fastighetsbeskrivning)}</h1>
+      <div class="sub">${esc(p.Kommun)} ${esc(p.Fastighetsbeteckning)}${p.Adress ? " · " + esc(p.Adress) : ""}</div>
+      <div style="margin-top:8px"><button class="knapp" id="stang">Stäng</button></div></div>
+    <div class="sektion"><h2>Lokalarea</h2><div class="stor">${n(p["Lokalarea Summa"])} kvm</div><table style="margin-top:6px">${typer}</table>
+      <div class="kalla">Jernhusens fastighetsförteckning 2025-12-31, sida ${esc(p.pdf_sida)}.</div></div>
+    <div class="sektion"><h2>Byggnader på järnvägsmark</h2>
+      <div>${p.jarnvagsbyggnader ? n(p.jarnvagsbyggnader) + " byggnader i turkos" : "Inga hittade"}${p.jarnvagsmark ? "" : " (ingen järnvägsmark i OSM vid punkten)"}</div>
+      <div class="kalla">OSM-byggnader inom 600 m som ligger på järnvägsmark (landuse=railway) eller är märkta som
+      stations- eller trafikbyggnader. Visar järnvägsmiljön, inte vilka byggnader Jernhusen äger. Höjd från OSM där den finns, annars 8 m. © OpenStreetMap-bidragsgivare, ODbL.</div></div>
+    ${t ? `<div class="sektion"><h2>Trafik en vardag (inom 500 m)</h2><table>
+      ${rad("Tågavgångar", "<b>" + n(t.avgangar.tag) + "</b>")}${t.avgangar.tag ? rad("Flest tåg på en timme", n(t.tag_max_per_timme)) : ""}
+      ${rad("Bussavgångar", n(t.avgangar.buss))}${rad("Spårvagn/tunnelbana", n(t.avgangar.sparvag_tunnelbana))}</table>
+      <div class="kalla">GTFS Sverige 2, Samtrafiken via Trafiklab (CC0), ${esc(t.referensdag)}.</div></div>` : ""}
+    ${pk ? `<div class="sektion"><h2>Punktlighet, ${esc(pk.station)}</h2><table>
+      ${rad("I tid (≤ " + pk.grans_min + " min)", "<b>" + n(pk.andel_i_tid) + " %</b>")}${rad("Inställda", n(pk.andel_installda) + " %")}</table>
+      <div class="kalla">Trafikverket (CC0), ${esc(pk.period_fran)} – ${esc(pk.period_till)}.</div></div>` : ""}
+    ${km ? `<div class="sektion"><h2>Kulturmiljö inom 250 m</h2><table>
+      ${rad("Byggnadsminnen", n(km.byggnadsminnen.length))}${rad("Inventerad bebyggelse", n(km.antal_bebyggelse))}
+      ${rad("Lämningar", n(km.antal_lamningar))}</table><div class="kalla">Riksantikvarieämbetet, öppna data.</div></div>` : ""}
+    ${p.befolkning ? `<div class="sektion"><h2>Omgivning</h2><table>${rad("Invånare inom 1 km", "ca " + n(p.befolkning.inom_1km))}
+      ${p.service_500m ? rad("Butiker och restauranger inom 500 m", n(p.service_500m.butiker + p.service_500m.mat_dryck)) : ""}</table>
+      <div class="kalla">SCB 2025 · OpenStreetMap.</div></div>` : ""}
+    <div class="sektion"><h2>Läge</h2><div>${esc(p.lage_metod)}</div>
+      <div class="kalla">Punkten kommer från adressen i förteckningen, sökt i OpenStreetMap. Den är ungefärlig och visar inte
+      fastighetens gräns.</div></div>`;
+  const kort = document.getElementById("kort"); kort.style.display = "block"; kort.scrollTop = 0;
+  document.getElementById("stang").onclick = () => { kort.style.display = "none"; };
+}
+document.getElementById("sverige").onclick = () => {
+  document.getElementById("kort").style.display = "none";
+  document.querySelectorAll("#topp li").forEach(li => li.classList.remove("vald"));
+  map.flyTo({ ...SVERIGE, duration: 2500 });
+};
+</script>
+</body>
+</html>

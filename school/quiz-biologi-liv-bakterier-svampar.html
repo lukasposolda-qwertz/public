@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Allt som lever, bakterier och svampar</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --correct-bg: #ecfdf5;
+    --correct-border: #059669;
+    --correct-text: #065f46;
+    --incorrect-bg: #fef2f2;
+    --incorrect-border: #dc2626;
+    --incorrect-text: #991b1b;
+    --partial-bg: #fffbeb;
+    --partial-border: #d97706;
+    --partial-text: #92400e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --card-radius: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .quiz-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .quiz-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .quiz-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .question-type-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 1rem;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .option-label:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: #f8f9ff;
+  }
+
+  .option-label.selected:not(.checked) {
+    border-color: var(--accent);
+    background: #eef2ff;
+  }
+
+  .option-label.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .option-label.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .option-label.disabled {
+    cursor: default;
+  }
+
+  .option-input {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .option-indicator {
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 18px;
+    margin-top: 1px;
+    font-size: 1rem;
+  }
+
+  .option-text {
+    flex: 1;
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: #eef2ff;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .feedback-box {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0 10px 10px 0;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-box.correct {
+    border-color: var(--correct-border);
+    background: var(--correct-bg);
+    color: var(--correct-text);
+  }
+
+  .feedback-box.incorrect {
+    border-color: var(--incorrect-border);
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+  }
+
+  .feedback-box.partial {
+    border-color: var(--partial-border);
+    background: var(--partial-bg);
+    color: var(--partial-text);
+  }
+
+  .feedback-verdict {
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-screen {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .resume-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .resume-info {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  .resume-score {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .work-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
+    line-height: 1.7;
+    font-size: 0.95rem;
+  }
+
+  .part-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+  }
+
+  .part-label { flex: 1 1 220px; line-height: 1.4; }
+
+  .part-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .txt-input { width: 15rem; max-width: 100%; }
+
+  .num-input, .sel-input, .txt-input {
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: white;
+    color: var(--text-primary);
+  }
+
+  .num-input { width: 8rem; }
+  .sel-input { min-width: 11rem; max-width: 100%; }
+
+  .num-input:focus, .sel-input:focus, .txt-input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .part-row.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .part-row.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+
+  .correct-note {
+    flex-basis: 100%;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .order-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem 0.625rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+  }
+
+  .order-item.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct-text); }
+  .order-item.incorrect { border-color: var(--incorrect-border); background: var(--incorrect-bg); color: var(--incorrect-text); }
+
+  .order-pos { font-weight: 700; color: var(--text-secondary); width: 1.25rem; }
+  .order-text { flex: 1; }
+
+  .order-btn {
+    font-family: inherit;
+    font-size: 0.9rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: white;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  .order-btn:hover:not(:disabled) { border-color: var(--accent); background: #eef2ff; }
+  .order-btn:disabled { opacity: 0.35; cursor: default; }
+
+  @media (max-width: 480px) {
+    .card { padding: 1.25rem; }
+    .quiz-title { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-title">Allt som lever, bakterier och svampar</div>
+    <div class="quiz-subtitle">Biologi åk 7 – kapitel 1, 2 och 4 | 65 frågor</div>
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">Fråga 1 av 65</span>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionCard">
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz-progress-quiz-biologi-liv-bakterier-svampar';
+
+const quizData = [
+  {
+    q: "Vilken uppgift har cellmembranet?",
+    type: "single",
+    opts: [
+      { t: "Det styr vilka ämnen som kommer in i och ut ur cellen", c: true },
+      { t: "Det fångar energi från solljuset", c: false },
+      { t: "Det innehåller cellens arvsanlag", c: false },
+      { t: "Det ger cellen en stadig och nästan fyrkantig form", c: false }
+    ],
+    fb: "Cellmembranet fungerar som cellens ”portvakt” och avgör vilka ämnen som släpps in och ut. Alla celler har ett cellmembran. Solljuset fångas av klorofyllkornen i växtceller, och arvsanlagen finns i cellkärnan. Den stadiga, ofta fyrkantiga formen hos växtceller kommer från cellväggen, som sitter utanför cellmembranet."
+  },
+  {
+    q: "Vilka egenskaper har alla levande varelser?",
+    type: "multi",
+    opts: [
+      { t: "De består alltid av en eller flera celler", c: true },
+      { t: "De behöver energi", c: true },
+      { t: "De kan förflytta sig från en plats till en annan", c: false },
+      { t: "De reagerar på sin omgivning", c: true }
+    ],
+    fb: "A, B och D stämmer. Alla levande varelser består av celler, behöver energi och reagerar på sin omgivning. De kan också fortplanta sig, ta upp ämnen och ge ifrån sig ämnen. Att kunna förflytta sig är däremot inget krav: en ek eller en svamp står still hela livet men lever ändå. Även en växt reagerar på omgivningen, till exempel genom att vända bladen mot ljuset."
+  },
+  {
+    q: "Vilken grupp hör varje organism till?",
+    type: "match",
+    badge: "Sortera – välj grupp för varje organism",
+    choices: ["Bakterier", "Växter", "Svampar", "Djur"],
+    rows: [
+      { t: "Bacill", ans: "Bakterier" },
+      { t: "Korall", ans: "Djur" },
+      { t: "Mögel", ans: "Svampar" },
+      { t: "Havstulpan", ans: "Djur" },
+      { t: "Mossa", ans: "Växter" },
+      { t: "Jäst", ans: "Svampar" },
+      { t: "Streptokock", ans: "Bakterier" },
+      { t: "Ek", ans: "Växter" }
+    ],
+    fb: "Baciller och streptokocker är bakterier: encelliga och utan cellkärna. Mögel och jäst är svampar, som saknar klorofyll och lever på färdig näring. Mossa och ek är växter med klorofyll. Korallen och havstulpanen är djur, trots att de sitter fast och kan likna växter. En havstulpan är faktiskt ett kräftdjur som sitter fast på stenar och fångar mat med sina ben."
+  },
+  {
+    q: "En enda bakterie hamnar på en odlingsplatta och förökar sig tills det har bildats en synlig prick av miljontals bakterier. Vad kallas en sådan samling bakterier?",
+    type: "text",
+    badge: "Skriv svaret – ett ord räcker",
+    parts: [{ label: "Svar", ans: ["koloni", "kolonier", "kolonin", "bakteriekoloni"], show: "koloni" }],
+    fb: "En sådan samling kallas koloni. En enskild bakterie är för liten för att synas, men efter något dygn i värme har den delat sig så många gånger att kolonin syns med blotta ögat. Därför kan man räkna kolonier för att få ett mått på hur många bakterier som hamnade på plattan från början."
+  },
+  {
+    q: "En häst och en åsna kan få en unge tillsammans, en mula. Varför räknas häst och åsna ändå som två olika arter?",
+    type: "single",
+    opts: [
+      { t: "Eftersom de har olika storlek och färg", c: false },
+      { t: "Eftersom de normalt lever i olika delar av världen", c: false },
+      { t: "Eftersom mulan i normala fall inte kan få egna ungar", c: true },
+      { t: "Eftersom de äter olika sorters föda", c: false }
+    ],
+    fb: "Två djur tillhör samma art om de kan få ungar som i sin tur kan få egna ungar. Mulan är nästan alltid steril, alltså kan den inte föröka sig. Därför är häst och åsna olika arter, och mulan är en hybrid – en blandning mellan två arter. Utseende, föda och var djuren lever avgör inte vilken art de tillhör."
+  },
+  {
+    q: "En bakterie delar sig var 20:e minut. Från början finns en enda bakterie, och alla nya bakterier fortsätter att dela sig i samma takt.",
+    type: "numeric",
+    parts: [
+      { label: "a) Antal bakterier efter 2 timmar", ans: 64, unit: "st" },
+      { label: "b) Antal bakterier efter 4 timmar", ans: 4096, unit: "st" }
+    ],
+    fb: "Varje delning fördubblar antalet. a) På 2 timmar (120 minuter) hinner det ske 120 / 20 = 6 delningar: 1 → 2 → 4 → 8 → 16 → 32 → 64. b) På 4 timmar sker 12 delningar. Efter 6 delningar finns 64, och sex delningar till ger 64 · 64 = 4096. Fördubblingen gör att antalet växer allt snabbare. På ett dygn skulle det i teorin bli fler bakterier än det finns sandkorn på jorden, men i verkligheten tar maten och utrymmet slut långt innan."
+  },
+  {
+    q: "Vilka påståenden om virus stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Virus är en sorts mycket små bakterier", c: false },
+      { t: "Virus kan föröka sig på egen hand i vatten", c: false },
+      { t: "Ett virus består av flera celler", c: false },
+      { t: "Virus syns tydligt i ett vanligt skolmikroskop", c: false }
+    ],
+    fb: "Inget av påståendena stämmer. Virus är inte bakterier och inte ens celler. Ett virus består i stort sett bara av arvsanlag inneslutna i ett skal. Det kan inte föröka sig på egen hand utan måste ta sig in i en levande cell. Virus är dessutom så små att man behöver ett elektronmikroskop för att se dem."
+  },
+  {
+    q: "Ordna stegen när ett virus förökar sig. Använd pilarna för att flytta raderna.",
+    type: "order",
+    items: [
+      "Cellen börjar tillverka nya viruspartiklar",
+      "Viruset fäster på en cell",
+      "Cellen spricker och de nya virusen sprids",
+      "Viruset tömmer sina arvsanlag i cellen"
+    ],
+    answer: [
+      "Viruset fäster på en cell",
+      "Viruset tömmer sina arvsanlag i cellen",
+      "Cellen börjar tillverka nya viruspartiklar",
+      "Cellen spricker och de nya virusen sprids"
+    ],
+    fb: "Viruset fäster först på cellen och tömmer sedan in sina arvsanlag. Arvsanlagen lurar cellen att tillverka nya viruspartiklar i stället för det cellen själv behöver. Till slut spricker cellen och de nya virusen sprids vidare till nya celler. Det kan ske i bakterier likaväl som i växt- och djurceller."
+  },
+  {
+    q: "Hos vilken grupp av svampar bildas sporerna i tätt packade rör på undersidan av hatten?",
+    type: "single",
+    opts: [
+      { t: "Flugsvampar", c: false },
+      { t: "Soppar, till exempel karljohansvamp", c: true },
+      { t: "Röksvampar", c: false },
+      { t: "Champinjoner", c: false }
+    ],
+    fb: "Soppar, som karljohansvampen, har en svampig undersida full av små rör där sporerna bildas. Flugsvampar och champinjoner har tunna skivor under hatten. Röksvampar har varken rör eller skivor."
+  },
+  {
+    q: "Stämmer påståendena om svampar?",
+    type: "match",
+    badge: "Stämmer eller stämmer inte? – välj för varje påstående",
+    choices: ["Stämmer", "Stämmer inte"],
+    rows: [
+      { t: "Ett mycel kan leva kvar i marken i många år", ans: "Stämmer" },
+      { t: "Kantareller har tunna skivor under hatten", ans: "Stämmer inte" },
+      { t: "Svampsporer är så små att de kan spridas långt med vinden", ans: "Stämmer" },
+      { t: "Ett och samma mycel kan bilda många sporkroppar", ans: "Stämmer" },
+      { t: "Svampar växer bäst på platser där det inte finns några döda växtdelar", ans: "Stämmer inte" }
+    ],
+    fb: "Mycelet, nätverket av svamptrådar i marken, kan leva i många år och bilda nya sporkroppar varje höst. Flera kantareller i samma glänta kan därför komma från ett och samma mycel. Sporerna är mikroskopiskt små och sprids långt med vinden. Kantareller har inte skivor utan låga, grenade åsar under hatten. Många svampar är nedbrytare och lever just av döda växtdelar som löv, barr och ved."
+  },
+  {
+    q: "Vilka påståenden om flercelliga organismer stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Olika celler kan vara specialiserade på olika uppgifter", c: true },
+      { t: "Alla celler i kroppen har samma form och uppgift", c: false },
+      { t: "Varje cell måste klara alla livets uppgifter på egen hand", c: false },
+      { t: "Cellerna i en flercellig organism kan inte föröka sig", c: false }
+    ],
+    fb: "Bara A stämmer. Hos flercelliga organismer samarbetar cellerna och delar upp arbetet. Människan har ungefär 200 olika sorters celler, till exempel muskelceller, nervceller och benceller, och de ser olika ut eftersom de har olika uppgifter. Det är encelliga organismer som måste klara allt på egen hand. Cellerna i en flercellig organism förökar sig hela tiden, till exempel när ett sår läks eller när ett barn växer."
+  },
+  {
+    q: "Arten människa har ett vetenskapligt namn med två ord, som Carl von Linné gav den. Skriv namnet.",
+    type: "text",
+    badge: "Skriv svaret",
+    parts: [{ label: "Vetenskapligt namn", ans: ["homo sapiens"], show: "Homo sapiens" }],
+    fb: "Människan heter Homo sapiens, vilket betyder ungefär ”den visa människan”. Namnet skrivs med stor bokstav i det första ordet och liten bokstav i det andra, och skrivs ofta i kursiv stil."
+  },
+  {
+    q: "Vad är ett organ?",
+    type: "single",
+    opts: [
+      { t: "En grupp likadana celler som har samma uppgift", c: false },
+      { t: "Det tunna skal som omger varje cell", c: false },
+      { t: "En enda mycket stor cell med flera cellkärnor", c: false },
+      { t: "En kroppsdel som är uppbyggd av flera olika sorters vävnader", c: true }
+    ],
+    fb: "Ett organ, till exempel hjärtat, lungorna eller levern, består av flera olika vävnader som samarbetar. Hjärtat innehåller bland annat muskelvävnad och nervvävnad. En grupp likadana celler med samma uppgift kallas vävnad – det är ett steg mindre än ett organ. Skalet runt varje cell är cellmembranet."
+  },
+  {
+    q: "Du ska titta på celler från en rödlök i mikroskop. Para ihop varje sak med vad den gör.",
+    type: "match",
+    badge: "Para ihop – välj ett alternativ för varje rad",
+    choices: [
+      "Är underlaget som provet läggs på",
+      "Lägger sig över provet så att det blir tunt och jämnt",
+      "Förstorar bilden av provet",
+      "Hindrar lökhinnan från att torka ut",
+      "Färgar cellerna röda"
+    ],
+    rows: [
+      { t: "Objektglaset", ans: "Är underlaget som provet läggs på" },
+      { t: "Täckglaset", ans: "Lägger sig över provet så att det blir tunt och jämnt" },
+      { t: "Mikroskopets linser", ans: "Förstorar bilden av provet" },
+      { t: "Vattendroppen", ans: "Hindrar lökhinnan från att torka ut" }
+    ],
+    fb: "Lökhinnan läggs i en vattendroppe på objektglaset, det avlånga glaset man lägger provet på. Vattnet håller hinnan fuktig. Täckglaset läggs ovanpå så att provet blir platt och jämnt. Mikroskopets linser förstorar så att cellerna syns – varje liten ”ruta” är en cell. Inget av redskapen färgar cellerna; rödlökens celler har en egen rödaktig färg."
+  },
+  {
+    q: "Vilka påståenden om mögel stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Mögelsvampar kan bilda ämnen som är giftiga för människor", c: true },
+      { t: "Mögel växer bäst där det är kallt och torrt", c: false },
+      { t: "Vissa ostar tillverkas med hjälp av ofarliga mögelsvampar", c: true },
+      { t: "Mögel är en sorts bakterie", c: false }
+    ],
+    fb: "A och C stämmer. Mögel är svampar, inte bakterier – det luddiga man ser är svampens mycel. Många mögelsvampar bildar giftiga ämnen, därför ska man inte äta mat som har börjat mögla. Undantaget är till exempel blå- och vitmögelostar, där ofarliga mögelsvampar ger osten dess smak. Mögel trivs där det är varmt och fuktigt."
+  },
+  {
+    q: "En elev resonerar om hur man ska förvara bröd. Vilket är det första steget som innehåller ett fel?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: [
+      "Steg 1: Mögelsporer finns i luften nästan överallt.",
+      "Steg 2: Därför går det inte att påverka hur snabbt bröd möglar.",
+      "Steg 3: Alltså spelar det ingen roll om brödet förvaras i frysen eller på bänken."
+    ],
+    opts: [
+      { t: "Steg 1", c: false },
+      { t: "Steg 2", c: true },
+      { t: "Steg 3", c: false },
+      { t: "Inget steg är fel", c: false }
+    ],
+    fb: "Steg 1 stämmer – sporer finns nästan överallt och går inte att stänga ute. Felet kommer i steg 2: även om sporerna finns där kan vi göra det svårt för svampen att växa. Mögel behöver värme och fukt, så i kyla växer det mycket långsamt och i frysen inte alls. Steg 3 bygger på det felaktiga steg 2 och blir därför också fel."
+  },
+  {
+    q: "Vilka levande varelser tror forskarna var de allra första på jorden?",
+    type: "single",
+    opts: [
+      { t: "Encelliga djur", c: false },
+      { t: "Enkla bakterier", c: true },
+      { t: "Svampar som levde av döda växter och djur", c: false },
+      { t: "Små växter som svävade i havet", c: false }
+    ],
+    fb: "Mycket gamla spår av bakterier har hittats i stenar, och allt tyder på att de första levande varelserna var enkla bakterier. Celler med cellkärna – början till växter, svampar och djur – uppstod troligen senare ur bakterier. Svampar som lever av döda växter och djur kan inte ha varit först, eftersom det då inte fanns några döda växter eller djur att leva av."
+  },
+  {
+    q: "Tänk dig att du räknar celler på en jättestor bild, en cell per sekund, dygnet runt utan paus.",
+    type: "numeric",
+    parts: [
+      { label: "a) Antal sekunder på ett dygn", ans: 86400, unit: "s" },
+      { label: "b) Antal dygn det tar att räkna 864 000 celler", ans: 10, unit: "dygn" }
+    ],
+    fb: "a) 60 · 60 · 24 = 86 400 sekunder. b) 864 000 / 86 400 = 10 dygn. Människokroppen består av tiotusentals miljarder celler. Att räkna alla i den här takten skulle ta över en miljon år – därför uppskattar forskare antalet i stället för att räkna varje cell."
+  },
+  {
+    q: "Bakterier sorteras ofta efter sin form. Vilken form har de bakterier som orsakar sjukdomarna?",
+    type: "match",
+    badge: "Para ihop – välj form för varje sjukdom",
+    choices: ["Kocker (kulor)", "Baciller (stavar)", "Spiriller (spiraler)"],
+    rows: [
+      { t: "Halsfluss", ans: "Kocker (kulor)" },
+      { t: "Stelkramp", ans: "Baciller (stavar)" },
+      { t: "Magsår", ans: "Spiriller (spiraler)" },
+      { t: "Karies (hål i tänderna)", ans: "Kocker (kulor)" }
+    ],
+    fb: "Halsfluss orsakas av streptokocker, kulformade bakterier som sitter på rad som ett pärlband. Även kariesbakterierna i munnen är kocker. Stelkramp orsakas av en stavformad bakterie, en bacill, som finns i jord. Magsår orsakas ofta av en spiralvriden bakterie som kan leva i magsäcken. I alla tre formgrupperna finns alltså bakterier som kan göra oss sjuka."
+  },
+  {
+    q: "Vilka av sjukdomarna orsakas av virus?",
+    type: "multi",
+    opts: [
+      { t: "Vanlig förkylning", c: true },
+      { t: "Kolera", c: false },
+      { t: "Kikhosta", c: false },
+      { t: "Influensa", c: true }
+    ],
+    fb: "A och D stämmer. Förkylning och influensa orsakas av virus, och därför hjälper inte antibiotika mot dem. Kolera och kikhosta orsakas däremot av bakterier. Mot både influensa och kikhosta finns vaccin."
+  },
+  {
+    q: "Många svampar har sina trådar sammanvuxna med trädens rötter. Svampen får socker av trädet och trädet får hjälp att ta upp vatten och närsalter. Vad kallas detta samspel? Ordet betyder ”svamprot”.",
+    type: "text",
+    badge: "Skriv svaret – ett ord räcker",
+    parts: [{ label: "Svar", ans: ["mykorrhiza", "mykorrhizan", "mycorrhiza", "mykoriza", "mykorriza", "mykorhiza"], show: "mykorrhiza" }],
+    fb: "Samspelet kallas mykorrhiza. Det är ett exempel på symbios – ett samspel där båda arterna har nytta av varandra. Träd med mykorrhiza växer ofta snabbare, och därför är svamparna viktiga för skogsbruket. Många matsvampar, som karljohansvamp och kantarell, lever i mykorrhiza med träd."
+  },
+  {
+    q: "Vad är den svenska rödlistan?",
+    type: "single",
+    opts: [
+      { t: "En förteckning över arter som är hotade, nära hotade eller har försvunnit från Sverige", c: true },
+      { t: "En lista över alla giftiga svampar och växter", c: false },
+      { t: "En lista över de arter som det är tillåtet att jaga och fiska", c: false },
+      { t: "En förteckning över alla arter som finns i Sverige", c: false }
+    ],
+    fb: "Rödlistan visar vilka arter som har en osäker framtid i Sverige: arter som är nära hotade, hotade eller redan försvunna. Den tas fram av ArtDatabanken och uppdateras ungefär vart femte år. Rödlistan används bland annat för att bestämma vilka arter och miljöer som behöver åtgärdsprogram. En lista över alla arter i landet skulle vara mycket längre."
+  },
+  {
+    q: "Para ihop varje problem med en åtgärd som kan hjälpa de hotade arterna.",
+    type: "match",
+    badge: "Para ihop – välj ett alternativ för varje rad",
+    choices: [
+      "Anlägga nya våtmarker",
+      "Låta kor och får beta",
+      "Inrätta ett fågelskyddsområde",
+      "Spara gamla och döda träd vid avverkning",
+      "Plantera ny granskog"
+    ],
+    rows: [
+      { t: "Grodor och salamandrar har för få dammar att lägga ägg i", ans: "Anlägga nya våtmarker" },
+      { t: "En blomrik äng håller på att växa igen med buskar", ans: "Låta kor och får beta" },
+      { t: "Sällsynta sjöfåglar störs av besökare när de häckar", ans: "Inrätta ett fågelskyddsområde" },
+      { t: "Vedsvampar och skalbaggar saknar döda träd att leva i", ans: "Spara gamla och döda träd vid avverkning" }
+    ],
+    fb: "Groddjur behöver grunda vatten för att lägga ägg, så nya våtmarker hjälper dem. Betande kor och får håller landskapet öppet så att ängsblommorna inte trängs undan av buskar och träd. I ett fågelskyddsområde får man inte gå in under häckningstiden. Många svampar och insekter lever bara i gamla eller döda träd, därför lämnar man sådana träd kvar vid avverkning. Ny granskog hjälper inte någon av de här arterna – täta planteringar med ett enda trädslag är tvärtom ofta artfattiga."
+  },
+  {
+    q: "Förr räknades svamparna till djurriket. Vilka egenskaper gör att svampar faktiskt liknar djur mer än växter?",
+    type: "multi",
+    opts: [
+      { t: "Svamparna saknar klorofyll och måste ta upp näring som redan finns", c: true },
+      { t: "Svampcellerna har en cellvägg", c: false },
+      { t: "Svampar kan förflytta sig för att leta efter mat", c: false },
+      { t: "Svampceller har ingen cellkärna", c: false }
+    ],
+    fb: "Bara A stämmer. Varken svampar eller djur har klorofyll, så ingen av dem kan använda solljus för att tillverka sin egen näring – båda är beroende av näring som redan finns. Cellväggen har svamparna gemensamt med växterna. Svampar kan inte förflytta sig utan växer där näringen finns. Svampceller har cellkärna, precis som djur- och växtceller."
+  },
+  {
+    q: "Vilka vanor minskar risken att sprida skadliga bakterier?",
+    type: "multi",
+    opts: [
+      { t: "Att tvätta händerna efter toalettbesök", c: true },
+      { t: "Att hålla flugor och råttor borta från maten", c: true },
+      { t: "Att ta antibiotika ibland, även när man är frisk", c: false },
+      { t: "Att hålla rått kött åtskilt från färdiglagad mat", c: true }
+    ],
+    fb: "A, B och D stämmer. Handtvätt efter toalettbesök tar bort bakterier från tarmen. Flugor, råttor och andra djur kan föra med sig bakterier till maten. Rått kött kan innehålla bakterier som dör när köttet tillagas, men om de kommer över på färdig mat finns det inget som dödar dem. Antibiotika skyddar inte mot framtida smitta och ska bara användas när en läkare bedömer att det behövs."
+  },
+  {
+    q: "Luktviol heter Viola odorata och styvmorsviol heter Viola tricolor. Vad visar det gemensamma ordet Viola?",
+    type: "single",
+    opts: [
+      { t: "Att båda arterna har trefärgade blommor", c: false },
+      { t: "Att båda arterna luktar gott", c: false },
+      { t: "Att båda arterna upptäcktes av samma forskare", c: false },
+      { t: "Att båda arterna tillhör samma släkte", c: true }
+    ],
+    fb: "Det första ordet i ett vetenskapligt artnamn är släktnamnet. Arter som är nära släkt med varandra har samma släktnamn, så alla violer heter Viola. Det andra ordet säger ofta något om arten: tricolor betyder ”tre färger” och odorata betyder ”välluktande” – de egenskaperna gäller alltså bara för var sin art. Namnet visar inget om vem som hittade arten."
+  },
+  {
+    q: "Ordna grupperna från den största (som innehåller flest arter) till den minsta. Använd pilarna för att flytta raderna.",
+    type: "order",
+    items: ["Släkte", "Domän", "Art", "Familj", "Rike"],
+    answer: ["Domän", "Rike", "Familj", "Släkte", "Art"],
+    fb: "Domänerna är de tre största grupperna för allt levande. Inom en domän finns riken, till exempel djurriket. Ett rike delas i mindre grupper, bland annat familjer. En familj innehåller flera släkten, och ett släkte innehåller en eller flera arter. Exempel: familjen ugglor innehåller släktet Strix, och där finns arten lappuggla (Strix nebulosa). Mellan rike och familj finns fler nivåer, men de behövs inte här."
+  },
+  {
+    q: "Vilka påståenden om bakterier stämmer?",
+    type: "multi",
+    opts: [
+      { t: "En bakterie är mycket mindre än en vanlig djurcell", c: true },
+      { t: "Alla bakterier är skadliga för människor", c: false },
+      { t: "Många bakterier fungerar som nedbrytare i naturen", c: true },
+      { t: "Bakterier förökar sig genom att bilda sporkroppar", c: false }
+    ],
+    fb: "A och C stämmer. Bakterier är mycket mindre än djur- och växtceller. De flesta bakterier är ofarliga eller till och med nyttiga, till exempel som nedbrytare som gör döda löv och djur till näringsrik jord. Bakterier förökar sig genom delning. Sporkroppar bildas av svampar."
+  },
+  {
+    q: "Mjölk värms snabbt upp till hög temperatur och kyls sedan ner igen, så att de flesta bakterier dör och mjölken håller längre. Vad kallas metoden?",
+    type: "text",
+    badge: "Skriv svaret – ett ord räcker",
+    parts: [{ label: "Svar", ans: ["pastörisering", "pastörisera", "pastöriseras", "pastöriserad", "pastörisering av mjölk", "pasteurisering", "pasteurisera", "pastorisering"], show: "pastörisering" }],
+    fb: "Metoden kallas pastörisering, efter den franske forskaren Louis Pasteur som visade att det är bakterier som får mjölk och annan mat att surna. Nästan all mjölk som säljs i affären är pastöriserad."
+  },
+  {
+    q: "En amöba består av en enda cell. Hur förökar den sig?",
+    type: "single",
+    opts: [
+      { t: "Genom att bilda sporer som sprids med vinden", c: false },
+      { t: "Genom att två amöbor smälter samman till en större", c: false },
+      { t: "Genom att cellen delar sig och blir två nya celler", c: true },
+      { t: "Genom att lägga ägg i vattnet", c: false }
+    ],
+    fb: "Amöban förökar sig genom delning: en fullvuxen cell delar sig i två nya celler. Det är så celler förökar sig i allmänhet, både encelliga organismer och cellerna i din egen kropp. Sporer används av svampar, och att lägga ägg är något som flercelliga djur gör."
+  },
+  {
+    q: "Para ihop varje upptäckt eller insats med rätt person.",
+    type: "match",
+    badge: "Para ihop – välj ett alternativ för varje rad",
+    choices: [
+      "Robert Hooke",
+      "Antonie van Leeuwenhoek",
+      "Carl von Linné",
+      "Louis Pasteur",
+      "Florence Nightingale",
+      "Alexander Fleming"
+    ],
+    rows: [
+      { t: "Gav cellen dess namn", ans: "Robert Hooke" },
+      { t: "Var först med att se bakterier i ett mikroskop", ans: "Antonie van Leeuwenhoek" },
+      { t: "Fick personalen på ett fältsjukhus att förbättra hygienen", ans: "Florence Nightingale" },
+      { t: "Visade att bakterier kan orsaka sjukdomar", ans: "Louis Pasteur" },
+      { t: "Upptäckte penicillinet", ans: "Alexander Fleming" }
+    ],
+    fb: "Hooke byggde mikroskop och ritade av mycket små föremål, och det var han som hittade på ordet cell. Leeuwenhoek slipade egna linser av hög kvalitet och blev den förste att se bakterier. Pasteur visade sambandet mellan bakterier och sjukdomar. Nightingale bevisade att god hygien räddar liv på sjukhus. Fleming upptäckte penicillinet, det första antibiotikumet. Linné passar inte på någon rad – han är känd för att ha sorterat och namngett växter och djur."
+  },
+  {
+    q: "Tre odlingsplattor stod öppna inomhus under en lektion och fick 42, 38 och 46 kolonier. Tre likadana plattor stod lika länge utomhus och fick 12, 9 och 15 kolonier.",
+    type: "numeric",
+    parts: [
+      { label: "a) Medelvärde inomhus", ans: 42, unit: "kolonier" },
+      { label: "b) Medelvärde utomhus", ans: 12, unit: "kolonier" },
+      { label: "c) Hur många gånger fler kolonier fick plattorna inomhus?", ans: 3.5, unit: "gånger" }
+    ],
+    fb: "a) (42 + 38 + 46) / 3 = 126 / 3 = 42. b) (12 + 9 + 15) / 3 = 36 / 3 = 12. c) 42 / 12 = 3,5. Varje koloni har vuxit upp från en bakterie som landade på plattan, så antalet kolonier är ett mått på hur många bakterier det fanns i luften. Inomhus finns många människor som för med sig bakterier, och luften byts inte ut lika ofta som utomhus. Man använder flera plattor och räknar medelvärde för att slumpen ska spela mindre roll."
+  },
+  {
+    q: "Vilka påståenden om Carl von Linné stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Han utbildade sig till läkare", c: true },
+      { t: "Han var den förste som såg bakterier i mikroskop", c: false },
+      { t: "Han föddes och växte upp i Lappland", c: false },
+      { t: "Han levde och verkade på 1600-talet", c: false }
+    ],
+    fb: "Bara A stämmer. Linné utbildade sig till läkare – på hans tid ingick läran om växter och djur i läkarutbildningen. Han föddes 1707 i Småland och levde alltså på 1700-talet. Lappland besökte han som ung forskare, och där upptäckte han nya arter. Den förste som såg bakterier var holländaren Leeuwenhoek."
+  },
+  {
+    q: "Varför fick den minsta levande delen namnet cell?",
+    type: "single",
+    opts: [
+      { t: "Små hålrum i en bit kork påminde om små rum, och cella betyder ”litet rum” på latin", c: true },
+      { t: "Ordet betyder ”levande” på grekiska", c: false },
+      { t: "Den fick namn efter forskaren som upptäckte den", c: false },
+      { t: "Ordet betyder ”att dela sig” på latin", c: false }
+    ],
+    fb: "Den engelske forskaren Robert Hooke tittade på tunna skivor av kork i mikroskop. Han såg massor av små hålrum som påminde honom om munkarnas små sovrum i ett kloster, och kallade dem celler efter latinets cella, ”litet rum”. Hålrummen var egentligen spåren efter döda celler i korkekens bark."
+  },
+  {
+    q: "Stämmer påståendena om arter?",
+    type: "match",
+    badge: "Stämmer eller stämmer inte? – välj för varje påstående",
+    choices: ["Stämmer", "Stämmer inte"],
+    rows: [
+      { t: "Talgoxe och blåmes kan få ungar som själva kan få ungar", ans: "Stämmer inte" },
+      { t: "Tax och pudel tillhör samma art", ans: "Stämmer" },
+      { t: "Blandningar mellan två arter är mycket vanliga i naturen", ans: "Stämmer inte" },
+      { t: "Det finns troligen många arter på jorden som ännu inte har upptäckts", ans: "Stämmer" },
+      { t: "Insekter är den djurgrupp som har flest kända arter", ans: "Stämmer" }
+    ],
+    fb: "Talgoxe och blåmes är två olika arter och får inga ungar tillsammans. Tax och pudel kan få valpar som i sin tur kan få valpar, så de är samma art – hund – trots att raserna ser olika ut. Hybrider, alltså blandningar mellan arter, är sällsynta. Forskarna har beskrivit omkring två miljoner arter men tror att det finns många fler, särskilt i regnskogar och på djupa havsbottnar. Insekterna är den överlägset artrikaste djurgruppen."
+  },
+  {
+    q: "Vilka av följande är exempel på symbios, alltså samspel där båda parter har nytta av varandra?",
+    type: "multi",
+    opts: [
+      { t: "En lav, där en svamp och en alg lever tillsammans", c: true },
+      { t: "Ett virus som förökar sig inne i en bakterie", c: false },
+      { t: "Bakterier i människans tarm som får mat och samtidigt bildar vitaminer", c: true },
+      { t: "Bakterier som bryter ner ett dött löv", c: false }
+    ],
+    fb: "A och C stämmer. I en lav ger svampen algen vatten och närsalter, och algen ger svampen socker från sin fotosyntes – båda vinner. Tarmbakterierna får mat som kroppen inte använder och bildar samtidigt vitaminer som vi kan ta upp. Viruset skadar och dödar bakterien, så där har bara den ena parten nytta. Bakterier som bryter ner ett dött löv lever av något som inte längre lever – det är nedbrytning, inte ett samspel mellan två levande organismer."
+  },
+  {
+    q: "Hur får svamparna sin näring?",
+    type: "match",
+    badge: "Sortera – välj kategori för varje svamp",
+    choices: ["Parasit", "Nedbrytare", "Symbios med växter"],
+    rows: [
+      { t: "Björkticka på en levande björk", ans: "Parasit" },
+      { t: "Fotsvamp mellan tårna", ans: "Parasit" },
+      { t: "Mögel på en gammal apelsin", ans: "Nedbrytare" },
+      { t: "Barrbroskskivling på vissna granbarr", ans: "Nedbrytare" },
+      { t: "Svamp vars trådar har vuxit ihop med en talls rötter", ans: "Symbios med växter" }
+    ],
+    fb: "En parasit lever på en annan levande organism och skadar den: björktickan bryter ner det levande trädet inifrån och fotsvampen växer i huden. Nedbrytare (saprofyter) lever av döda växter och djur, som möglet på apelsinen och svampen på de vissna barren. Svampen vars trådar har vuxit ihop med trädets rötter lever i mykorrhiza – trädet får hjälp med vatten och närsalter och svampen får socker."
+  },
+  {
+    q: "Vad finns i cellkärnan som styr många av organismens egenskaper?",
+    type: "single",
+    opts: [
+      { t: "Klorofyll som fångar solljus", c: false },
+      { t: "Socker som cellen använder som energi", c: false },
+      { t: "Gener som består av ämnet DNA", c: true },
+      { t: "Cellsaft som håller cellen spänd", c: false }
+    ],
+    fb: "Cellkärnan innehåller generna, arvsanlagen, som består av DNA. Generna styr många av organismens egenskaper och förs vidare till nya celler och till avkomman. Klorofyll finns i klorofyllkornen i växtceller, inte i kärnan. Socker och cellsaft finns ute i cellen."
+  },
+  {
+    q: "När sjöar och hav är varma och innehåller mycket gödningsämnen kan blågröna bakterier föröka sig så kraftigt att vattnet blir grönt och grumligt. Vad kallas det?",
+    type: "text",
+    badge: "Skriv svaret – ett ord räcker",
+    parts: [{ label: "Svar", ans: ["vattenblomning", "vattenblomningen", "algblomning", "algblomningen"], show: "vattenblomning" }],
+    fb: "Fenomenet kallas vattenblomning (ibland algblomning), trots att det inte har med blommor att göra. Det är vanligt i Östersjön under varma somrar och är ett tecken på övergödning."
+  },
+  {
+    q: "Ordna från minst till störst. Använd pilarna för att flytta raderna.",
+    type: "order",
+    items: [
+      "En växtcell",
+      "Honungsskivlingens jättemycel i Nordamerika",
+      "Ett virus",
+      "En flugsvamps sporkropp",
+      "En bakterie"
+    ],
+    answer: [
+      "Ett virus",
+      "En bakterie",
+      "En växtcell",
+      "En flugsvamps sporkropp",
+      "Honungsskivlingens jättemycel i Nordamerika"
+    ],
+    fb: "Virus är så små att de bara syns i elektronmikroskop. Bakterier är mycket mindre än växt- och djurceller, som i sin tur är för små för att synas utan mikroskop. En flugsvamps sporkropp är byggd av otaliga celler. Störst är ett mycel av honungsskivling i Nordamerika: det täcker en yta större än 900 fotbollsplaner och räknas som en av världens största organismer."
+  },
+  {
+    q: "Vilka påståenden om blågröna bakterier stämmer?",
+    type: "multi",
+    opts: [
+      { t: "De har klorofyll och kan använda solljus som energikälla", c: true },
+      { t: "De är egentligen alger, trots att de kallas bakterier", c: false },
+      { t: "De förökar sig särskilt snabbt i varmt och näringsrikt vatten", c: true },
+      { t: "De är alltid ofarliga att bada bland", c: false }
+    ],
+    fb: "A och C stämmer. Blågröna bakterier är riktiga bakterier – de saknar cellkärna – men de har klorofyll och använder solljus, ungefär som växter. När vattnet är varmt och innehåller mycket gödningsämnen kan de föröka sig explosionsartat. Vissa arter är giftiga och kan ge magbesvär om man sväljer vattnet och klåda på huden. En del av dem kallas alger, till exempel katthårsalg, men de är bakterier."
+  },
+  {
+    q: "Förr trodde många att bakterier kunde uppstå av sig själva, till exempel ur buljong. Louis Pasteur gjorde ett försök. Vilket är det första steget i resonemanget som innehåller ett fel?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: [
+      "Steg 1: Pasteur kokade buljong så att alla bakterier i den dog.",
+      "Steg 2: Han såg till att inga bakterier från luften kunde nå buljongen.",
+      "Steg 3: Buljongen förblev fri från bakterier. Alltså uppstår inte bakterier av sig själva – de måste komma dit utifrån."
+    ],
+    opts: [
+      { t: "Steg 1", c: false },
+      { t: "Steg 2", c: false },
+      { t: "Steg 3", c: false },
+      { t: "Inget steg är fel", c: true }
+    ],
+    fb: "Resonemanget är helt rätt. Genom att koka buljongen dödade Pasteur bakterierna som redan fanns där. När inga nya bakterier kunde komma in från luften växte det heller inga bakterier. Om bakterier kunde uppstå av sig själva skulle buljongen ha blivit full av bakterier ändå. Föreställningen att liv kan uppstå ur något som inte lever kallades uralstring."
+  },
+  {
+    q: "Varför använder biologer vetenskapliga artnamn?",
+    type: "single",
+    opts: [
+      { t: "För att varje art ska få ett namn som beskriver dess färg", c: false },
+      { t: "För att svenska namn inte får användas i faktaböcker", c: false },
+      { t: "För att latin är det språk som flest människor i världen talar i dag", c: false },
+      { t: "För att samma art ska ha samma namn i alla länder", c: true }
+    ],
+    fb: "En art kan ha helt olika namn på olika språk och till och med i olika dialekter, vilket lätt leder till missförstånd. Med ett vetenskapligt namn vet forskare över hela världen att de menar samma art. Linné använde latin eftersom det var det gemensamma språket för forskare i Europa på hans tid – i dag talar nästan ingen latin som vardagsspråk. Namnen beskriver ibland en egenskap, men inte nödvändigtvis färgen, och svenska namn används också."
+  },
+  {
+    q: "En jordglob har diametern 64 cm. Den verkliga jorden har diametern ungefär 12 800 km, och biosfären – området där det finns liv – är ungefär 20 km tjock.",
+    type: "numeric",
+    parts: [
+      { label: "a) Hur många km av den verkliga jorden motsvarar 1 cm på jordgloben?", ans: 200, unit: "km" },
+      { label: "b) Hur tjock blir biosfären på jordgloben?", ans: 1, unit: "mm" }
+    ],
+    fb: "a) 12 800 km / 64 cm = 200 km per cm. b) 20 km / 200 km per cm = 0,1 cm = 1 mm. Hela området där det finns liv – från de högst flygande fåglarna till de djupast simmande fiskarna – blir alltså bara en millimeter tjockt på en jordglob som är 64 cm bred. Biosfären är ett mycket tunt skikt runt jorden."
+  },
+  {
+    q: "Vi gör det svårt för bakterier att föröka sig i maten. Varför fungerar varje metod?",
+    type: "match",
+    badge: "Para ihop – välj förklaring för varje metod",
+    choices: [
+      "Kylan gör att bakterierna förökar sig mycket långsamt",
+      "Torrheten gör det svårt för bakterierna att föröka sig",
+      "Hettan dödar de flesta bakterier"
+    ],
+    rows: [
+      { t: "Mjölk förvaras i kylskåp", ans: "Kylan gör att bakterierna förökar sig mycket långsamt" },
+      { t: "Fisk hängs på tork", ans: "Torrheten gör det svårt för bakterierna att föröka sig" },
+      { t: "Mjölk pastöriseras", ans: "Hettan dödar de flesta bakterier" },
+      { t: "Blåbär läggs i frysen", ans: "Kylan gör att bakterierna förökar sig mycket långsamt" },
+      { t: "Köttbullar steks genom", ans: "Hettan dödar de flesta bakterier" }
+    ],
+    fb: "Bakterier trivs bäst när det är varmt och fuktigt. I kylskåp och frys förökar de sig mycket långsamt eller inte alls, men de flesta dör inte – därför börjar maten förstöras när den blir varm igen. Torkad fisk innehåller för lite vatten för att bakterier ska kunna föröka sig, och kan därför sparas länge. Vid pastörisering och stekning blir det så varmt att de flesta bakterier dör."
+  },
+  {
+    q: "En elev ska avgöra vilken grupp en organism tillhör genom att undersöka dess celler. Vilket är det första steget som innehåller ett fel?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: [
+      "Steg 1: Cellerna har en cellkärna, så det är inte en bakterie.",
+      "Steg 2: Cellerna har en cellvägg utanför cellmembranet.",
+      "Steg 3: Alltså är organismen ett djur."
+    ],
+    opts: [
+      { t: "Steg 1", c: false },
+      { t: "Steg 2", c: false },
+      { t: "Steg 3", c: true },
+      { t: "Inget steg är fel", c: false }
+    ],
+    fb: "Steg 1 stämmer – bakterier saknar cellkärna. Steg 2 är en iakttagelse och kan mycket väl stämma. Felet är slutsatsen i steg 3: djurceller har ingen cellvägg. En cell med både cellkärna och cellvägg kommer från en växt eller en svamp. Om cellerna dessutom har klorofyllkorn är det en växt; saknas klorofyll är det en svamp."
+  },
+  {
+    q: "Champinjoner kan likna den dödligt giftiga vita flugsvampen. Vad brukar skilja dem åt?",
+    type: "single",
+    opts: [
+      { t: "Champinjonen har rör under hatten, men flugsvampen har åsar", c: false },
+      { t: "Champinjonen har rosa eller bruna skivor, men flugsvampen har vita skivor", c: true },
+      { t: "Champinjonen växer bara i parker, men flugsvampen bara i skog", c: false },
+      { t: "Champinjonen har vit hatt, men flugsvampen har röd hatt med vita prickar", c: false }
+    ],
+    fb: "Både champinjoner och flugsvampar har skivor under hatten. Champinjonens skivor är rosa när svampen är ung och blir sedan bruna, medan vit flugsvamp har vita skivor. Den vita flugsvampen är helt vit – det är den röda flugsvampen som har röd hatt med vita prickar. Champinjoner växer både i skog och i hagar och parker. Den som är osäker ska aldrig äta en vit svamp som liknar en champinjon."
+  },
+  {
+    q: "Stämmer påståendena om lavar?",
+    type: "match",
+    badge: "Stämmer eller stämmer inte? – välj för varje påstående",
+    choices: ["Stämmer", "Stämmer inte"],
+    rows: [
+      { t: "Lavar kan växa på platser där varken svampar eller växter klarar sig ensamma", ans: "Stämmer" },
+      { t: "Lavar trivs bäst i städer med mycket bilavgaser", ans: "Stämmer inte" },
+      { t: "Många lavar växer bara någon millimeter per år", ans: "Stämmer" },
+      { t: "Lavar kan växa direkt på kala klippor", ans: "Stämmer" },
+      { t: "Lavar är en sorts mossa", ans: "Stämmer inte" }
+    ],
+    fb: "En lav är en svamp och en alg som lever i symbios, och tillsammans klarar de sig på platser som kala klippor där ingen av dem skulle överleva ensam. Vissa lavar bildar ämnen som fräter på stenen så att de får fäste. Många lavar är känsliga för luftföroreningar och därför ovanliga i städer. Lavar växer ofta mycket långsamt. De är inte mossor, även om till exempel fönsterlav ofta förväxlas med vitmossa."
+  },
+  {
+    q: "Lavar delas in i skorplavar, bladlavar och busklavar. Vilken grupp passar varje rad?",
+    type: "match",
+    badge: "Sortera – välj grupp för varje rad",
+    choices: ["Skorplav", "Bladlav", "Busklav"],
+    rows: [
+      { t: "Sitter som en tunn skorpa på en sten och liknar spilld målarfärg", ans: "Skorplav" },
+      { t: "Växer platt mot underlaget men har uppstickande flikar", ans: "Bladlav" },
+      { t: "Ser ut som en liten buske eller hänger ner från grenar", ans: "Busklav" },
+      { t: "Kartlav", ans: "Skorplav" },
+      { t: "Varglav", ans: "Busklav" }
+    ],
+    fb: "Skorplavar sitter fast som en tunn skorpa och kan likna spilld färg – kartlaven bildar mönster som påminner om en karta. Bladlavar ligger platt men har flikar, som blåslav och vägglav. Busklavar är upprättstående eller hängande och ser ut som små buskar; varglaven är en gul busklav som växer på gamla tallstubbar."
+  },
+  {
+    q: "Forskarna delar i dag in allt levande i tre domäner. Vad var den viktigaste orsaken till det?",
+    type: "single",
+    opts: [
+      { t: "Man upptäckte att svampar kan göra fotosyntes", c: false },
+      { t: "Man ville ha samma indelning som Linné använde", c: false },
+      { t: "Man insåg att arkéerna skiljer sig så mycket från vanliga bakterier att de behöver en egen huvudgrupp", c: true },
+      { t: "Man upptäckte att virus består av celler", c: false }
+    ],
+    fb: "De tre domänerna är vanliga bakterier, arkéer och organismer med cellkärna (växter, svampar och djur). Arkéerna liknar bakterier till utseendet men skiljer sig på viktiga sätt, och många lever i extrema miljöer som heta, svavelrika källor. Svampar gör inte fotosyntes, virus är inte celler, och Linné delade bara in de levande varelserna i växtriket och djurriket."
+  },
+  {
+    q: "Varifrån kan gödningsämnen som orsakar övergödning av sjöar och hav komma?",
+    type: "multi",
+    opts: [
+      { t: "Från gödslade åkrar", c: true },
+      { t: "Från avloppsvatten från hushåll", c: true },
+      { t: "Från bilavgaser", c: true },
+      { t: "Från lavar som växer på strandklipporna", c: false }
+    ],
+    fb: "A, B och C stämmer. Gödningsämnen (närsalter) som kväve och fosfor sprids från gödslade åkrar, från hushållens och industriernas avlopp – reningsverken tar inte bort allt – och via luften från bilavgaser. När onaturligt mycket gödningsämnen hamnar i naturen kallas det övergödning. Lavar växer långsamt och tar upp näring ur luft och regn; de släpper inte ut gödningsämnen."
+  },
+  {
+    q: "Ordna händelserna från orsak till följd. Använd pilarna för att flytta raderna.",
+    type: "order",
+    items: [
+      "Nedbrytare på bottnen förökar sig och förbrukar mycket syre",
+      "Gödningsämnen rinner ut i havet",
+      "Fiskar och bottendjur drabbas av syrebrist",
+      "Blågröna bakterier och alger förökar sig kraftigt",
+      "Bakterierna och algerna dör och sjunker till bottnen"
+    ],
+    answer: [
+      "Gödningsämnen rinner ut i havet",
+      "Blågröna bakterier och alger förökar sig kraftigt",
+      "Bakterierna och algerna dör och sjunker till bottnen",
+      "Nedbrytare på bottnen förökar sig och förbrukar mycket syre",
+      "Fiskar och bottendjur drabbas av syrebrist"
+    ],
+    fb: "Gödningsämnena gör att blågröna bakterier och alger kan föröka sig mycket. När de dör sjunker de till bottnen och blir mat åt nedbrytare, främst bakterier. Nedbrytarna blir då ovanligt många och använder så mycket syre att det blir syrebrist vid bottnen. Fiskar och andra djur som behöver syre dör eller flyr – man talar ibland om bottendöd."
+  },
+  {
+    q: "Alexander Fleming kom tillbaka efter semestern och såg att en av hans bakterieodlingar hade möglat. Vad var det han lade märke till?",
+    type: "single",
+    opts: [
+      { t: "Det växte inga bakterier närmast mögelsvampen", c: true },
+      { t: "Bakterierna hade börjat äta upp mögelsvampen", c: false },
+      { t: "Bakterierna växte snabbare nära mögelsvampen", c: false },
+      { t: "Mögelsvampen hade bytt färg där bakterierna växte", c: false }
+    ],
+    fb: "Runt mögelsvampen fanns en zon där bakterierna inte kunde växa. Fleming drog slutsatsen att svampen bildar ett ämne som hindrar bakterier, och ämnet fick namnet penicillin efter svampen Penicillium (penselmögel). Fleming fick Nobelpriset 1945 för upptäckten."
+  },
+  {
+    q: "En skorplav växer så att kanten flyttar sig 1 mm utåt per år åt alla håll. Laven är rund och har diametern 12 cm. Ungefär hur gammal är laven?",
+    type: "numeric",
+    parts: [{ label: "Ålder", ans: 60, unit: "år" }],
+    fb: "Lavens radie är hälften av diametern: 12 cm / 2 = 6 cm = 60 mm. Om kanten flyttar sig 1 mm per år har det tagit ungefär 60 år. Forskare kan använda långsamväxande lavar på det här sättet för att uppskatta hur länge en sten eller klippa har legat fri från is."
+  },
+  {
+    q: "Vilka påståenden om vit flugsvamp stämmer?",
+    type: "multi",
+    opts: [
+      { t: "Den blir ofarlig om man kokar eller steker den", c: false },
+      { t: "Man märker alltid förgiftningen inom en timme", c: false },
+      { t: "Den känns igen på att den smakar starkt och bittert", c: false },
+      { t: "Den växer bara i södra Europa", c: false }
+    ],
+    fb: "Inget av påståendena stämmer. Giftet i vit flugsvamp förstörs inte av värme. Svampen har mild smak, så man märker inget när man äter den, och det kan dröja upp till ett dygn innan man blir sjuk – först kräkningar och svår diarré, sedan skador på lever och njurar. Den växer i svenska skogar. Den som kan ha ätit vit flugsvamp måste snabbt få läkarhjälp."
+  },
+  {
+    q: "Para ihop varje beskrivning med rätt organism.",
+    type: "match",
+    badge: "Para ihop – välj ett alternativ för varje rad",
+    choices: ["Stinksvamp", "Röksvamp", "Trollsmör", "Häxkvast", "Larvklubba", "Kantarell"],
+    rows: [
+      { t: "Luktar ruttet kött och får flugor att sprida sporerna", ans: "Stinksvamp" },
+      { t: "Sporerna ryker ut ur en öppning när man trycker på svampen", ans: "Röksvamp" },
+      { t: "Gula, slemmiga klumpar som kan krypa några centimeter per dygn", ans: "Trollsmör" },
+      { t: "Täta samlingar av tunna grenar på björkar, orsakade av en liten svamp", ans: "Häxkvast" },
+      { t: "Växer upp ur en död larv eller puppa i marken", ans: "Larvklubba" }
+    ],
+    fb: "Stinksvampen lockar flugor med sin lukt, och sporerna fastnar på flugorna. Röksvampen bildar sporerna inne i sporkroppen och släpper ut dem som rök. Trollsmör kan röra sig och äter växtdelar, så det liknar mer ett djur än en svamp – det räknas i dag till slemsvamparna. Häxkvastar bildas när en mikroskopisk svamp får björkens grenar att växa onormalt. Larvklubban är en parasit som tar näring från larver och puppor. Kantarellen passar inte på någon rad."
+  },
+  {
+    q: "Vilka av följande måste finnas för att det ska kunna finnas liv på en plats?",
+    type: "multi",
+    opts: [
+      { t: "Vatten i flytande form", c: true },
+      { t: "Solljus", c: false },
+      { t: "Syre i luften", c: false },
+      { t: "En temperatur över 20 °C", c: false }
+    ],
+    fb: "Bara A stämmer. Allt liv vi känner till är beroende av vatten i flytande form. Solljus behövs inte överallt: på de djupaste havsbottnarna lever fiskar och räkor i totalt mörker. Vissa bakterier klarar sig helt utan syre. Och det finns liv både på iskalla bergstoppar och i Antarktis."
+  },
+  {
+    q: "På vilka sätt har svampar betydelse för människor och natur?",
+    type: "multi",
+    opts: [
+      { t: "De bryter ner döda växtdelar så att det bildas ny jord", c: true },
+      { t: "De hjälper många träd att ta upp vatten och närsalter", c: true },
+      { t: "Jästsvampar används när man bakar bröd", c: true },
+      { t: "Vissa svampar är goda och näringsrika att äta", c: true }
+    ],
+    fb: "Alla fyra stämmer. Svampar är viktiga nedbrytare som gör löv, barr och död ved till jord. Genom mykorrhiza hjälper de träd att ta upp vatten och närsalter. Jästsvampar får degen att jäsa och används också när man gör öl och vin. Kantareller, karljohansvamp och champinjoner är populära matsvampar. Dessutom bildar vissa mögelsvampar ämnen som används som medicin."
+  },
+  {
+    q: "Ordna händelserna från den äldsta till den nyaste. Använd pilarna för att flytta raderna.",
+    type: "order",
+    items: [
+      "Penicillin upptäcks",
+      "Cellen får sitt namn",
+      "Livet delas in i tre domäner",
+      "Man visar att mjölk håller längre om den värms upp en kort stund",
+      "Tvånamnssystemet för arter införs"
+    ],
+    answer: [
+      "Cellen får sitt namn",
+      "Tvånamnssystemet för arter införs",
+      "Man visar att mjölk håller längre om den värms upp en kort stund",
+      "Penicillin upptäcks",
+      "Livet delas in i tre domäner"
+    ],
+    fb: "Cellen fick sitt namn på 1600-talet, när de första bra mikroskopen byggdes. Linné införde vetenskapliga namn med två ord på 1700-talet. Pasteur visade på 1800-talet att man kan döda bakterier i mjölk med värme. Fleming upptäckte penicillinet 1928, och på 1990-talet infördes de tre domänerna när forskarna förstod hur annorlunda arkéerna är."
+  },
+  {
+    q: "En elev förklarar varför en bröddeg jäser. Vilket är det första steget som innehåller ett fel?",
+    type: "single",
+    badge: "Hitta felet – välj ett alternativ",
+    work: [
+      "Steg 1: Jästsvamparna i degen bryter ner socker.",
+      "Steg 2: Då bildas gasen koldioxid, som får degen att svälla.",
+      "Steg 3: Den alkohol som kan bildas stannar kvar i det färdiga brödet."
+    ],
+    opts: [
+      { t: "Steg 1", c: false },
+      { t: "Steg 2", c: false },
+      { t: "Steg 3", c: true },
+      { t: "Inget steg är fel", c: false }
+    ],
+    fb: "Steg 1 och 2 stämmer: jästsvamparna får energi genom att bryta ner socker, och då bildas koldioxid som blåser upp degen. Om det blir brist på syre bildas även lite alkohol – men den avdunstar i ugnens värme och finns inte kvar i det färdiga brödet. När man tillverkar öl och vin tar man däremot vara på alkoholen."
+  },
+  {
+    q: "Varför kan man säga att du består av ”returmaterial”?",
+    type: "single",
+    opts: [
+      { t: "Kroppen tillverkar nya atomer av de celler som dör", c: false },
+      { t: "Atomerna i din kropp har en gång funnits i stjärnor som har exploderat", c: true },
+      { t: "Alla dina celler har tidigare tillhört andra människor", c: false },
+      { t: "Kroppen gör om solljus till atomer", c: false }
+    ],
+    fb: "När stora stjärnor exploderar bildas moln av partiklar i rymden. Ur ett sådant moln bildades solen och jorden för ungefär 4 600 miljoner år sedan. Atomerna i jorden – och därmed i dig – kommer alltså från stjärnor som inte längre finns. Kroppen kan inte tillverka nya atomer; den bygger sina celler av atomer som den får genom maten, vattnet och luften."
+  },
+  {
+    q: "Stämmer påståendena om antibiotika och resistenta bakterier?",
+    type: "match",
+    badge: "Stämmer eller stämmer inte? – välj för varje påstående",
+    choices: ["Stämmer", "Stämmer inte"],
+    rows: [
+      { t: "Antibiotika hjälper aldrig mot en vanlig förkylning", ans: "Stämmer" },
+      { t: "En mutation är en plötslig förändring av en gen", ans: "Stämmer" },
+      { t: "Bakterier blir resistenta för att människans kropp vänjer sig vid medicinen", ans: "Stämmer inte" },
+      { t: "En enda resistent bakterie som överlever en behandling kan snabbt bli miljontals resistenta bakterier", ans: "Stämmer" },
+      { t: "Ju oftare antibiotika används, desto mindre blir risken för resistens", ans: "Stämmer inte" }
+    ],
+    fb: "Antibiotika verkar mot bakterier men inte mot virus, och förkylning orsakas av virus. Resistens börjar med en mutation, en slumpmässig förändring i en gen, som gör att en bakterie tål medicinen. När antibiotikan dödar de andra bakterierna kan den resistenta bakterien föröka sig utan konkurrens, och eftersom bakterier delar sig snabbt kan den bli miljontals på kort tid. Det är bakterierna som förändras, inte människan. Ju oftare antibiotika används, desto fler tillfällen får resistenta bakterier att ta över."
+  },
+  {
+    q: "Vilka av följande kan göra att arter försvinner och att den biologiska mångfalden minskar?",
+    type: "multi",
+    opts: [
+      { t: "Att våtmarker torrläggs", c: true },
+      { t: "Att gamla skogar avverkas", c: true },
+      { t: "Att blomrika ängar växer igen", c: true },
+      { t: "Att för mycket gödningsämnen hamnar i sjöar och hav", c: true }
+    ],
+    fb: "Alla fyra stämmer. Det största hotet mot de flesta arter är att deras livsmiljöer förändras eller försvinner. Torrlagda våtmarker tar bort platser för groddjur och fåglar, avverkade gamla skogar tar bort död ved och gamla träd som många svampar och insekter behöver, och ängar som växer igen förlorar sina blommor och fjärilar. Övergödning gynnar ett fåtal arter och leder till syrebrist som slår ut andra."
+  },
+  {
+    q: "En flugsvamp kan bilda 3 000 000 sporer. Anta att bara 1 av 100 000 sporer hamnar på en plats där den kan växa till ett nytt mycel. Hur många nya mycel blir det?",
+    type: "numeric",
+    parts: [{ label: "Antal nya mycel", ans: 30, unit: "st" }],
+    fb: "3 000 000 / 100 000 = 30. Även om nästan alla sporer går förlorade blir det alltså ändå flera nya svampar. Därför bildar svampar så otroligt många sporer – ju fler som sprids, desto större chans att några hamnar på en bra plats."
+  },
+  {
+    q: "Ett svampmycel i marken kan bli flera tusen år gammalt. Hur är det möjligt?",
+    type: "single",
+    opts: [
+      { t: "Mycelet vilar som sporer i marken under de flesta år", c: false },
+      { t: "Mycelet skyddas av sporkropparna som växer ovanpå", c: false },
+      { t: "Mycelet byts ut mot ett nytt varje gång en spor gror", c: false },
+      { t: "Mycelet bildar hela tiden nya trådar och har ingen bestämd livslängd", c: true }
+    ],
+    fb: "Sporkropparna vissnar efter någon vecka, men själva svampen – mycelet – lever vidare under marken. Den håller sig ”evigt ung” genom att ständigt bilda nya svamptrådar. Ett mycel kan därför bli både enormt stort och mycket gammalt; honungsskivlingens jättemycel i Nordamerika tros vara minst 2 400 år. Sporerna behövs för att sprida svampen till nya platser, inte för att hålla ett mycel vid liv."
+  }
+];
+
+// ── Övningsformat: inmatning, skriv svaret, para ihop/sortera, ordna ──
+function isCustom(q) {
+  return q.type === 'numeric' || q.type === 'text' || q.type === 'match' || q.type === 'order';
+}
+
+function normText(s) {
+  return String(s).toLowerCase().replace(/[.,!?"”“']/g, '').replace(/\s+/g, ' ').trim().replace(/^(en|ett) /, '');
+}
+
+// Antal ändringar (tecken) som skiljer två ord åt – används för att godta små stavfel
+function editDistance(a, b) {
+  var prev = [], cur, i, j;
+  for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++) {
+    cur = [i];
+    for (j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+function checkText(value, accepted) {
+  var v = normText(value);
+  if (!v) return 'wrong';
+  if (accepted.some(function(a) { return normText(a) === v; })) return 'exact';
+  if (v.length >= 5 && accepted.some(function(a) { return editDistance(normText(a), v) <= 1; })) return 'typo';
+  return 'wrong';
+}
+
+var orderState = [];
+
+function shortNum(n) {
+  return String(n).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function parseNum(s) {
+  var v = parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
+  return isNaN(v) ? null : v;
+}
+
+function renderWork(q, list) {
+  var box = document.createElement('div');
+  box.className = 'work-box';
+  q.work.forEach(function(line) {
+    var d = document.createElement('div');
+    d.textContent = line;
+    box.appendChild(d);
+  });
+  list.appendChild(box);
+}
+
+function renderCustom(q, list) {
+  if (q.type === 'numeric') {
+    if (!q.badge) document.getElementById('typeBadge').textContent =
+      q.parts.length > 1 ? 'Räkna ut – lös i steg och skriv dina svar' : 'Räkna ut – skriv ditt svar';
+    q.parts.forEach(function(p, i) {
+      var row = document.createElement('div');
+      row.className = 'part-row';
+      row.innerHTML = '<span class="part-label"></span><span class="part-input">' +
+        '<input class="num-input" type="text" inputmode="decimal" autocomplete="off" id="part' + i + '">' +
+        '<span></span></span>';
+      row.querySelector('.part-label').textContent = p.label;
+      row.querySelector('.part-input span').textContent = p.unit;
+      list.appendChild(row);
+    });
+  } else if (q.type === 'text') {
+    if (!q.badge) document.getElementById('typeBadge').textContent = 'Skriv svaret';
+    q.parts.forEach(function(p, i) {
+      var row = document.createElement('div');
+      row.className = 'part-row';
+      row.innerHTML = '<span class="part-label"></span><span class="part-input">' +
+        '<input class="txt-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" id="part' + i + '">' +
+        '</span>';
+      row.querySelector('.part-label').textContent = p.label;
+      list.appendChild(row);
+    });
+  } else if (q.type === 'match') {
+    q.rows.forEach(function(r, i) {
+      var row = document.createElement('div');
+      row.className = 'part-row';
+      var lab = document.createElement('span');
+      lab.className = 'part-label';
+      lab.textContent = r.t;
+      var sel = document.createElement('select');
+      sel.className = 'sel-input';
+      sel.id = 'part' + i;
+      sel.innerHTML = '<option value="">Välj …</option>';
+      q.choices.forEach(function(c) {
+        var o = document.createElement('option');
+        o.value = c; o.textContent = c;
+        sel.appendChild(o);
+      });
+      row.appendChild(lab);
+      row.appendChild(sel);
+      list.appendChild(row);
+    });
+  } else if (q.type === 'order') {
+    if (!q.badge) document.getElementById('typeBadge').textContent = 'Ordna – flytta raderna till rätt ordning';
+    orderState = q.items.slice();
+    drawOrder(list, false);
+  }
+  var first = list.querySelector('input, select');
+  if (first && window.matchMedia('(pointer: fine)').matches) first.focus();
+}
+
+function drawOrder(list, done, q) {
+  list.querySelectorAll('.order-item').forEach(function(el) { el.remove(); });
+  orderState.forEach(function(t, i) {
+    var row = document.createElement('div');
+    row.className = 'order-item';
+    if (done) row.classList.add(t === q.answer[i] ? 'correct' : 'incorrect');
+    row.innerHTML = '<span class="order-pos">' + (i + 1) + '.</span><span class="order-text"></span>' +
+      '<button class="order-btn" aria-label="Flytta upp">▲</button><button class="order-btn" aria-label="Flytta ned">▼</button>';
+    row.querySelector('.order-text').textContent = done && t !== q.answer[i]
+      ? t + '  (rätt plats: ' + (q.answer.indexOf(t) + 1) + ')' : t;
+    var btns = row.querySelectorAll('.order-btn');
+    btns[0].disabled = done || i === 0;
+    btns[1].disabled = done || i === orderState.length - 1;
+    btns[0].onclick = function() { swapOrder(list, i, i - 1); };
+    btns[1].onclick = function() { swapOrder(list, i, i + 1); };
+    list.appendChild(row);
+  });
+}
+
+function swapOrder(list, a, b) {
+  if (checked) return;
+  var tmp = orderState[a]; orderState[a] = orderState[b]; orderState[b] = tmp;
+  drawOrder(list, false);
+}
+
+function checkCustom(q) {
+  var list = document.getElementById('optionsList');
+  var results = [];
+
+  if (q.type === 'order') {
+    orderState.forEach(function(t, i) { results.push(t === q.answer[i]); });
+    drawOrder(list, true, q);
+  } else {
+    var rows = list.querySelectorAll('.part-row');
+    var defs = q.type === 'numeric' || q.type === 'text' ? q.parts : q.rows;
+    defs.forEach(function(d, i) {
+      var inp = document.getElementById('part' + i);
+      var ok, typo = false;
+      if (q.type === 'numeric') {
+        var v = parseNum(inp.value);
+        ok = v !== null && Math.abs(v - d.ans) <= Math.abs(d.ans) * 0.01 + 1e-9;
+      } else if (q.type === 'text') {
+        var res = checkText(inp.value, d.ans);
+        ok = res !== 'wrong';
+        typo = res === 'typo';
+      } else {
+        ok = inp.value === d.ans;
+      }
+      inp.disabled = true;
+      results.push(ok);
+      rows[i].classList.add(ok ? 'correct' : 'incorrect');
+      if (!ok || typo) {
+        var note = document.createElement('span');
+        note.className = 'correct-note';
+        if (typo) note.textContent = 'Godkänt, men det stavas: ' + d.show;
+        else if (q.type === 'numeric') note.textContent = 'Rätt svar: ' + shortNum(d.ans) + ' ' + d.unit;
+        else if (q.type === 'text') note.textContent = 'Rätt svar: ' + d.show;
+        else note.textContent = 'Rätt svar: ' + d.ans;
+        rows[i].appendChild(note);
+      }
+    });
+  }
+
+  var nRight = results.filter(Boolean).length;
+  var isExact = nRight === results.length;
+  var isPartial = !isExact && nRight > 0;
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt. (' + nRight + ' av ' + results.length + ' rätt)';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+  document.getElementById('feedbackText').textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+let current = 0;
+let score = 0;
+let answers = [];
+let checked = false;
+
+// ── localStorage helpers ──────────────────────────────────────────
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentQuestion: current + 1,
+      score: score,
+      answers: answers
+    }));
+  } catch(e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// ── Card template ─────────────────────────────────────────────────
+function getCardTemplate() {
+  return `
+    <div class="question-type-badge" id="typeBadge"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+    <div class="btn-row">
+      <button class="btn" id="checkBtn" onclick="checkAnswer()">Kontrollera</button>
+      <button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Nästa fråga →</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-verdict" id="feedbackVerdict"></div>
+      <div id="feedbackText"></div>
+    </div>
+  `;
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  const saved = loadProgress();
+  if (saved && saved.currentQuestion > 0 && saved.currentQuestion < quizData.length) {
+    showResumeScreen(saved);
+  } else {
+    clearProgress();
+    render();
+  }
+}
+
+function showResumeScreen(saved) {
+  const nextQ = saved.currentQuestion;
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (nextQ + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width =
+    (nextQ / quizData.length * 100) + '%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div class="resume-screen">' +
+    '<div class="resume-title">Fortsätt där du slutade</div>' +
+    '<div class="resume-info">Du är på fråga <strong>' + (nextQ + 1) + '</strong> av ' + quizData.length + '</div>' +
+    '<div class="resume-score">' + saved.score + ' rätt hittills</div>' +
+    '<div class="btn-row" style="justify-content:center; margin-top:1.5rem;">' +
+    '<button class="btn" onclick="continueQuiz()">Fortsätt</button>' +
+    '<button class="btn btn-outline" onclick="freshStart()">Börja om</button>' +
+    '</div></div>';
+}
+
+function continueQuiz() {
+  const saved = loadProgress();
+  if (saved) {
+    current = saved.currentQuestion;
+    score = saved.score;
+    answers = saved.answers || [];
+  }
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+function freshStart() {
+  clearProgress();
+  current = 0; score = 0; answers = [];
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  const q = quizData[current];
+  const isSingle = q.type === 'single';
+  const pct = (current / quizData.length) * 100;
+
+  document.getElementById('progressText').textContent =
+    'Fråga ' + (current + 1) + ' av ' + quizData.length;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  document.getElementById('typeBadge').textContent = q.badge || (isSingle
+    ? 'Enval – välj ett alternativ'
+    : 'Flerval – ett eller flera alternativ kan vara rätta');
+
+  document.getElementById('questionText').innerHTML = q.q.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+  if (q.work) renderWork(q, list);
+
+  if (isCustom(q)) renderCustom(q, list);
+  else q.opts.forEach(function(opt, i) {
+    var label = document.createElement('label');
+    label.className = 'option-label';
+
+    var input = document.createElement('input');
+    input.type = isSingle ? 'radio' : 'checkbox';
+    input.className = 'option-input';
+    input.id = 'opt' + i;
+    if (isSingle) input.name = 'quiz-option';
+
+    var textSpan = document.createElement('span');
+    textSpan.className = 'option-text';
+    textSpan.textContent = ['A', 'B', 'C', 'D'][i] + ') ' + opt.t;
+
+    label.appendChild(input);
+    label.appendChild(textSpan);
+
+    input.addEventListener('change', function() {
+      if (checked) return;
+      if (isSingle) {
+        list.querySelectorAll('.option-label').forEach(function(l) {
+          l.classList.remove('selected');
+        });
+      }
+      label.classList.toggle('selected', input.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  document.getElementById('checkBtn').style.display = 'inline-block';
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('nextBtn').style.display = 'none';
+
+  var fb = document.getElementById('feedbackBox');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+  checked = false;
+}
+
+// ── Check answer ──────────────────────────────────────────────────
+function checkAnswer() {
+  if (checked) return;
+  checked = true;
+
+  var q = quizData[current];
+  if (isCustom(q)) { checkCustom(q); return; }
+  var isSingle = q.type === 'single';
+  var labels = document.querySelectorAll('.option-label');
+  var inputs = isSingle
+    ? document.querySelectorAll('input[name="quiz-option"]')
+    : document.querySelectorAll('.option-input');
+
+  var selected = [];
+  inputs.forEach(function(inp, i) { if (inp.checked) selected.push(i); });
+
+  var correct = [];
+  q.opts.forEach(function(opt, i) { if (opt.c) correct.push(i); });
+
+  labels.forEach(function(label, i) {
+    label.classList.add('disabled', 'checked');
+    var inp = label.querySelector('input');
+    inp.disabled = true;
+    var textSpan = label.querySelector('.option-text');
+    var isCorrect = q.opts[i].c;
+    var wasSelected = inp.checked;
+
+    if (isCorrect) {
+      label.classList.add('correct');
+      var ind = document.createElement('span');
+      ind.className = 'option-indicator';
+      ind.textContent = '✓';
+      label.insertBefore(ind, textSpan);
+    } else if (wasSelected && !isCorrect) {
+      label.classList.add('incorrect');
+      var ind2 = document.createElement('span');
+      ind2.className = 'option-indicator';
+      ind2.textContent = '✗';
+      label.insertBefore(ind2, textSpan);
+    }
+    label.classList.remove('selected');
+  });
+
+  var correctSet = new Set(correct);
+  var isExact = selected.length === correct.length &&
+                selected.every(function(i) { return correctSet.has(i); });
+  var isPartial = !isSingle && !isExact && selected.length > 0 &&
+                  selected.some(function(i) { return correctSet.has(i); });
+
+  if (isExact) score++;
+  answers.push(isExact ? 1 : 0);
+  saveProgress();
+
+  var fb = document.getElementById('feedbackBox');
+  var verdict = document.getElementById('feedbackVerdict');
+  var fbText = document.getElementById('feedbackText');
+
+  if (isExact) {
+    fb.className = 'feedback-box correct';
+    verdict.textContent = 'Rätt.';
+  } else if (isPartial) {
+    fb.className = 'feedback-box partial';
+    verdict.textContent = 'Delvis rätt.';
+  } else {
+    fb.className = 'feedback-box incorrect';
+    verdict.textContent = 'Fel.';
+  }
+
+  fbText.textContent = q.fb;
+  fb.style.display = 'block';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+// ── Navigation ────────────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= quizData.length) {
+    showResults();
+  } else {
+    render();
+  }
+}
+
+function showResults() {
+  clearProgress();
+  document.getElementById('progressText').textContent = 'Resultat';
+  document.getElementById('progressBar').style.width = '100%';
+
+  document.getElementById('questionCard').innerHTML =
+    '<div style="text-align:center; padding:1rem 0;">' +
+    '<div style="font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:1.5rem;">Resultat</div>' +
+    '<div style="font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1;">' + score + '</div>' +
+    '<div style="font-size:1rem;color:var(--text-secondary);margin-top:0.5rem;margin-bottom:0.25rem;">av ' + quizData.length + ' rätt</div>' +
+    '<div style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:2rem;">Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor.</div>' +
+    '<button class="btn" onclick="restart()">Starta om</button>' +
+    '</div>';
+}
+
+function restart() {
+  clearProgress();
+  current = 0; score = 0; answers = []; checked = false;
+  document.getElementById('questionCard').innerHTML = getCardTemplate();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

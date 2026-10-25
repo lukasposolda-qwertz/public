@@ -63,6 +63,8 @@
   ol { list-style: none; margin: 0; padding: 4px 0; }
   li { display: grid; grid-template-columns: 26px 1fr; gap: 2px 8px; padding: 6px 14px; cursor: pointer; }
   li:hover, li.vald { background: var(--hover); }
+  .sektion ul li { display: list-item; padding: 2px 0; cursor: default; }
+  .sektion ul li:hover { background: none; }
   .nr { font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; font-size: 12px; padding-top: 1px; }
   .meta { grid-column: 2; color: var(--muted); font-size: 12px; }
   .stapel { grid-column: 2; height: 3px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
@@ -141,7 +143,7 @@
       title="Huvudlinjer: stambanorna och andra stora linjer (OpenStreetMap usage=main), i hela landet.">Huvudlinjer</button>
     <button class="on ovriga" id="ovrigaknapp" aria-pressed="true"
       title="Övriga spår i dämpad färg: bandelar och sidolinjer i hela landet, och inzoomat (från ca zoom 14) även bangårdar, sidospår och industrispår.">Övriga spår</button>
-    <button id="tagknapp" aria-pressed="false"
+    <button id="tagknapp" aria-pressed="false" class="on"
       title="Alla tåg en vanlig vardag enligt tidtabellen (GTFS), animerade längs spåren. Inte realtid.">Tåg i rörelse</button>
   </div>
   <div class="falt" title="Välj vilken uppgift punkterna på kartan färgas efter"><label for="ind">Färga</label><select id="ind"></select></div>
@@ -151,7 +153,7 @@
       <button id="sverige" title="Platt översikt över hela Sverige">Hela Sverige</button>
     </div>
     <a class="textknapp" href="jamforelse.html">Jämförelse</a>
-    <button class="textknapp" id="omknapp" title="Om kartan, källor och licenser">Om</button>
+    <a class="textknapp" href="om.html" title="Om kartan, definitioner, metoder, källor och licenser">Om</a>
   </div>
 </div>
 
@@ -177,6 +179,8 @@ const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const n = v => v === null || v === undefined || Number.isNaN(v) ? "–" : Number(v).toLocaleString("sv-SE", { maximumFractionDigits: 1 });
 const rad = (k, v) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`;
+// Kortens källrader är korta; definitioner och metod finns på om.html
+const metod = a => `<a href="om.html#${a}">Så räknas det</a>`;
 const ODBL = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bidragsgivare, ODbL';
 const osmLank = (id, text) => `<a href="https://www.openstreetmap.org/${esc(id)}" target="_blank" rel="noopener">${esc(text || id)}</a>`;
 const PDF_URL = "https://www.datocms-assets.com/163536/1772552927-fastighetsforteckning-2025-1.pdf";
@@ -209,11 +213,11 @@ const RAMP = ["#c7e9f1", "#7fcbe0", "#3ea6cf", "#1f78b4", "#0b3d6e"];
 const SAKNAS = "#7a828f";
 const OMR = { "Stationer": "--station", "Depåer och kombiterminaler": "--depa" };
 const jaNej = (v, ja = "#ff6b6b") => ({ "Ja": ja, "Nej": "#5b6472" });
-const NP_FARG = { "balans": "#4ade80", "stress": "#ff6b6b", "beroende": "#8b95a5", "obalanserad nod": "#f5a524", "obalanserad plats": "#6aa8ff" };
+const NP_FARG = { "balans": "#4ade80", "hög intensitet": "#ff6b6b", "låg intensitet": "#8b95a5", "obalanserad nod": "#f5a524", "obalanserad plats": "#6aa8ff" };
 const NP_TEXT = {
   "balans": "nod och plats i balans",
-  "stress": "mycket trafik och mycket stad: risk för trängsel och konkurrens om ytan",
-  "beroende": "lite trafik och lite stad",
+  "hög intensitet": "mycket trafik och mycket stad jämfört med övriga lägen. Enligt modellen kan trafik och stadsliv konkurrera om ytan; det är inte en mätning av trängsel",
+  "låg intensitet": "lite trafik och lite stad jämfört med övriga lägen",
   "obalanserad nod": "mer trafik än stad runt stationen: utrymme för fler bostäder, arbetsplatser och service",
   "obalanserad plats": "mer stad än trafik: stationen kan behöva bättre trafik",
 };
@@ -395,7 +399,15 @@ map.on("style.load", async () => {
   egnaLager();
   filtrera();
   placeraPaneler();
+  // Tåg i rörelse är på från start, med klockan satt till tiden just nu (05–23), annars 08:00
+  if (!startat) {
+    startat = true;
+    const nu = new Date(), min = nu.getHours() * 60 + nu.getMinutes();
+    tagTid = min >= 300 && min < 1380 ? min : 480;
+    vaxlaTag();
+  }
 });
+let startat = false;
 map.on("click", "fast", e => {
   const p = data.features.find(f => f.properties.id === e.features[0].properties.id).properties;
   p._grupp ? visaGrupp(p) : valj(p.id);
@@ -510,7 +522,6 @@ document.getElementById("sverige").onclick = () => {
   valdId = null; markeraVald(); ritaLista(); visaOm(); doljRestid();
   map.flyTo({ ...SVERIGE, duration: 2500 });
 };
-document.getElementById("omknapp").onclick = () => { valdId = null; markeraVald(); ritaLista(); visaOm(); };
 
 // Panelerna börjar under toppmenyn, vars höjd beror på fönsterbredden
 function placeraPaneler() {
@@ -605,8 +616,9 @@ function tagLoop(ts) {
   requestAnimationFrame(tagLoop);
 }
 document.getElementById("tagtyper").innerHTML = TAGTYPER.map(([t, c]) => `<span class="sw" style="background:${c};box-shadow:0 0 0 1.5px #0d1117"></span>${esc(t)}`).join(" &nbsp;");
-document.getElementById("tagknapp").onclick = async e => {
-  const k = e.currentTarget;
+document.getElementById("tagknapp").onclick = () => vaxlaTag();
+async function vaxlaTag() {
+  const k = document.getElementById("tagknapp");
   tagPa = !tagPa; k.classList.toggle("on", tagPa); k.setAttribute("aria-pressed", tagPa);
   document.getElementById("tagpanel").hidden = !tagPa; document.body.classList.toggle("taglage", tagPa);
   if (!tagPa) { tagFC = TOM; map.getSource("tag")?.setData(TOM); return; }
@@ -647,37 +659,19 @@ function nodPlatsSvg(p) {
 // ---- kort: om och källor ---------------------------------------------------------------
 function visaOm() {
   const k = document.getElementById("kort");
-  k.innerHTML = `<div class="phuvud"><b>Om kartan</b><button class="knapp" id="stang">Stäng</button></div>
-    <div class="sektion"><p class="notis" style="margin-top:0">Inofficiell demo, gjord som ett privat projekt. Inte framtagen av eller för
-      Jernhusen AB och ersätter inte bolagets egna uppgifter.</p>
-    <p>Kartan visar fastigheterna i Jernhusens publicerade <a href="${PDF_URL}" target="_blank" rel="noopener">fastighetsförteckning
-      per 2025-12-31</a>. Varje punkt är ett ungefärligt läge, framtaget från adressen i förteckningen och förbättrat med
-      Trafikverkets stationslägen och namngivna depåer i OpenStreetMap. Punkten är inte fastighetens gräns.</p>
-    <p>Klicka på en fastighet för att se uppgifterna och flyga in i 3D. <b>Platt</b> rätar upp kartan där du är;
-      <b>Hela Sverige</b> visar översikten igen. Under <b>Färga</b> väljer du
-      vilken uppgift punkterna färgas efter. Alla avstånd räknas från punkten.</p>
-    <p><b>Tåg i rörelse</b> spelar upp alla tåg en vanlig vardag enligt tidtabellen, längs spåren. I kortet för en
-      stationsfastighet finns restidsomlandet med tåg och en <a href="nodplats.html">nod–plats-analys</a>.</p>
-    <p class="liten">Fastighetsgränser och energideklarationer finns inte med: Lantmäteriets och Boverkets villkor tillåter inte att de
-      publiceras öppet. Turkosa byggnader är byggnader i OpenStreetMap som kopplats till fastigheten (på adressen, med samma namn,
-      stationsbyggnader intill eller byggnader på depåmark). Det är en uppskattning, inte uppgift om ägande.</p></div>
-    <div class="sektion"><h2>Källor och licenser</h2><ul style="padding-left:18px;margin:0" class="liten">
-      <li>Fastighetsdata: Jernhusen AB, fastighetsförteckning 2025-12-31. © Jernhusen AB.</li>
-      <li>Lägen, byggnader, stationer, service, spår, järnvägsnät: © OpenStreetMap-bidragsgivare (Nominatim, Overpass). ODbL 1.0.</li>
-      <li>Stationslägen: Trafikverket, stationsregister. CC0.</li>
-      <li>Kollektivtrafik, restidsomland och tåg i rörelse: GTFS Sverige 2, Samtrafiken via <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">Trafiklab</a>. CC0.
-        Tågens väg längs spåren: OpenStreetMap (ODbL).</li>
-      <li>Befolkning (1 km-rutor), DeSO-statistik, verksamhets- och handelsområden och sysselsatta efter arbetsställe (TAB1828):
-        <a href="https://www.scb.se" target="_blank" rel="noopener">SCB</a>. Källa: SCB.</li>
-      <li>Klimat 1991–2020: <a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>. CC BY 4.0, bearbetad.
-        Framtida klimat: <a href="https://www.smhi.se/klimat/framtidens-klimat/klimatscenariotjansten" target="_blank" rel="noopener">SMHI Klimatscenariotjänsten</a>, länsmedel, bearbetad.</li>
-      <li>Nod–plats-modellen: L. Bertolini (1999), <i>Spatial development patterns and public transport</i>. Egen tillämpning.</li>
-      <li>Skyddad natur: Naturvårdsverket, Naturvårdsregistret. CC0.</li>
-      <li>Översvämning och stabilitet: <a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF</a>. Skred och jordart: <a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a>, CC0.</li>
-      <li>Kulturmiljö: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>. CC0/CC BY.</li>
-      <li>Bakgrundskartor: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> (© OpenMapTiles, data från OpenStreetMap); flygfoto: Esri.</li>
-      <li>Kartbibliotek: <a href="https://maplibre.org" target="_blank" rel="noopener">MapLibre GL JS</a> (BSD-3). Kod: MIT, © 2026 Lukas Posolda.</li>
-    </ul><p class="kalla">Metoder och detaljer i <a href="README.md">README</a>. Data sammanställd ${esc(data?.metadata?.skapad || "")}.</p></div>`;
+  // Kort välkomstruta. Definitioner, metoder och källor finns på helsidan om.html.
+  k.innerHTML = `<div class="phuvud"><b>Välkommen</b><button class="knapp" id="stang">Stäng</button></div>
+    <div class="sektion"><p style="margin-top:0">Jernhusens 143 fastigheter enligt bolagets publicerade
+      <a href="${PDF_URL}" target="_blank" rel="noopener">fastighetsförteckning 2025-12-31</a>, med järnvägsnätet, tågtrafiken och
+      omgivningen kring varje fastighet. Allt bygger på öppna data.</p>
+    <ul style="padding-left:18px;margin:0 0 10px">
+      <li><b>Klicka på en punkt</b> för uppgifter om fastigheten.</li>
+      <li><b>Tåg i rörelse</b> visar alla tåg en vardag enligt tidtabellen.</li>
+      <li><b>Färga</b> väljer vilken uppgift punkterna färgas efter.</li>
+    </ul>
+    <p class="notis" style="margin:0">Inofficiell demo, gjord som ett privat projekt. Inte framtagen av eller för Jernhusen AB.
+      Punkterna är ungefärliga lägen, inte fastighetsgränser.</p>
+    <p style="margin:12px 0 0"><a class="knapp" href="om.html" style="text-decoration:none;color:var(--text)">Om kartan, definitioner och källor →</a></p></div>`;
   k.style.display = "block"; k.scrollTop = 0;
   document.getElementById("stang").onclick = () => { k.style.display = "none"; };
 }
@@ -709,14 +703,13 @@ function kortHtml(p) {
   h += `<div class="sektion"><h2>Byggnader (${byg.length})</h2>` + (byg.length
     ? `<table>${byg.map(b => rad(b.properties.namn || "Byggnad", `${osmLank(b.properties.osm, "OSM")} · ${esc(urv[b.properties.urval] || "")}`)).join("")}</table>`
     : `<div class="liten">Ingen byggnad kunde kopplas till fastigheten.</div>`) +
-    `<div class="kalla">Byggnader i OpenStreetMap kopplade till fastigheten, turkosa på kartan. En uppskattning, inte uppgift om ägande. ${ODBL}.</div></div>`;
+    `<div class="kalla">Turkosa på kartan. En uppskattning, inte uppgift om ägande. ${ODBL}. ${metod("lagen")}</div></div>`;
   const t = p.trafik;
   if (t) h += `<div class="sektion"><h2>Kollektivtrafik inom 500 m, en vardag</h2><table>
     ${rad("Tågavgångar", "<b>" + n(t.avgangar.tag) + "</b>")}${t.avgangar.tag ? rad("Flest tåg på en timme", n(t.tag_max_per_timme)) + rad("Första / sista tåg", esc(t.tag_forsta) + " – " + esc(t.tag_sista)) : ""}
     ${rad("Bussavgångar", n(t.avgangar.buss))}${rad("Spårvagn och tunnelbana", n(t.avgangar.sparvag_tunnelbana))}${t.avgangar.bat ? rad("Båt", n(t.avgangar.bat)) : ""}</table>
     ${t.tag_operatorer.length ? `<div class="liten" style="margin-top:4px">Tågoperatörer: ${esc(t.tag_operatorer.join(", "))}</div>` : ""}
-    <div class="kalla">Planerad trafik ${esc(t.referensdag)}, GTFS Sverige 2 (version ${esc(t.gtfs_version)}), Samtrafiken via Trafiklab, CC0.
-    En tur räknas en gång även om den stannar vid flera hållplatser.</div></div>`;
+    <div class="kalla">Planerad trafik ${esc(t.referensdag)}. GTFS Sverige 2, Trafiklab (CC0). ${metod("trafik")}</div></div>`;
   const s = p.osm_station;
   h += `<div class="sektion"><h2>Närmaste järnvägsstation</h2>` + (s
     ? `<table>${rad(s.namn, "ca " + n(s.avstand_m) + " m")}</table><div class="kalla">${osmLank(s.osm, "Visa i OSM")}. ${ODBL}.</div>`
@@ -729,15 +722,13 @@ function kortHtml(p) {
     <tr><th>Stationer</th><td>${n(rt.stationer_30)}</td><td>${n(rt.stationer_60)}</td></tr></table>
     ${rt.storsta_mal.length ? `<div class="liten" style="margin-top:6px">Största orter inom en timme: ${rt.storsta_mal.map(m => esc(m.station.replace(/ Centralstation$/, " C").replace(/ station$/, "")) + " " + m.minuter + " min").join(", ")}</div>` : ""}
     <div style="margin-top:8px"><button class="knapp" id="restidknapp">Visa på kartan</button></div>
-    <div class="kalla">Snabbaste resa med tåg från ${esc(rt.startstationer.join(" / "))}, avresa ${esc(rt.avresa)} ${esc(rt.referensdag)}, byten minst 3 min,
-    gång till stationen 1,3 m/s. Bara tåg. Invånare i SCB:s 1 km-rutor inom 1 km från en nådd station (bara Sverige); anställda är ett golv
-    (stadskärnor ingår inte i verksamhetsområdena). GTFS Sverige 2 (CC0), SCB.</div></div>`;
+    <div class="kalla">Från ${esc(rt.startstationer.join(" / "))}, avresa ${esc(rt.avresa)}, bara tåg. Anställda är ett golv.
+    GTFS Sverige 2 (CC0), SCB. ${metod("restid")}</div></div>`;
   const np = p.nodplats;
   if (np) h += `<div class="sektion"><h2>Nod–plats</h2>${nodPlatsSvg(p)}
     <div><span class="sw" style="background:${NP_FARG[np.typ]}"></span><b>${esc(np.typ[0].toUpperCase() + np.typ.slice(1))}</b>: ${esc(NP_TEXT[np.typ])}.</div>
     <table style="margin-top:6px">${rad("Nodvärde (trafik)", n(np.nod))}${rad("Platsvärde (stad)", n(np.plats))}</table>
-    <div class="kalla">Bertolinis nod–plats-modell, relativ inom Jernhusens ${np.lagen} stationslägen (0 = lägst, 1 = högst).
-    <a href="nodplats.html">Hela analysen</a>.</div></div>`;
+    <div class="kalla">Relativt inom Jernhusens ${np.lagen} stationslägen (0 = lägst, 1 = högst). <a href="nodplats.html">Hela analysen</a> · ${metod("nodplats")}</div></div>`;
   const b = p.befolkning, dm = p.demografi, sv = p.service_500m;
   if (b || dm || sv) h += `<div class="sektion"><h2>Omgivning</h2><table>
     ${b ? rad("Invånare inom 1 km (ca)", n(b.inom_1km)) : ""}
@@ -745,8 +736,7 @@ function kortHtml(p) {
          + rad("… kommunen / riket", n(dm.nettoinkomst_kommun_tkr) + " / " + n(dm.nettoinkomst_riket_tkr) + " tkr")
          + rad("Låg / hög ekonomisk standard", n(dm.lag_ek_standard) + " / " + n(dm.hog_ek_standard) + " %") : ""}
     ${sv ? rad("Butiker / mat och dryck inom 500 m", n(sv.butiker) + " / " + n(sv.mat_dryck)) + rad("Busshållplatser / cykelparkering", n(sv.busshallplatser) + " / " + n(sv.cykelparkering)) : ""}</table>
-    <div class="kalla">SCB: 1 km-rutor 2025 och DeSO ${esc(dm?.deso || "")} år ${esc(dm?.ar || "")} (de boende, inte de som arbetar där).
-    Service: OpenStreetMap, ett minimum. ${ODBL}.</div></div>`;
+    <div class="kalla">SCB (DeSO ${esc(dm?.deso || "")}, ${esc(dm?.ar || "")}); service: ${ODBL}. ${metod("omgivning")}</div></div>`;
   const ap = p.arbetsplatser;
   if (ap) h += `<div class="sektion"><h2>Arbetsplatser och dagbefolkning</h2><table>
     ${rad("Anställda i verksamhetsområden inom 1 km", "<b>" + n(ap.anstallda_verksamhetsomraden_1km) + "</b>")}
@@ -754,14 +744,12 @@ function kortHtml(p) {
     ${ap.storsta_bransch ? rad("Största bransch i närmaste område", `<span class="liten">${esc(ap.storsta_bransch)}</span>`) : ""}
     ${ap.kommun_dagbefolkning ? rad("Kommunen: arbetar / bor och arbetar", n(ap.kommun_dagbefolkning) + " / " + n(ap.kommun_nattbefolkning))
       + rad("Dagbefolkning per nattbefolkning", n(ap.kommun_dag_natt_kvot)) + rad("Inpendlare till kommunen", n(ap.kommun_inpendlare)) : ""}</table>
-    <div class="kalla">SCB: verksamhets- och handelsområden ${esc(ap.omraden_ar)} (andel av områdets anställda som ligger inom 1 km). Områdena omfattar
-    industri, kontor, handel och logistik utanför bostadsområden men inte stadskärnor, så siffran är ett golv. Kommunen: sysselsatta
-    efter arbetsställe och bostad, ${esc(ap.kommun_ar)} (TAB1828). Källa: SCB.</div></div>`;
+    <div class="kalla">Stadskärnor ingår inte, så antalet anställda är ett golv. SCB, ${esc(ap.omraden_ar)} och ${esc(ap.kommun_ar)}. ${metod("arbetsplatser")}</div></div>`;
   const kl = p.klimat;
   if (kl) h += `<div class="sektion"><h2>Klimat ${esc(kl.period)}</h2><table>
     ${rad("Årsmedeltemperatur", n(kl.arsmedel_temp) + " °C")}${rad("Januari / juli", n(kl.jan_temp) + " / " + n(kl.jul_temp) + " °C")}${rad("Årsnederbörd", n(kl.arsnederbord_mm) + " mm")}</table>
-    <div class="kalla">Normalvärden ur SMHI:s månadsvärden. Temperatur: ${esc(kl.temp_station || "–")}; nederbörd: ${esc(kl.neder_station || "–")}.
-    SMHI, CC BY 4.0, bearbetad.</div></div>`;
+    <div class="kalla">Station: ${esc(kl.temp_station || "–")}${kl.neder_station && kl.neder_station !== kl.temp_station ? "; nederbörd " + esc(kl.neder_station) : ""}.
+    SMHI, CC BY 4.0, bearbetad. ${metod("klimat")}</div></div>`;
   const fk = p.framtidsklimat;
   if (fk) {
     const fm = v => v === null || v === undefined ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toLocaleString("sv-SE", { maximumFractionDigits: 1 });
@@ -773,24 +761,22 @@ function kortHtml(p) {
       ${r("Dygn med minst 10 mm regn", "r10mm")}${r("Dygn med minst 20 mm regn", "r20mm")}
       <tr><th>Årsnederbörd</th><td>–</td><td>${fm(fk.pr?.rcp85_2041?.forandring)} %</td><td>${fm(fk.pr?.rcp45_2071?.forandring)} %</td><td><b>${fm(fk.pr?.rcp85_2071?.forandring)} %</b></td></tr>
       ${r("Graddagar uppvärmning", "hd17")}${r("Kylgraddagar", "ddgt20")}</table>
-      <p class="liten" style="margin:8px 0 0"><b>Skyfall:</b> SMHI:s nationella skyfallskartering räknar med att korta, kraftiga regn blir
-      20 % (RCP4.5) respektive 40 % (RCP8.5) intensivare i slutet av seklet. Ytor nära vattendrag: se översvämning under Naturrisker.</p>
-      <div class="kalla">Länsmedel, inte lokala värden. Förändring mot 1971–2000, ensemblemedel av klimatmodeller (EURO-CORDEX).
-      Referensvärden ur observationsbaserade data. <a href="https://www.smhi.se/klimat/framtidens-klimat/klimatscenariotjansten" target="_blank" rel="noopener">SMHI Klimatscenariotjänsten</a>,
-      bearbetad. Klimatfaktorer: <a href="https://www.smhi.se/tema/hantera-vatten-och-klimat/hantera-oversvamning-till-foljd-av-skyfall/riskkartering-oversvamningskansliga-omraden-vid-skyfall" target="_blank" rel="noopener">SMHI</a>.</div></div>`;
+      <p class="liten" style="margin:8px 0 0"><b>Skyfall:</b> korta, kraftiga regn väntas bli 20 % (RCP4.5) till 40 % (RCP8.5)
+      intensivare i slutet av seklet.</p>
+      <div class="kalla">Länsmedel, förändring mot 1971–2000. SMHI Klimatscenariotjänsten, bearbetad. ${metod("framtidsklimat")}</div></div>`;
   }
   const sp = p.spar;
   if (sp) h += `<div class="sektion"><h2>Spår inom ${n(sp.radie_m)} m</h2><table>
     ${rad("Totalt", "<b>" + n(sp.totalt_m) + " m</b>")}${rad("Huvudspår / bangård", n(sp.huvudspar) + " / " + n(sp.bangard) + " m")}
     ${rad("Sidospår / anslutningsspår", n(sp.sidospar) + " / " + n(sp.anslutningsspar) + " m")}${rad("Elektrifierat", n(sp.elektrifierat_m) + " m")}</table>
-    <div class="kalla">OpenStreetMap railway=rail, spårtyp enligt OSM:s taggning. ${ODBL}.</div></div>`;
+    <div class="kalla">${ODBL}. ${metod("spar")}</div></div>`;
   const rk = p.risk;
   if (rk) {
     const j = v => v === null || v === undefined || v === false ? "Nej" : `<span class="ja">Ja</span>`;
     h += `<div class="sektion"><h2>Naturrisker inom 100 m</h2><table>
       ${rad("Översvämning, 100-årsflöde", j(rk.q100))}${rad("Översvämning, 200-årsflöde", j(rk.q200))}${rad("Översvämning, högsta flöde", j(rk.bhf))}
       ${rad("Stabilitetskartering (MCF)", j(rk.stabilitet))}${rad("Aktsamhetsområde skred (SGU)", j(rk.sgu_skred))}${rad("Jordart", esc(rk.jordart || "–"))}</table>
-      <div class="kalla">MCF och SGU (CC0). "Nej" betyder att inget är karterat inom 100 m, inte att risk saknas.</div></div>`;
+      <div class="kalla">"Nej" betyder att inget är karterat, inte att risk saknas. MCF, SGU. ${metod("risker")}</div></div>`;
   }
   const nat = p.skyddad_natur;
   if (nat) h += `<div class="sektion"><h2>Skyddad natur inom 500 m</h2>` + (nat.omraden.length
@@ -802,11 +788,11 @@ function kortHtml(p) {
     h += `<div class="sektion"><h2>Kulturmiljö inom 250 m</h2><table>
       ${km.byggnadsminnen.map(x => rad("Byggnadsminne", lank(x.url, x.namn))).join("")}
       ${rad("Inventerad bebyggelse", n(km.antal_bebyggelse))}${rad("Kulturhistoriska lämningar", n(km.antal_lamningar) + " (varav " + n(km.antal_fornlamningar) + " fornlämningar)")}</table>
-      <div class="kalla">Riksantikvarieämbetet, öppna data. Kvaliteten kan variera; kontakta länsstyrelsen inför markarbeten.</div></div>`;
+      <div class="kalla">Riksantikvarieämbetet. ${metod("kulturmiljo")}</div></div>`;
   }
   h += `<div class="sektion"><h2>Läge</h2><div>${esc(p.lage_metod)}</div>
     <div class="kalla">${p.lage_flyttad_m !== undefined ? `Adressen träffade bara gatan, så punkten flyttades ca ${n(p.lage_flyttad_m)} m. ` : ""}
-    Punkten är ungefärlig och visar inte fastighetens gräns.</div></div>`;
+    Punkten är ungefärlig och visar inte fastighetens gräns. ${metod("lagen")}</div></div>`;
   return h;
 }
 </script>

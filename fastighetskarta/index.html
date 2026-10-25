@@ -84,6 +84,15 @@
   .ja { color: var(--risk); font-weight: 600; }
   .notis { background: rgba(255,210,122,.08); border: 1px solid rgba(255,210,122,.35); border-radius: 6px; padding: 8px 10px; }
 
+  #tagknapp.on { background: var(--accent); color: #0d1117; font-weight: 600; }
+  #tagpanel { left: 324px; right: 60px; bottom: 12px; max-width: 680px; margin: 0 auto; padding: 8px 12px;
+              display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; overflow: visible; }
+  #tagpanel[hidden] { display: none; }
+  #tagklocka { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; min-width: 58px; }
+  #tagtid { flex: 1 1 200px; accent-color: var(--accent); }
+  .tagrad { flex: 1 0 100%; font-size: 11px; color: var(--muted); }
+  .maplibregl-popup-content { background: var(--panel-solid); color: var(--text); font-size: 12px; padding: 8px 10px; }
+  .maplibregl-popup-tip { display: none; }
   .maplibregl-ctrl-attrib { background: rgba(16,20,28,.85) !important; color: var(--muted); font-size: 11px; }
   .maplibregl-ctrl-attrib a { color: var(--text); }
   .maplibregl-ctrl-group { background: var(--panel-solid); } .maplibregl-ctrl-group button span { filter: invert(1); }
@@ -98,6 +107,8 @@
     #lista { width: auto; right: 12px; max-height: 30vh !important; top: auto !important; bottom: 12px; }
     #legend { display: none; }
     #kort { left: 12px; right: 12px; width: auto; max-height: 55vh !important; }
+    #tagpanel { left: 12px; right: 12px; }
+    body.taglage #lista { display: none; }
   }
 </style>
 </head>
@@ -118,6 +129,8 @@
       title="Huvudlinjer: stambanorna och andra stora linjer (OpenStreetMap usage=main), i hela landet.">Huvudlinjer</button>
     <button class="on ovriga" id="ovrigaknapp" aria-pressed="true"
       title="Övriga spår i dämpad färg: bandelar och sidolinjer i hela landet, och inzoomat (från ca zoom 14) även bangårdar, sidospår och industrispår.">Övriga spår</button>
+    <button id="tagknapp" aria-pressed="false"
+      title="Alla tåg en vanlig vardag enligt tidtabellen (GTFS), animerade längs spåren. Inte realtid.">Tåg i rörelse</button>
   </div>
   <div class="falt" title="Välj vilken uppgift punkterna på kartan färgas efter"><label for="ind">Färga</label><select id="ind"></select></div>
   <div class="hoger">
@@ -136,6 +149,15 @@
 </div>
 <div id="kort" class="panel"></div>
 <div id="legend" class="panel"></div>
+<div id="tagpanel" class="panel" hidden>
+  <button class="knapp" id="tagspela" aria-label="Pausa">❚❚</button>
+  <span id="tagklocka">08:00</span>
+  <input id="tagtid" type="range" min="0" max="1439" step="1" value="480" aria-label="Tid på dygnet">
+  <select id="tagfart" aria-label="Hastighet">
+    <option value="0.5">30 s per s</option><option value="2" selected>2 min per s</option><option value="10">10 min per s</option>
+  </select>
+  <div class="tagrad"><span id="tagantal"></span> <span id="tagtyper"></span></div>
+</div>
 
 <script>
 // ---- hjälp ---------------------------------------------------------------------------
@@ -175,6 +197,15 @@ const RAMP = ["#c7e9f1", "#7fcbe0", "#3ea6cf", "#1f78b4", "#0b3d6e"];
 const SAKNAS = "#7a828f";
 const OMR = { "Stationer": "--station", "Depåer och kombiterminaler": "--depa" };
 const jaNej = (v, ja = "#ff6b6b") => ({ "Ja": ja, "Nej": "#5b6472" });
+const NP_FARG = { "balans": "#4ade80", "stress": "#ff6b6b", "beroende": "#8b95a5", "obalanserad nod": "#f5a524", "obalanserad plats": "#6aa8ff" };
+const NP_TEXT = {
+  "balans": "nod och plats i balans",
+  "stress": "mycket trafik och mycket stad: risk för trängsel och konkurrens om ytan",
+  "beroende": "lite trafik och lite stad",
+  "obalanserad nod": "mer trafik än stad runt stationen: utrymme för fler bostäder, arbetsplatser och service",
+  "obalanserad plats": "mer stad än trafik: stationen kan behöva bättre trafik",
+};
+const TAGTYPER = [["Snabbtåg", "#ff5d8f"], ["Fjärr- och interregionala tåg", "#ffd166"], ["Regional- och pendeltåg", "#5ee7ff"]];
 // grupp = rubrik i menyn
 const IND = {
   omr:     { grupp: "Fastigheten", namn: "Affärsområde", kat: p => p["Affärsområde"], farger: () => Object.fromEntries(Object.entries(OMR).map(([k, v]) => [k, css(v)])) },
@@ -185,9 +216,17 @@ const IND = {
   syss:    { grupp: "Befolkning och omgivning", namn: "Sysselsättningsgrad (DeSO)", num: p => p.demografi?.sysselsattning_20_64, kalla: "SCB", enhet: "%" },
   ink:     { grupp: "Befolkning och omgivning", namn: "Nettoinkomst (DeSO)", num: p => p.demografi?.nettoinkomst_tkr, kalla: "SCB", enhet: "tkr" },
   service: { grupp: "Befolkning och omgivning", namn: "Butiker, mat och service inom 500 m", num: p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), kalla: "OpenStreetMap" },
+  anst:    { grupp: "Arbetsplatser", namn: "Anställda inom 1 km (verksamhetsområden)", num: p => p.arbetsplatser?.anstallda_verksamhetsomraden_1km, kalla: "SCB" },
+  dagkvot: { grupp: "Arbetsplatser", namn: "Dagbefolkning per nattbefolkning, kommunen", num: p => p.arbetsplatser?.kommun_dag_natt_kvot, kalla: "SCB", enhet: "ggr", dec: 2 },
+  r30:     { grupp: "Restid med tåg", namn: "Invånare som nås inom 30 min", num: p => p.restid?.invanare_30, kalla: "Trafiklab, SCB", saknas: "Ingen tågstation inom 1 km" },
+  r60:     { grupp: "Restid med tåg", namn: "Invånare som nås inom 60 min", num: p => p.restid?.invanare_60, kalla: "Trafiklab, SCB", saknas: "Ingen tågstation inom 1 km" },
+  np:      { grupp: "Restid med tåg", namn: "Nod–plats-typ", kat: p => p.nodplats?.typ ?? null, kalla: "egen analys", saknas: "Ingen tågstation inom 1 km",
+             farger: () => NP_FARG },
   spar:    { grupp: "Fastigheten", namn: "Spårlängd inom 300 m", num: p => p.spar?.totalt_m, kalla: "OpenStreetMap", enhet: "m" },
   temp:    { grupp: "Klimat", namn: "Årsmedeltemperatur", num: p => p.klimat?.arsmedel_temp, kalla: "SMHI", enhet: "°C" },
   neder:   { grupp: "Klimat", namn: "Årsnederbörd", num: p => p.klimat?.arsnederbord_mm, kalla: "SMHI", enhet: "mm" },
+  su85:    { grupp: "Klimat", namn: "Fler högsommardygn 2071–2100 (RCP8.5, länet)", num: p => p.framtidsklimat?.su?.rcp85_2071?.forandring, kalla: "SMHI", enhet: "dygn" },
+  r20_85:  { grupp: "Klimat", namn: "Fler dygn med minst 20 mm regn 2071–2100 (RCP8.5, länet)", num: p => p.framtidsklimat?.r20mm?.rcp85_2071?.forandring, kalla: "SMHI", enhet: "dygn" },
   flod:    { grupp: "Risker och natur", namn: "Översvämning inom 100 m", kat: p => p.risk ? (p.risk.q100 ? "100-årsflöde" : p.risk.bhf ? "Bara högsta flöde" : "Nej") : null,
              farger: () => ({ "100-årsflöde": "#ff6b6b", "Bara högsta flöde": "#f5a524", "Nej": "#5b6472" }), kalla: "MCF" },
   skred:   { grupp: "Risker och natur", namn: "Skred/stabilitet inom 100 m", kat: p => p.risk ? ((p.risk.sgu_skred !== null || p.risk.stabilitet) ? "Ja" : "Nej") : null, farger: () => jaNej(), kalla: "SGU, MCF" },
@@ -212,7 +251,7 @@ function farg(p) {
 }
 function ritaLegend() {
   const I = IND[ind], heltal = !I.enhet || I.enhet === "m" || I.enhet === "mm";
-  const f = x => heltal ? Math.round(x).toLocaleString("sv-SE") : Number(x).toLocaleString("sv-SE", { maximumFractionDigits: 1 });
+  const f = x => heltal ? Math.round(x).toLocaleString("sv-SE") : Number(x).toLocaleString("sv-SE", { maximumFractionDigits: I.dec ?? 1 });
   const e = I.enhet ? " " + I.enhet : "";
   const sw = c => `<span class="sw" style="background:${c}"></span>`;
   let h = `<div style="margin-bottom:2px">Punkterna färgas efter</div><div style="color:var(--text);font-weight:600;margin-bottom:4px">${esc(I.namn)}</div>`;
@@ -221,7 +260,7 @@ function ritaLegend() {
         const till = i < brytpunkter.length ? brytpunkter[i] : null;
         const t = till === null ? f(fr) + e + " och mer" : heltal ? (fr === till - 1 ? f(fr) : f(fr) + "–" + f(till - 1)) + e : f(fr) + " till under " + f(till) + e;
         return `<div>${sw(klassFarg(i))}${t}</div>`; }).join("");
-  if (ind !== "omr") h += `<div>${sw(SAKNAS)}Uppgift saknas</div><div style="margin-top:3px">Källa: ${esc(I.kalla)}</div>`;
+  if (ind !== "omr") h += `<div>${sw(SAKNAS)}${esc(I.saknas || "Uppgift saknas")}</div><div style="margin-top:3px">Källa: ${esc(I.kalla)}</div>`;
   h += `<div style="margin-top:8px">Punktens storlek visar lokalarean.</div>`;
   h += `<div style="margin-top:4px"><span class="rail"></span>Huvudlinjer (stambanor m.fl.)</div>`;
   h += `<div><span class="rail" style="opacity:.5;box-shadow:none"></span>Övriga spår; inzoomat även bangårdar och sidospår</div>`;
@@ -277,6 +316,22 @@ function egnaLager() {
     paint: { "line-color": K.rail, "line-opacity": 0.3, "line-blur": 3, "line-width": bredd(4, 9) } });
   map.addLayer({ id: "jarnvag", type: "line", source: "jarnvag", filter: ar("main"), layout: { ...rund, visibility: syn(huvudPa) },
     paint: { "line-color": K.rail, "line-opacity": 0.95, "line-width": bredd(1.1, 2.4) } });
+  // Restidsomland: nådda stationer, färg efter minuter
+  map.addSource("restid", { type: "geojson", data: restidFC() });
+  map.addLayer({ id: "restid-punkt", type: "circle", source: "restid", paint: {
+    "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 4, 10, 8],
+    "circle-color": ["interpolate", ["linear"], ["get", "min"], 0, "#4ade80", 30, "#facc15", 60, "#f97316"],
+    "circle-stroke-color": K.halo, "circle-stroke-width": 1.2 } });
+  map.addLayer({ id: "restid-namn", type: "symbol", source: "restid", minzoom: 7, layout: {
+    "text-field": ["concat", ["get", "namn"], " · ", ["to-string", ["get", "min"]], " min"], "text-font": ["Noto Sans Regular"],
+    "text-size": 11, "text-offset": [0, 1.1], "text-anchor": "top", "text-optional": true },
+    paint: { "text-color": K.text, "text-halo-color": K.halo, "text-halo-width": 1.5 } });
+  // Tåg i rörelse
+  map.addSource("tag", { type: "geojson", data: tagFC });
+  map.addLayer({ id: "tag-punkt", type: "circle", source: "tag", paint: {
+    "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 2.6, 9, 4.5, 14, 7],
+    "circle-color": ["match", ["get", "typ"], 0, TAGTYPER[0][1], 1, TAGTYPER[1][1], TAGTYPER[2][1]],
+    "circle-stroke-color": K.halo, "circle-stroke-width": 0.8 } });
   map.addSource("fast", { type: "geojson", data: data });
   // Storlek efter lokalarea (radie ~ √LOA). Tydligt synliga redan i landsvyn och växer när man zoomar in.
   // Största fastigheten: 20 px över Sverige, 28 px i regionvy, 36 px i stadsvy, 44 px inzoomat.
@@ -389,7 +444,7 @@ document.getElementById("ovrigaknapp").onclick = e => {
 // Platt: räta upp där man är (samma centrum och zoom). Hela Sverige: platt översikt.
 document.getElementById("platt").onclick = () => map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
 document.getElementById("sverige").onclick = () => {
-  valdId = null; markeraVald(); ritaLista(); visaOm();
+  valdId = null; markeraVald(); ritaLista(); visaOm(); doljRestid();
   map.flyTo({ ...SVERIGE, duration: 2500 });
 };
 document.getElementById("omknapp").onclick = () => { valdId = null; markeraVald(); ritaLista(); visaOm(); };
@@ -405,6 +460,127 @@ function placeraPaneler() {
 }
 window.addEventListener("resize", placeraPaneler);
 
+// ---- restidsomland -----------------------------------------------------------------------
+let RESTID = null, restidId = null;
+const TOM = { type: "FeatureCollection", features: [] };
+function restidFC() {
+  if (!RESTID || !restidId || !RESTID.fastigheter[restidId]) return TOM;
+  return { type: "FeatureCollection", features: RESTID.fastigheter[restidId].filter(([, m]) => m <= 60).map(([i, m]) => {
+    const [namn, lon, lat] = RESTID.stationer[i];
+    return { type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: { namn, min: m } };
+  }) };
+}
+async function visaRestid(id) {
+  if (!RESTID) RESTID = await fetch("restid.json", { cache: "no-cache" }).then(r => r.json());
+  restidId = id;
+  const fc = restidFC();
+  map.getSource("restid")?.setData(fc);
+  if (!fc.features.length) return;
+  const b = new maplibregl.LngLatBounds();
+  fc.features.forEach(f => b.extend(f.geometry.coordinates));
+  map.fitBounds(b, { padding: { top: 90, bottom: 60, left: 340, right: 410 }, pitch: 0, bearing: 0, maxZoom: 11, duration: 2000 });
+}
+function doljRestid() { restidId = null; map.getSource("restid")?.setData(TOM); }
+
+// ---- tåg i rörelse -----------------------------------------------------------------------
+// Tidtabellen för en vardag (GTFS). Mellan stationerna följer tåget spåret i OSM (förberäknat i tag.json).
+let TAG = null, tagPa = false, tagSpelar = true, tagTid = 8 * 60, tagFC = TOM, senast = 0, senastRitad = 0;
+const tagFart = () => Number(document.getElementById("tagfart").value);
+function forbered(T) {
+  const kosLat = Math.cos(62 * Math.PI / 180);
+  T.str = T.strackor.map(s => {
+    const xy = []; for (let i = 0; i < s.length; i += 2) xy.push([s[i], s[i + 1]]);
+    const L = [0]; for (let i = 1; i < xy.length; i++) L.push(L[i - 1] + Math.hypot((xy[i][0] - xy[i - 1][0]) * kosLat, xy[i][1] - xy[i - 1][1]));
+    return { xy, L };
+  });
+  T.span = T.turer.map(t => [t[3][2], t[3][t[3].length - 3]]);   // första avgång, sista ankomst
+}
+function langs(str, f) {
+  const { xy, L } = str, mal = f * L[L.length - 1];
+  let i = 1; while (i < L.length - 1 && L[i] < mal) i++;
+  const d = L[i] - L[i - 1], g = d ? (mal - L[i - 1]) / d : 0;
+  return [xy[i - 1][0] + g * (xy[i][0] - xy[i - 1][0]), xy[i - 1][1] + g * (xy[i][1] - xy[i - 1][1])];
+}
+function position(seq, t) {
+  for (let i = 0; i + 4 < seq.length + 1; i += 4) {
+    const [s, ank, avg, str] = seq.slice(i, i + 4);
+    if (t < ank) return null;
+    if (t <= avg) return TAG.stationer[s].slice(1);
+    if (i + 4 >= seq.length) return null;
+    const ank2 = seq[i + 5];
+    if (t < ank2) {
+      const f = (t - avg) / (ank2 - avg), a = TAG.stationer[s], b = TAG.stationer[seq[i + 4]];
+      if (str >= 0) return langs(TAG.str[str], f);
+      if (str <= -2) return langs(TAG.str[-2 - str], 1 - f);
+      return [a[1] + f * (b[1] - a[1]), a[2] + f * (b[2] - a[2])];
+    }
+  }
+  return null;
+}
+function ritaTag() {
+  const fs = [];
+  TAG.turer.forEach((tur, i) => {
+    for (const t of [tagTid, tagTid + 1440]) {          // nattåg från dagen före har tider över 24:00
+      const [a, b] = TAG.span[i];
+      if (t < a || t > b) continue;
+      const p = position(tur[3], t);
+      if (p) { fs.push({ type: "Feature", geometry: { type: "Point", coordinates: p }, properties: { i, typ: tur[0] } }); break; }
+    }
+  });
+  tagFC = { type: "FeatureCollection", features: fs };
+  map.getSource("tag")?.setData(tagFC);
+  const h = Math.floor(tagTid / 60), m = Math.floor(tagTid % 60);
+  document.getElementById("tagklocka").textContent = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  document.getElementById("tagtid").value = Math.floor(tagTid);
+  document.getElementById("tagantal").textContent = `${fs.length} tåg i trafik enligt tidtabellen ${TAG.referensdag}.`;
+}
+function tagLoop(ts) {
+  if (!tagPa) return;
+  if (senast && tagSpelar) tagTid = (tagTid + (ts - senast) / 1000 * tagFart()) % 1440;
+  senast = ts;
+  if (ts - senastRitad > 66) { senastRitad = ts; ritaTag(); }   // ca 15 bilder per sekund räcker
+  requestAnimationFrame(tagLoop);
+}
+document.getElementById("tagtyper").innerHTML = TAGTYPER.map(([t, c]) => `<span class="sw" style="background:${c}"></span>${esc(t)}`).join(" &nbsp;");
+document.getElementById("tagknapp").onclick = async e => {
+  const k = e.currentTarget;
+  tagPa = !tagPa; k.classList.toggle("on", tagPa); k.setAttribute("aria-pressed", tagPa);
+  document.getElementById("tagpanel").hidden = !tagPa; document.body.classList.toggle("taglage", tagPa);
+  if (!tagPa) { tagFC = TOM; map.getSource("tag")?.setData(TOM); return; }
+  if (!TAG) { k.textContent = "Laddar …"; TAG = await fetch("tag.json", { cache: "no-cache" }).then(r => r.json()); forbered(TAG); k.textContent = "Tåg i rörelse"; }
+  senast = 0; ritaTag(); requestAnimationFrame(tagLoop);
+};
+document.getElementById("tagspela").onclick = e => {
+  tagSpelar = !tagSpelar; e.currentTarget.textContent = tagSpelar ? "❚❚" : "▶";
+  e.currentTarget.setAttribute("aria-label", tagSpelar ? "Pausa" : "Spela");
+};
+document.getElementById("tagtid").oninput = e => { tagTid = Number(e.target.value); if (TAG) ritaTag(); };
+map.on("click", "tag-punkt", e => {
+  const tur = TAG.turer[e.features[0].properties.i], seq = tur[3];
+  const fran = TAG.stationer[seq[0]][0], till = TAG.stationer[seq[seq.length - 4]][0];
+  const tid = v => { const x = ((v % 1440) + 1440) % 1440; return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(Math.floor(x % 60)).padStart(2, "0")}`; };
+  new maplibregl.Popup({ closeButton: false }).setLngLat(e.lngLat).setHTML(
+    `<b>${esc(TAG.operatorer[tur[1]] || "Tåg")}${tur[2] ? " " + esc(tur[2]) : ""}</b><br>${esc(TAGTYPER[tur[0]][0])}<br>
+     ${esc(fran)} ${tid(seq[2])} → ${esc(till)} ${tid(seq[seq.length - 3])}`).addTo(map);
+});
+map.on("mouseenter", "tag-punkt", () => map.getCanvas().style.cursor = "pointer");
+map.on("mouseleave", "tag-punkt", () => map.getCanvas().style.cursor = "");
+
+// ---- nod–plats-diagram i kortet -----------------------------------------------------------
+function nodPlatsSvg(p) {
+  const lagen = new Map();
+  data.features.forEach(f => { const q = f.properties.nodplats; if (q) lagen.set(q.station, q); });
+  const S = 180, P = 22, x = v => P + v * (S - 2 * P), y = v => S - P - v * (S - 2 * P);
+  const prick = (q, egen) => `<circle cx="${x(q.nod)}" cy="${y(q.plats)}" r="${egen ? 6 : 3.2}" fill="${NP_FARG[q.typ]}"
+    ${egen ? 'stroke="#fff" stroke-width="2"' : 'opacity=".55"'}><title>${esc(q.station)}</title></circle>`;
+  return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" role="img" aria-label="Nod–plats-diagram" style="display:block;margin:4px auto">
+    <rect x="${P}" y="${P}" width="${S - 2 * P}" height="${S - 2 * P}" fill="none" stroke="var(--line)"/>
+    <polygon points="${x(0)},${y(0.15)} ${x(0)},${y(0)} ${x(0.15)},${y(0)} ${x(1)},${y(0.85)} ${x(1)},${y(1)} ${x(0.85)},${y(1)}" fill="rgba(74,222,128,.08)"/>
+    <text x="${S / 2}" y="${S - 5}" fill="var(--muted)" font-size="10" text-anchor="middle">Nod (trafik) →</text>
+    <text x="10" y="${S / 2}" fill="var(--muted)" font-size="10" text-anchor="middle" transform="rotate(-90 10 ${S / 2})">Plats (stad) →</text>
+    ${[...lagen.values()].filter(q => q.station !== p.nodplats.station).map(q => prick(q, false)).join("")}${prick(p.nodplats, true)}</svg>`;
+}
+
 // ---- kort: om och källor ---------------------------------------------------------------
 function visaOm() {
   const k = document.getElementById("kort");
@@ -417,6 +593,8 @@ function visaOm() {
     <p>Klicka på en fastighet för att se uppgifterna och flyga in i 3D. <b>Platt</b> rätar upp kartan där du är;
       <b>Hela Sverige</b> visar översikten igen. Under <b>Färga</b> väljer du
       vilken uppgift punkterna färgas efter. Alla avstånd räknas från punkten.</p>
+    <p><b>Tåg i rörelse</b> spelar upp alla tåg en vanlig vardag enligt tidtabellen, längs spåren. I kortet för en
+      stationsfastighet finns restidsomlandet med tåg och en <a href="nodplats.html">nod–plats-analys</a>.</p>
     <p class="liten">Fastighetsgränser och energideklarationer finns inte med: Lantmäteriets och Boverkets villkor tillåter inte att de
       publiceras öppet. Turkosa byggnader är byggnader i OpenStreetMap som kopplats till fastigheten (på adressen, med samma namn,
       stationsbyggnader intill eller byggnader på depåmark). Det är en uppskattning, inte uppgift om ägande.</p></div>
@@ -424,9 +602,13 @@ function visaOm() {
       <li>Fastighetsdata: Jernhusen AB, fastighetsförteckning 2025-12-31. © Jernhusen AB.</li>
       <li>Lägen, byggnader, stationer, service, spår, järnvägsnät: © OpenStreetMap-bidragsgivare (Nominatim, Overpass). ODbL 1.0.</li>
       <li>Stationslägen: Trafikverket, stationsregister. CC0.</li>
-      <li>Kollektivtrafik: GTFS Sverige 2, Samtrafiken via <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">Trafiklab</a>. CC0.</li>
-      <li>Befolkning (1 km-rutor) och DeSO-statistik: <a href="https://www.scb.se" target="_blank" rel="noopener">SCB</a>. Källa: SCB.</li>
-      <li>Klimat 1991–2020: <a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>. CC BY 4.0, bearbetad.</li>
+      <li>Kollektivtrafik, restidsomland och tåg i rörelse: GTFS Sverige 2, Samtrafiken via <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">Trafiklab</a>. CC0.
+        Tågens väg längs spåren: OpenStreetMap (ODbL).</li>
+      <li>Befolkning (1 km-rutor), DeSO-statistik, verksamhets- och handelsområden och sysselsatta efter arbetsställe (TAB1828):
+        <a href="https://www.scb.se" target="_blank" rel="noopener">SCB</a>. Källa: SCB.</li>
+      <li>Klimat 1991–2020: <a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>. CC BY 4.0, bearbetad.
+        Framtida klimat: <a href="https://www.smhi.se/klimat/framtidens-klimat/klimatscenariotjansten" target="_blank" rel="noopener">SMHI Klimatscenariotjänsten</a>, länsmedel, bearbetad.</li>
+      <li>Nod–plats-modellen: L. Bertolini (1999), <i>Spatial development patterns and public transport</i>. Egen tillämpning.</li>
       <li>Skyddad natur: Naturvårdsverket, Naturvårdsregistret. CC0.</li>
       <li>Översvämning och stabilitet: <a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF</a>. Skred och jordart: <a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a>, CC0.</li>
       <li>Kulturmiljö: <a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a>. CC0/CC BY.</li>
@@ -440,11 +622,14 @@ function visaOm() {
 // ---- kort: fastighet ---------------------------------------------------------------------
 function valj(id) {
   const f = data.features.find(x => x.properties.id === id), p = f.properties;
-  valdId = id; markeraVald(); ritaLista();
+  valdId = id; markeraVald(); ritaLista(); doljRestid();
   map.flyTo({ center: f.geometry.coordinates, zoom: 16, pitch: 60, bearing: ((p.rank * 37) % 120) - 60, duration: 3000, essential: true });
   const k = document.getElementById("kort");
   k.innerHTML = kortHtml(p); k.style.display = "block"; k.scrollTop = 0;
   document.getElementById("stang").onclick = () => { k.style.display = "none"; };
+  const rk = document.getElementById("restidknapp");
+  if (rk) rk.onclick = () => restidId === id ? (doljRestid(), rk.textContent = "Visa på kartan")
+                                             : (visaRestid(id), rk.textContent = "Dölj på kartan");
 }
 
 function kortHtml(p) {
@@ -473,6 +658,23 @@ function kortHtml(p) {
   h += `<div class="sektion"><h2>Närmaste järnvägsstation</h2>` + (s
     ? `<table>${rad(s.namn, "ca " + n(s.avstand_m) + " m")}</table><div class="kalla">${osmLank(s.osm, "Visa i OSM")}. ${ODBL}.</div>`
     : `<div class="liten">Ingen station inom 500 m i OpenStreetMap.</div>`) + `</div>`;
+  const rt = p.restid;
+  if (rt) h += `<div class="sektion"><h2>Restid med tåg, vardagsmorgon</h2><table>
+    <tr><th></th><td class="liten">30 min</td><td class="liten">60 min</td></tr>
+    <tr><th>Invånare nära en nådd station</th><td><b>${n(rt.invanare_30)}</b></td><td><b>${n(rt.invanare_60)}</b></td></tr>
+    <tr><th>Anställda i verksamhetsområden</th><td>${n(rt.anstallda_vo_30)}</td><td>${n(rt.anstallda_vo_60)}</td></tr>
+    <tr><th>Stationer</th><td>${n(rt.stationer_30)}</td><td>${n(rt.stationer_60)}</td></tr></table>
+    ${rt.storsta_mal.length ? `<div class="liten" style="margin-top:6px">Största orter inom en timme: ${rt.storsta_mal.map(m => esc(m.station.replace(/ Centralstation$/, " C").replace(/ station$/, "")) + " " + m.minuter + " min").join(", ")}</div>` : ""}
+    <div style="margin-top:8px"><button class="knapp" id="restidknapp">Visa på kartan</button></div>
+    <div class="kalla">Snabbaste resa med tåg från ${esc(rt.startstationer.join(" / "))}, avresa ${esc(rt.avresa)} ${esc(rt.referensdag)}, byten minst 3 min,
+    gång till stationen 1,3 m/s. Bara tåg. Invånare i SCB:s 1 km-rutor inom 1 km från en nådd station (bara Sverige); anställda är ett golv
+    (stadskärnor ingår inte i verksamhetsområdena). GTFS Sverige 2 (CC0), SCB.</div></div>`;
+  const np = p.nodplats;
+  if (np) h += `<div class="sektion"><h2>Nod–plats</h2>${nodPlatsSvg(p)}
+    <div><span class="sw" style="background:${NP_FARG[np.typ]}"></span><b>${esc(np.typ[0].toUpperCase() + np.typ.slice(1))}</b>: ${esc(NP_TEXT[np.typ])}.</div>
+    <table style="margin-top:6px">${rad("Nodvärde (trafik)", n(np.nod))}${rad("Platsvärde (stad)", n(np.plats))}</table>
+    <div class="kalla">Bertolinis nod–plats-modell, relativ inom Jernhusens ${np.lagen} stationslägen (0 = lägst, 1 = högst).
+    <a href="nodplats.html">Hela analysen</a>.</div></div>`;
   const b = p.befolkning, dm = p.demografi, sv = p.service_500m;
   if (b || dm || sv) h += `<div class="sektion"><h2>Omgivning</h2><table>
     ${b ? rad("Invånare inom 1 km (ca)", n(b.inom_1km)) : ""}
@@ -482,11 +684,38 @@ function kortHtml(p) {
     ${sv ? rad("Butiker / mat och dryck inom 500 m", n(sv.butiker) + " / " + n(sv.mat_dryck)) + rad("Busshållplatser / cykelparkering", n(sv.busshallplatser) + " / " + n(sv.cykelparkering)) : ""}</table>
     <div class="kalla">SCB: 1 km-rutor 2025 och DeSO ${esc(dm?.deso || "")} år ${esc(dm?.ar || "")} (de boende, inte de som arbetar där).
     Service: OpenStreetMap, ett minimum. ${ODBL}.</div></div>`;
+  const ap = p.arbetsplatser;
+  if (ap) h += `<div class="sektion"><h2>Arbetsplatser och dagbefolkning</h2><table>
+    ${rad("Anställda i verksamhetsområden inom 1 km", "<b>" + n(ap.anstallda_verksamhetsomraden_1km) + "</b>")}
+    ${rad("Anställda i handelsområden inom 1 km", n(ap.anstallda_handel_1km))}
+    ${ap.storsta_bransch ? rad("Största bransch i närmaste område", `<span class="liten">${esc(ap.storsta_bransch)}</span>`) : ""}
+    ${ap.kommun_dagbefolkning ? rad("Kommunen: arbetar / bor och arbetar", n(ap.kommun_dagbefolkning) + " / " + n(ap.kommun_nattbefolkning))
+      + rad("Dagbefolkning per nattbefolkning", n(ap.kommun_dag_natt_kvot)) + rad("Inpendlare till kommunen", n(ap.kommun_inpendlare)) : ""}</table>
+    <div class="kalla">SCB: verksamhets- och handelsområden ${esc(ap.omraden_ar)} (andel av områdets anställda som ligger inom 1 km). Områdena omfattar
+    industri, kontor, handel och logistik utanför bostadsområden men inte stadskärnor, så siffran är ett golv. Kommunen: sysselsatta
+    efter arbetsställe och bostad, ${esc(ap.kommun_ar)} (TAB1828). Källa: SCB.</div></div>`;
   const kl = p.klimat;
   if (kl) h += `<div class="sektion"><h2>Klimat ${esc(kl.period)}</h2><table>
     ${rad("Årsmedeltemperatur", n(kl.arsmedel_temp) + " °C")}${rad("Januari / juli", n(kl.jan_temp) + " / " + n(kl.jul_temp) + " °C")}${rad("Årsnederbörd", n(kl.arsnederbord_mm) + " mm")}</table>
     <div class="kalla">Normalvärden ur SMHI:s månadsvärden. Temperatur: ${esc(kl.temp_station || "–")}; nederbörd: ${esc(kl.neder_station || "–")}.
     SMHI, CC BY 4.0, bearbetad.</div></div>`;
+  const fk = p.framtidsklimat;
+  if (fk) {
+    const fm = v => v === null || v === undefined ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toLocaleString("sv-SE", { maximumFractionDigits: 1 });
+    const r = (namn, k, e = "") => { const q = fk[k] || {};
+      return `<tr><th>${esc(namn)}</th><td>${q.referens === undefined ? "–" : n(q.referens) + e}</td><td>${fm(q.rcp85_2041?.forandring)}</td><td>${fm(q.rcp45_2071?.forandring)}</td><td><b>${fm(q.rcp85_2071?.forandring)}</b></td></tr>`; };
+    h += `<div class="sektion"><h2>Framtida klimat och skyfall, ${esc(fk.lan)}</h2><table style="font-size:12px">
+      <tr><th></th><td class="liten">1971–2000</td><td class="liten">2041–70<br>RCP8.5</td><td class="liten">2071–2100<br>RCP4.5</td><td class="liten">2071–2100<br>RCP8.5</td></tr>
+      ${r("Årsmedeltemperatur (°C)", "tas")}${r("Högsommardygn, minst 25 °C", "su")}${r("Tropiska nätter, minst 20 °C", "tr")}
+      ${r("Dygn med minst 10 mm regn", "r10mm")}${r("Dygn med minst 20 mm regn", "r20mm")}
+      <tr><th>Årsnederbörd</th><td>–</td><td>${fm(fk.pr?.rcp85_2041?.forandring)} %</td><td>${fm(fk.pr?.rcp45_2071?.forandring)} %</td><td><b>${fm(fk.pr?.rcp85_2071?.forandring)} %</b></td></tr>
+      ${r("Graddagar uppvärmning", "hd17")}${r("Kylgraddagar", "ddgt20")}</table>
+      <p class="liten" style="margin:8px 0 0"><b>Skyfall:</b> SMHI:s nationella skyfallskartering räknar med att korta, kraftiga regn blir
+      20 % (RCP4.5) respektive 40 % (RCP8.5) intensivare i slutet av seklet. Ytor nära vattendrag: se översvämning under Naturrisker.</p>
+      <div class="kalla">Länsmedel, inte lokala värden. Förändring mot 1971–2000, ensemblemedel av klimatmodeller (EURO-CORDEX).
+      Referensvärden ur observationsbaserade data. <a href="https://www.smhi.se/klimat/framtidens-klimat/klimatscenariotjansten" target="_blank" rel="noopener">SMHI Klimatscenariotjänsten</a>,
+      bearbetad. Klimatfaktorer: <a href="https://www.smhi.se/tema/hantera-vatten-och-klimat/hantera-oversvamning-till-foljd-av-skyfall/riskkartering-oversvamningskansliga-omraden-vid-skyfall" target="_blank" rel="noopener">SMHI</a>.</div></div>`;
+  }
   const sp = p.spar;
   if (sp) h += `<div class="sektion"><h2>Spår inom ${n(sp.radie_m)} m</h2><table>
     ${rad("Totalt", "<b>" + n(sp.totalt_m) + " m</b>")}${rad("Huvudspår / bangård", n(sp.huvudspar) + " / " + n(sp.bangard) + " m")}

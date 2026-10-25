@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jernhusens stationslägen – nod och plats</title>
+<meta name="description" content="Inofficiell nod–plats-analys av Jernhusens stationslägen enligt Bertolinis modell, byggd på öppna data.">
+<style>
+  :root { --bg: #0d1117; --panel: #10141c; --line: rgba(255,255,255,.12); --text: #e8ecf2; --muted: #8b95a5; --accent: #3ee0c5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); background: var(--bg); }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 17px; margin: 0; } h2 { font-size: 14px; margin: 0 0 8px; }
+  a { color: var(--accent); }
+  .inoff { margin-left: auto; font-size: 12px; color: #ffd27a; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  .ruta { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  svg { width: 100%; height: auto; display: block; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: var(--muted); font-weight: 500; cursor: pointer; }
+  tr.vald td { background: rgba(62,224,197,.12); }
+  tbody tr { cursor: pointer; }
+  .lista { max-height: 70vh; overflow: auto; }
+  #info { min-height: 3em; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Nod och plats</h1>
+  <span class="muted">Jernhusens stationslägen enligt Bertolinis nod–plats-modell</span>
+  <a href="./" style="font-size:13px">← Kartan</a>
+  <span class="inoff">Inofficiell demo, inte en tjänst från Jernhusen AB</span>
+</header>
+<main>
+  <div class="ruta">
+    <svg id="diagram" viewBox="0 0 640 640" role="img" aria-label="Nod–plats-diagram"></svg>
+    <div id="info" class="muted">Peka på en prick eller en rad för att se stationen.</div>
+    <div id="forklaring" style="margin-top:8px"></div>
+  </div>
+  <div class="ruta">
+    <h2>Stationslägen</h2>
+    <div class="lista"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  </div>
+  <div class="ruta" style="grid-column:1/-1">
+    <h2>Så är analysen gjord</h2>
+    <p>Modellen (L. Bertolini, 1999) ställer en stations <b>nodvärde</b>, hur väl den är kopplad till trafiknätet, mot dess
+      <b>platsvärde</b>, hur mycket stad som finns runt den. Stationer på diagonalen är i balans. Under diagonalen finns mer trafik än stad
+      (en obalanserad nod, ofta med utrymme att bygga), över den mer stad än trafik (en obalanserad plats).</p>
+    <p><b>Nodvärde</b>: tågavgångar och avgångar med buss, spårvagn och tunnelbana inom 500 m en vardag, samt stationer och invånare
+      som nås med tåg inom 30 minuter på morgonen. <b>Platsvärde</b>: invånare inom 1 km, anställda i SCB:s verksamhets- och handelsområden
+      inom 1 km samt butiker, mat och dryck och service inom 500 m. Varje del skalas 0–1 (min–max på logaritmen) över stationslägena och
+      nod- respektive platsvärdet är medelvärdet av delarna. Balans: skillnad högst 0,15. Stress: båda minst 0,75. Beroende: båda högst 0,25.</p>
+    <p class="muted">Värdena är relativa inom Jernhusens stationslägen med en tågstation inom 1 km, inte ett nationellt mått. Fastigheter vid
+      samma station räknas som ett läge. Anställda är ett golv eftersom stadskärnor inte ingår i SCB:s verksamhetsområden.
+      Källor: GTFS Sverige 2, Samtrafiken via Trafiklab (CC0) · SCB, befolkning per 1 km-ruta 2025 och verksamhets- och handelsområden 2020 ·
+      © OpenStreetMap-bidragsgivare (ODbL) · Jernhusen AB, fastighetsförteckning 2025-12-31. Detaljer i <a href="README.md">README</a>.</p>
+  </div>
+</main>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const n = (v, d = 2) => v === null || v === undefined ? "–" : Number(v).toLocaleString("sv-SE", { maximumFractionDigits: d });
+const FARG = { "balans": "#4ade80", "stress": "#ff6b6b", "beroende": "#8b95a5", "obalanserad nod": "#f5a524", "obalanserad plats": "#6aa8ff" };
+const kort = s => s.replace(/ Centralstation/g, " C").replace(/ station/g, "");
+const S = 640, P = 56, x = v => P + v * (S - 2 * P), y = v => S - P - v * (S - 2 * P);
+let lagen = [], vald = null, sortK = "nod", asc = false;
+
+fetch("fastigheter.geojson", { cache: "no-cache" }).then(r => r.json()).then(d => {
+  const m = new Map();
+  for (const f of d.features) {
+    const p = f.properties, q = p.nodplats;
+    if (!q) continue;
+    if (!m.has(q.station)) m.set(q.station, { ...q, fastigheter: [] });
+    m.get(q.station).fastigheter.push(p.Fastighetsbeskrivning);
+  }
+  lagen = [...m.values()];
+  document.getElementById("forklaring").innerHTML = Object.entries(FARG).map(([t, c]) =>
+    `<span style="margin-right:12px;white-space:nowrap"><span class="sw" style="background:${c}"></span>${esc(t)} (${lagen.filter(l => l.typ === t).length})</span>`).join("");
+  ritaDiagram(); ritaTabell();
+});
+
+function ritaDiagram() {
+  const g = [];
+  g.push(`<polygon points="${x(0)},${y(0.15)} ${x(0)},${y(0)} ${x(0.15)},${y(0)} ${x(1)},${y(0.85)} ${x(1)},${y(1)} ${x(0.85)},${y(1)}" fill="rgba(74,222,128,.07)"/>`);
+  g.push(`<rect x="${x(0.75)}" y="${y(1)}" width="${x(1) - x(0.75)}" height="${y(0.75) - y(1)}" fill="rgba(255,107,107,.07)"/>`);
+  g.push(`<rect x="${x(0)}" y="${y(0.25)}" width="${x(0.25) - x(0)}" height="${y(0) - y(0.25)}" fill="rgba(139,149,165,.10)"/>`);
+  g.push(`<rect x="${P}" y="${P}" width="${S - 2 * P}" height="${S - 2 * P}" fill="none" stroke="var(--line)"/>`);
+  for (const t of [0, 0.25, 0.5, 0.75, 1]) g.push(`<text x="${x(t)}" y="${S - P + 18}" fill="var(--muted)" font-size="12" text-anchor="middle">${n(t)}</text>
+    <text x="${P - 10}" y="${y(t) + 4}" fill="var(--muted)" font-size="12" text-anchor="end">${n(t)}</text>`);
+  g.push(`<text x="${S / 2}" y="${S - 14}" fill="var(--muted)" font-size="13" text-anchor="middle">Nodvärde: trafik →</text>`);
+  g.push(`<text x="18" y="${S / 2}" fill="var(--muted)" font-size="13" text-anchor="middle" transform="rotate(-90 18 ${S / 2})">Platsvärde: stad →</text>`);
+  g.push(`<text x="${x(0.97)}" y="${y(0.04)}" fill="#f5a524" font-size="12" text-anchor="end">mer trafik än stad</text>`);
+  g.push(`<text x="${x(0.03)}" y="${y(0.95)}" fill="#6aa8ff" font-size="12">mer stad än trafik</text>`);
+  for (const l of lagen) {
+    const v = l === vald;
+    g.push(`<g data-s="${esc(l.station)}" style="cursor:pointer"><circle cx="${x(l.nod)}" cy="${y(l.plats)}" r="${v ? 9 : 6}" fill="${FARG[l.typ]}"
+      stroke="${v ? "#fff" : "#0d1117"}" stroke-width="${v ? 2.5 : 1}"/>
+      <text x="${x(l.nod) + 9}" y="${y(l.plats) + 4}" fill="${v ? "#fff" : "var(--muted)"}" font-size="${v ? 13 : 10}">${esc(kort(l.station.split(" / ")[0]))}</text></g>`);
+  }
+  const svg = document.getElementById("diagram");
+  svg.innerHTML = g.join("");
+  svg.querySelectorAll("g[data-s]").forEach(e => { e.onmouseenter = e.onclick = () => valj(e.dataset.s); });
+}
+const KOL = [["station", "Station", false], ["nod", "Nod", true], ["plats", "Plats", true], ["typ", "Typ", false]];
+function ritaTabell() {
+  document.getElementById("thead").innerHTML = "<tr>" + KOL.map(([k, t, num]) => `<th class="${num ? "num" : ""}" data-k="${k}">${t}${k === sortK ? (asc ? " ▴" : " ▾") : ""}</th>`).join("") + "</tr>";
+  document.querySelectorAll("#thead th").forEach(th => th.onclick = () => { asc = th.dataset.k === sortK ? !asc : !KOL.find(k => k[0] === th.dataset.k)[2]; sortK = th.dataset.k; ritaTabell(); });
+  const r = [...lagen].sort((a, b) => (a[sortK] < b[sortK] ? -1 : a[sortK] > b[sortK] ? 1 : 0) * (asc ? 1 : -1));
+  document.getElementById("tbody").innerHTML = r.map(l => `<tr data-s="${esc(l.station)}" class="${l === vald ? "vald" : ""}">
+    <td>${esc(kort(l.station))}</td><td class="num">${n(l.nod)}</td><td class="num">${n(l.plats)}</td>
+    <td><span class="sw" style="background:${FARG[l.typ]}"></span>${esc(l.typ)}</td></tr>`).join("");
+  document.querySelectorAll("#tbody tr").forEach(tr => { tr.onmouseenter = tr.onclick = () => valj(tr.dataset.s); });
+}
+function valj(s) {
+  const l = lagen.find(x => x.station === s);
+  if (!l || l === vald) return;
+  vald = l; ritaDiagram();
+  document.querySelectorAll("#tbody tr").forEach(tr => tr.classList.toggle("vald", tr.dataset.s === s));
+  const v = l.varden;
+  document.getElementById("info").innerHTML = `<b style="color:var(--text)">${esc(l.station)}</b> · ${esc(l.typ)} · nod ${n(l.nod)}, plats ${n(l.plats)}<br>
+    Tåg ${n(v.tag_avgangar, 0)} och övrig kollektivtrafik ${n(v.ovriga_avgangar, 0)} avgångar per vardag · ${n(v.stationer_30, 0)} stationer och
+    ${n(v.invanare_30, 0)} invånare inom 30 min med tåg · ${n(v.invanare_1km, 0)} invånare och minst ${n(v.anstallda_1km, 0)} anställda inom 1 km ·
+    ${n(v.service_500m, 0)} butiker, kaféer och service inom 500 m.<br>Fastigheter: ${esc(l.fastigheter.join(", "))}.`;
+}
+</script>
+</body>
+</html>

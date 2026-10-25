@@ -12,6 +12,7 @@ fastighetsförteckning per 2025-12-31.
 |---|---|
 | `index.html` | Kartan: en statisk sida med MapLibre GL JS och vektorkartor, platt som standard och 3D när en fastighet väljs |
 | `jamforelse.html` | Jämförelsetabell över alla fastigheter |
+| `om.html` | Om kartan: användning, definitioner, metoder, källor och licenser |
 | `nodplats.html` | Nod–plats-analys av stationslägena |
 | `restid.json` | Stationer som nås med tåg inom en timme, per fastighet |
 | `tag.json` | Alla tågturer en vardag med vägen längs spåren, för "Tåg i rörelse" |
@@ -118,8 +119,10 @@ spårvagn och tunnelbana inom 500 m, samt stationer och invånare som nås med t
 **Platsvärde**: invånare och anställda inom 1 km samt butiker, mat och dryck och service inom 500 m.
 Varje del skalas 0–1 (min–max på logaritmen av 1 + värdet) över Jernhusens stationslägen, och nod- respektive
 platsvärdet är medelvärdet av delarna. Typ: *balans* när skillnaden är högst 0,15, annars *obalanserad nod*
-(mer trafik än stad) eller *obalanserad plats* (mer stad än trafik). Inom balans: *stress* när båda är minst 0,75
-och *beroende* när båda är högst 0,25. Fastigheter vid samma stationer räknas som ett läge. Värdena är relativa
+(mer trafik än stad) eller *obalanserad plats* (mer stad än trafik). Inom balans: *hög intensitet* när båda är minst 0,75
+och *låg intensitet* när båda är högst 0,25 (Bertolinis "stress" och "dependency"). Gränsvärdena är projektets
+egna val; modellen ritar zonerna men anger inga siffror. Hög intensitet betyder enligt modellen att trafik och
+stadsliv kan konkurrera om ytan, inte att trängsel är uppmätt. Fastigheter vid samma stationer räknas som ett läge. Värdena är relativa
 inom de här lägena, inte ett nationellt mått.
 
 ## Tåg i rörelse

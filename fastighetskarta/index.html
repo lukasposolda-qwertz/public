@@ -261,7 +261,7 @@ function ritaLegend() {
         const t = till === null ? f(fr) + e + " och mer" : heltal ? (fr === till - 1 ? f(fr) : f(fr) + "–" + f(till - 1)) + e : f(fr) + " till under " + f(till) + e;
         return `<div>${sw(klassFarg(i))}${t}</div>`; }).join("");
   if (ind !== "omr") h += `<div>${sw(SAKNAS)}${esc(I.saknas || "Uppgift saknas")}</div><div style="margin-top:3px">Källa: ${esc(I.kalla)}</div>`;
-  h += `<div style="margin-top:8px">Punktens storlek visar lokalarean.</div>`;
+  h += `<div style="margin-top:8px">Punktens storlek visar lokalarean. Där flera fastigheter har samma punkt visas en punkt med summan.</div>`;
   h += `<div style="margin-top:4px"><span class="rail"></span>Huvudlinjer (stambanor m.fl.)</div>`;
   h += `<div><span class="rail" style="opacity:.5;box-shadow:none"></span>Övriga spår; inzoomat även bangårdar och sidospår</div>`;
   h += `<div><span class="sw" style="background:var(--accent);border-radius:2px"></span>Byggnad kopplad till fastigheten (OSM)</div>`;
@@ -335,15 +335,15 @@ function egnaLager() {
   map.addSource("fast", { type: "geojson", data: data });
   // Storlek efter lokalarea (radie ~ √LOA). Tydligt synliga redan i landsvyn och växer när man zoomar in.
   // Största fastigheten: 20 px över Sverige, 28 px i regionvy, 36 px i stadsvy, 44 px inzoomat.
-  const rot = ["sqrt", ["get", "Lokalarea Summa"]];
+  const rot = ["sqrt", ["get", "_loa"]];
   const radie = ["interpolate", ["linear"], ["zoom"],
                  4, ["+", 6, ["/", rot, 18]], 8, ["+", 8, ["/", rot, 12.5]], 13, ["+", 10, ["/", rot, 9.6]], 17, ["+", 12, ["/", rot, 7.8]]];
   map.addLayer({ id: "fast", type: "circle", source: "fast", paint: {
     "circle-radius": radie, "circle-color": ["get", "_farg"], "circle-opacity": 0.95,
-    "circle-stroke-color": ["case", ["==", ["get", "id"], valdId || ""], "#ffffff", "rgba(255,255,255,.65)"],
-    "circle-stroke-width": ["case", ["==", ["get", "id"], valdId || ""], 3, 1.2] } });
+    "circle-stroke-color": ["case", ["==", ["get", "id"], markerad()], "#ffffff", "rgba(255,255,255,.65)"],
+    "circle-stroke-width": ["case", ["==", ["get", "id"], markerad()], 3, 1.2] } });
   map.addLayer({ id: "fast-namn", type: "symbol", source: "fast", minzoom: 9, layout: {
-    "text-field": ["get", "Fastighetsbeskrivning"], "text-font": ["Noto Sans Regular"], "text-size": 12,
+    "text-field": ["coalesce", ["get", "_etikett"], ["get", "Fastighetsbeskrivning"]], "text-font": ["Noto Sans Regular"], "text-size": 12,
     "text-offset": [0, 1.3], "text-anchor": "top", "text-optional": true },
     paint: { "text-color": K.text, "text-halo-color": K.halo, "text-halo-width": 1.5 } });
 }
@@ -365,6 +365,7 @@ map.on("style.load", async () => {
     document.getElementById("ind").innerHTML = grp.map(g => `<optgroup label="${esc(g)}">` +
       Object.entries(IND).filter(([, I]) => I.grupp === g).map(([k, I]) => `<option value="${k}">${esc(I.namn)}</option>`).join("") +
       `</optgroup>`).join("");
+    grupperaSammaPunkt();
     fargaPunkter();
     visaOm();
   }
@@ -372,7 +373,10 @@ map.on("style.load", async () => {
   filtrera();
   placeraPaneler();
 });
-map.on("click", "fast", e => valj(e.features[0].properties.id));
+map.on("click", "fast", e => {
+  const p = data.features.find(f => f.properties.id === e.features[0].properties.id).properties;
+  p._grupp ? visaGrupp(p) : valj(p.id);
+});
 map.on("mouseenter", "fast", () => map.getCanvas().style.cursor = "pointer");
 map.on("mouseleave", "fast", () => map.getCanvas().style.cursor = "");
 // Platt-knappen markeras när kartan är lutad eller vriden, så att det syns att den gör något
@@ -381,8 +385,8 @@ map.on("pitchend", uppdateraPlatt); map.on("rotateend", uppdateraPlatt); map.on(
 
 function markeraVald() {
   if (map.getLayer("fast")) {
-    map.setPaintProperty("fast", "circle-stroke-color", ["case", ["==", ["get", "id"], valdId || ""], "#ffffff", "rgba(255,255,255,.65)"]);
-    map.setPaintProperty("fast", "circle-stroke-width", ["case", ["==", ["get", "id"], valdId || ""], 3, 1.2]);
+    map.setPaintProperty("fast", "circle-stroke-color", ["case", ["==", ["get", "id"], markerad()], "#ffffff", "rgba(255,255,255,.65)"]);
+    map.setPaintProperty("fast", "circle-stroke-width", ["case", ["==", ["get", "id"], markerad()], 3, 1.2]);
   }
   if (map.getLayer("hus-3d")) {
     const K = KARTOR[karta];
@@ -390,6 +394,41 @@ function markeraVald() {
     const kopplad = ["in", ["id"], ["literal", valdaBasId.map(x => x.id)]];
     map.setPaintProperty("hus-3d", "fill-extrusion-color", ["case", vald, "#a7fff0", kopplad, css("--accent"), K.hus || "#ffffff"]);
   }
+}
+
+// ---- fastigheter med exakt samma punkt -------------------------------------------------------
+// Flera fastigheter kan ha fått samma läge (samma adress eller samma metod). De ritas som EN punkt med
+// summan av lokalarean och ett gemensamt namn; ett klick visar fastigheterna att välja mellan.
+function grupperaSammaPunkt() {
+  const g = new Map();
+  for (const f of data.features) {
+    f.properties._loa = f.properties["Lokalarea Summa"] || 0;
+    const k = f.geometry.coordinates.join(",");
+    g.set(k, [...(g.get(k) || []), f.properties]);
+  }
+  for (const ps of g.values()) {
+    if (ps.length < 2) continue;
+    ps.sort((a, b) => (b["Lokalarea Summa"] || 0) - (a["Lokalarea Summa"] || 0));
+    const [l, ...ovr] = ps, namn = [...new Set(ps.map(p => p.Fastighetsbeskrivning))];
+    l._grupp = ps.map(p => p.id);
+    l._loa = ps.reduce((s, p) => s + (p["Lokalarea Summa"] || 0), 0);
+    l._etikett = (namn.length === 1 ? namn[0] : namn[0] + " m.fl.") + ` (${ps.length} fastigheter)`;
+    ovr.forEach(p => { p._ledare = l.id; });
+  }
+}
+const markerad = () => { const p = valdId && data.features.find(f => f.properties.id === valdId)?.properties; return p ? (p._ledare || p.id) : ""; };
+function visaGrupp(l) {
+  const ps = l._grupp.map(id => data.features.find(f => f.properties.id === id).properties);
+  const k = document.getElementById("kort");
+  k.innerHTML = `<div class="phuvud"><b>${ps.length} fastigheter på samma punkt</b><button class="knapp" id="stang">Stäng</button></div>
+    <div class="sektion"><ol style="padding:0">${ps.map(p => `<li data-id="${esc(p.id)}"><span class="sw" style="background:${p._farg}"></span>
+      <span><b>${esc(p.Fastighetsbeskrivning)}</b> · ${esc(p.Fastighetsbeteckning)}</span>
+      <span class="meta">${esc(p.Adress || "")} · ${n(p["Lokalarea Summa"])} kvm</span></li>`).join("")}</ol>
+    <div class="kalla">Fastigheterna är separata i förteckningen men har fått exakt samma läge (${esc(ps[0].lage_metod)}).
+      Det betyder att den öppna datan inte skiljer dem åt, inte att de ligger på samma plats. Exakta lägen kräver Lantmäteriets fastighetsgränser.</div></div>`;
+  k.style.display = "block"; k.scrollTop = 0;
+  document.getElementById("stang").onclick = () => { k.style.display = "none"; };
+  k.querySelectorAll("li[data-id]").forEach(li => li.onclick = () => valj(li.dataset.id));
 }
 
 // ---- lista och filter ------------------------------------------------------------------
@@ -414,7 +453,8 @@ function ritaLista() {
 function filtrera() {
   ritaLista();
   if (!map.getLayer("fast")) return;
-  const f = ["in", ["get", "id"], ["literal", urval().map(f => f.properties.id)]];
+  // En fastighet som delar punkt med andra visas genom gruppens punkt
+  const f = ["in", ["get", "id"], ["literal", [...new Set(urval().map(f => f.properties._ledare || f.properties.id))]]];
   map.setFilter("fast", f); map.setFilter("fast-namn", f);
 }
 document.getElementById("sok").oninput = filtrera;

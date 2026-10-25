@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Om kartan – Jernhusens fastigheter</title>
+<meta name="description" content="Om den inofficiella kartan över Jernhusens fastigheter: hur den används, vad uppgifterna betyder, hur de räknas och vilka källor som används.">
+<style>
+  :root { --bg: #0d1117; --panel: #10141c; --line: rgba(255,255,255,.12); --text: #e8ecf2; --muted: #8b95a5; --accent: #3ee0c5;
+          --rail: #f5a524; --notis: rgba(255,210,122,.08); --notis-kant: rgba(255,210,122,.35); }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+  body { margin: 0; font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); background: var(--bg); }
+  header { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px;
+           padding: 12px 20px; background: rgba(13,17,23,.95); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
+  header b { font-size: 16px; }
+  header a { font-size: 14px; }
+  .inoff { margin-left: auto; font-size: 12px; color: #ffd27a; }
+  a { color: var(--accent); }
+  .ram { display: grid; grid-template-columns: 220px minmax(0, 760px); gap: 40px; max-width: 1060px; margin: 0 auto; padding: 32px 20px 64px; }
+  nav { position: sticky; top: 72px; align-self: start; font-size: 14px; }
+  nav ol { list-style: none; margin: 0; padding: 0; }
+  nav li { margin: 0 0 6px; }
+  nav a { color: var(--muted); text-decoration: none; }
+  nav a:hover { color: var(--text); }
+  nav .under { padding-left: 12px; font-size: 13px; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 12px; }
+  h2 { font-size: 21px; margin: 44px 0 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 26px 0 6px; }
+  p, li { max-width: 70ch; }
+  .ingress { font-size: 18px; color: #cdd5e0; }
+  .notis { background: var(--notis); border: 1px solid var(--notis-kant); border-radius: 8px; padding: 12px 14px; }
+  .svag { color: var(--muted); font-size: 14px; }
+  dl { margin: 8px 0; }
+  dt { font-weight: 600; margin-top: 10px; }
+  dd { margin: 2px 0 0; color: #cdd5e0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 10px 0; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  .tabell { overflow-x: auto; }
+  .sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 0 1.5px #0d1117; }
+  kbd { font: 13px ui-monospace, monospace; background: rgba(255,255,255,.08); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+  @media (max-width: 860px) {
+    .ram { grid-template-columns: 1fr; gap: 16px; padding-top: 20px; }
+    nav { position: static; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+    h1 { font-size: 25px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <b>Om kartan</b>
+  <a href="./">← Till kartan</a>
+  <a href="jamforelse.html">Jämförelse</a>
+  <a href="nodplats.html">Nod och plats</a>
+  <span class="inoff">Inofficiell demo, inte en tjänst från Jernhusen AB</span>
+</header>
+<div class="ram">
+<nav aria-label="Innehåll">
+  <ol>
+    <li><a href="#projektet">Projektet</a></li>
+    <li><a href="#anvanda">Så använder du kartan</a></li>
+    <li><a href="#lagen">Fastigheter och lägen</a></li>
+    <li><a href="#uppgifter">Uppgifterna per fastighet</a></li>
+    <li class="under"><a href="#trafik">Kollektivtrafik</a></li>
+    <li class="under"><a href="#restid">Restid med tåg</a></li>
+    <li class="under"><a href="#nodplats">Nod och plats</a></li>
+    <li class="under"><a href="#omgivning">Omgivning</a></li>
+    <li class="under"><a href="#arbetsplatser">Arbetsplatser</a></li>
+    <li class="under"><a href="#klimat">Klimat i dag</a></li>
+    <li class="under"><a href="#framtidsklimat">Framtida klimat och skyfall</a></li>
+    <li class="under"><a href="#spar">Spår</a></li>
+    <li class="under"><a href="#risker">Naturrisker och natur</a></li>
+    <li class="under"><a href="#kulturmiljo">Kulturmiljö</a></li>
+    <li><a href="#tag">Tåg i rörelse</a></li>
+    <li><a href="#saknas">Det som saknas</a></li>
+    <li><a href="#kallor">Källor och licenser</a></li>
+  </ol>
+</nav>
+<main>
+  <h1>Jernhusens fastigheter på en karta</h1>
+  <p class="ingress">En karta över de 143 fastigheterna i Jernhusens publicerade fastighetsförteckning, med järnvägsnätet,
+    tågtrafiken och omgivningen kring varje fastighet. Allt bygger på öppna data.</p>
+  <p class="notis">Inofficiell demo, gjord som ett privat projekt. Kartan är inte framtagen av eller för Jernhusen AB och ersätter
+    inte bolagets egna uppgifter. Uppgifterna är uppskattningar ur öppna källor och kan innehålla fel.</p>
+
+  <h2 id="projektet">Projektet</h2>
+  <p>Utgångspunkten är Jernhusens <a href="https://www.datocms-assets.com/163536/1772552927-fastighetsforteckning-2025-1.pdf" target="_blank" rel="noopener">fastighetsförteckning
+    per 2025-12-31</a>: fastighetsbeteckning, beskrivning, adress och lokalarea per lokaltyp. Varje fastighet har fått ett ungefärligt
+    läge och har sedan berikats med öppna data om trafik, befolkning, arbetsplatser, klimat, risker och kulturmiljö.</p>
+  <p>Syftet är att visa vad som går att säga om ett fastighetsbestånd enbart med öppna data, och att samla det på ett ställe.
+    För varje uppgift anges källa och hämtningsdatum. Där underlaget är tunt sägs det.</p>
+
+  <h2 id="anvanda">Så använder du kartan</h2>
+  <dl>
+    <dt>Fastigheterna</dt>
+    <dd>Varje punkt är en fastighet; storleken visar lokalarean. Klicka på en punkt eller ett namn i listan för att se uppgifterna.
+      Kartan flyger då in och lutar till 3D. Har flera fastigheter samma punkt visas de som en punkt med summerad lokalarea,
+      och ett klick låter dig välja.</dd>
+    <dt>Färga</dt>
+    <dd>Menyn <b>Färga</b> bestämmer vilken uppgift punkterna färgas efter, till exempel tågavgångar, invånare eller framtida klimat.
+      Siffror delas i fem lika stora grupper; teckenförklaringen nere till vänster visar gränserna.</dd>
+    <dt>Tåg i rörelse</dt>
+    <dd>Är påslagen när kartan öppnas. Alla tåg en vanlig vardag rör sig längs spåren enligt tidtabellen. Panelen längst ner har
+      paus, tidsreglage och hastighet. Klicka på ett tåg för att se operatör och sträcka. <a href="#tag">Mer om animationen.</a></dd>
+    <dt>Spår och bakgrund</dt>
+    <dd><b>Huvudlinjer</b> och <b>Övriga spår</b> tänder och släcker järnvägsnätet. Bakgrunden kan vara Mörk, Ljus, Standard eller Flygfoto.</dd>
+    <dt>Navigera</dt>
+    <dd>Zooma med knapparna nere till höger, mushjulet eller två fingrar. Kompassknappen vrider norr uppåt; dra i den för att luta
+      och vrida. <b>⟂ Platt</b> rätar upp kartan där du är och <b>Hela Sverige</b> visar översikten. Helskärm finns bland kartknapparna.</dd>
+    <dt>Jämförelse och nod–plats</dt>
+    <dd><a href="jamforelse.html">Jämförelsen</a> visar samma mått för alla fastigheter i en sorterbar tabell som kan laddas ner som CSV.
+      <a href="nodplats.html">Nod och plats</a> jämför stationslägena i ett diagram.</dd>
+  </dl>
+
+  <h2 id="lagen">Fastigheter och lägen</h2>
+  <p>Förteckningen innehåller adresser men inga koordinater. Varje adress har sökts i OpenStreetMap (Nominatim) och bara godtagits
+    om träffen ligger i rätt kommun. Saknas adress har beskrivningen sökts i stället, till exempel "Nattavaara hållplats".</p>
+  <p>När adressen bara träffar gatan hamnar punkten mitt på gatan. Sådana punkter förbättras i tur och ordning:</p>
+  <ol>
+    <li>Namnger beskrivningen en station används Trafikverkets stationsläge.</li>
+    <li>För depåer används en namngiven depå i OpenStreetMap i rätt kommun.</li>
+    <li>Annars flyttas punkten till närmaste järnvägsmark intill gatan, högst 1,5 km.</li>
+  </ol>
+  <p>130 av 143 fastigheter har fått ett läge. De övriga visas bara i listan. <b>Punkten är ett ungefärligt läge, inte fastighetens gräns</b>,
+    och alla avstånd räknas från punkten. Metoden står i kortet för varje fastighet.</p>
+  <h3>Byggnader</h3>
+  <p>Turkosa byggnader är byggnader i OpenStreetMap som kopplats till fastigheten: byggnaden på adressen, byggnader med samma namn,
+    stations- och trafikbyggnader inom 150 m och, för depåer, byggnader på järnvägs- eller depåmark inom 300 m. Det är en uppskattning,
+    inte uppgift om ägande.</p>
+
+  <h2 id="uppgifter">Uppgifterna per fastighet</h2>
+  <p>Kortet för en fastighet visar det som finns för just den. Här förklaras vad uppgifterna betyder och hur de räknas.</p>
+
+  <h3 id="trafik">Kollektivtrafik inom 500 m</h3>
+  <p>Planerade avgångar en vanlig vardag (tisdag 2026-11-10) från alla hållplatser inom 500 m, per trafikslag. En tur som stannar vid
+    flera hållplatser inom radien räknas en gång, och tåg som slutar vid hållplatsen räknas inte. Dessutom flest tåg under en timme,
+    första och sista tåg samt tågoperatörer. Källa: GTFS Sverige 2.</p>
+
+  <h3 id="restid">Restid med tåg</h3>
+  <p>För fastigheter med en tågstation inom 1 km: vart man når med tåg inom 30 och 60 minuter en vardagsmorgon.</p>
+  <ul>
+    <li>Resan börjar vid fastighetspunkten med gång till en station inom 1 km (fågelvägen, 1,3 m/s).</li>
+    <li>Avresa var tionde minut 07:00–08:50; bästa avresa räknas, så upp till 10 minuters väntan ingår.</li>
+    <li>Byten är tillåtna med minst 3 minuter på samma station. Bara tåg, inte buss, spårvagn eller tunnelbana.</li>
+    <li><b>Invånare</b>: befolkningen i SCB:s 1 km-rutor vars mittpunkt ligger inom 1 km från en nådd station, varje ruta en gång.
+      Bara svenska rutor räknas.</li>
+    <li><b>Anställda</b>: på samma sätt ur SCB:s verksamhetsområden. Ett golv, se <a href="#arbetsplatser">arbetsplatser</a>.</li>
+  </ul>
+  <p><b>Visa på kartan</b> i kortet färgar de nådda stationerna efter restid.</p>
+
+  <h3 id="nodplats">Nod och plats</h3>
+  <p>Bertolinis nod–plats-modell (1999) ställer en stations <b>nodvärde</b>, hur väl den är kopplad till trafiknätet, mot dess
+    <b>platsvärde</b>, hur mycket stad som finns runt den.</p>
+  <ul>
+    <li><b>Nodvärde</b>: tågavgångar och avgångar med buss, spårvagn och tunnelbana inom 500 m, samt stationer och invånare som nås
+      med tåg inom 30 minuter.</li>
+    <li><b>Platsvärde</b>: invånare och anställda inom 1 km samt butiker, mat och dryck och service inom 500 m.</li>
+    <li>Varje del skalas 0–1 (min–max på logaritmen) över Jernhusens stationslägen, och nod- och platsvärdet är medelvärdet av delarna.</li>
+  </ul>
+  <div class="tabell"><table>
+    <tr><th>Typ</th><th>Villkor</th><th>Innebörd enligt modellen</th></tr>
+    <tr><td><span class="sw" style="background:#4ade80"></span>Balans</td><td>Skillnad högst 0,15</td><td>Trafik och stad i proportion till varandra.</td></tr>
+    <tr><td><span class="sw" style="background:#ff6b6b"></span>Hög intensitet</td><td>Balans, båda minst 0,75</td><td>Mycket trafik och mycket stad. Trafik och stadsliv kan konkurrera om ytan. Inte en mätning av trängsel.</td></tr>
+    <tr><td><span class="sw" style="background:#8b95a5"></span>Låg intensitet</td><td>Balans, båda högst 0,25</td><td>Lite trafik och lite stad.</td></tr>
+    <tr><td><span class="sw" style="background:#f5a524"></span>Obalanserad nod</td><td>Nod mer än 0,15 över plats</td><td>Mer trafik än stad: utrymme för fler bostäder, arbetsplatser och service.</td></tr>
+    <tr><td><span class="sw" style="background:#6aa8ff"></span>Obalanserad plats</td><td>Plats mer än 0,15 över nod</td><td>Mer stad än trafik: stationen kan behöva bättre trafik.</td></tr>
+  </table></div>
+  <p class="svag">Bertolini kallar hög och låg intensitet "stress" och "dependency". Han ritar zonerna men anger inga siffror,
+    så gränsvärdena ovan och urvalet av indikatorer är projektets egna val. Värdena är relativa inom Jernhusens stationslägen,
+    inte ett nationellt mått: med fler stationer i jämförelsen skulle färre hamna i toppen. Fastigheter vid samma station räknas som ett läge.</p>
+
+  <h3 id="omgivning">Omgivning</h3>
+  <dl>
+    <dt>Invånare inom 1 km</dt>
+    <dd>SCB:s 1 km-rutor (2025), där varje ruta viktas med hur stor del av den som ligger inom 1 km från punkten.</dd>
+    <dt>DeSO-området</dt>
+    <dd>Det DeSO-område (SCB:s minsta statistikområde) som punkten ligger i: sysselsättningsgrad 20–64 år, medelnettoinkomst jämfört med
+      kommunen och riket, och andel med låg och hög ekonomisk standard, år 2024. Beskriver de boende, inte de som arbetar där.</dd>
+    <dt>Service inom 500 m</dt>
+    <dd>Butiker, restauranger och kaféer, övrig service, busshållplatser och cykelparkeringar i OpenStreetMap. OSM är inte heltäckande,
+      så siffrorna är ett minimum.</dd>
+  </dl>
+
+  <h3 id="arbetsplatser">Arbetsplatser och dagbefolkning</h3>
+  <dl>
+    <dt>Anställda inom 1 km</dt>
+    <dd>Anställda i SCB:s verksamhetsområden och handelsområden (2020), viktade med hur stor del av området som ligger inom 1 km.
+      Verksamhetsområdena omfattar industri, kontor, handel och logistik utanför bostadsområden men <b>inte stadskärnor</b>, och täcker
+      ungefär 2 av Sveriges 5 miljoner sysselsatta. Siffran är alltså ett golv, och för centralstationer klart för låg.</dd>
+    <dt>Dagbefolkning i kommunen</dt>
+    <dd>Sysselsatta med arbetsställe i kommunen (bor där eller pendlar in) jämfört med sysselsatta som bor i kommunen, 2024.
+      Över 1 betyder att fler arbetar än bor i kommunen. Finare indelning än kommun finns inte som öppna data.</dd>
+  </dl>
+
+  <h3 id="klimat">Klimat i dag</h3>
+  <p>Normalvärden 1991–2020 för temperatur och nederbörd, beräknade ur SMHI:s kvalitetskontrollerade månadsvärden vid närmaste station
+    med minst 300 av 360 månader, högst 60 km bort. Station anges i kortet.</p>
+
+  <h3 id="framtidsklimat">Framtida klimat och skyfall</h3>
+  <p>Länets värden i SMHI:s Klimatscenariotjänst: medelvärdet av många klimatmodeller (EURO-CORDEX), jämfört med referensperioden 1971–2000.
+    Kortet visar förändringen för tre fall: mitten av seklet med höga utsläpp (RCP8.5, 2041–2070) och slutet av seklet med begränsade
+    (RCP4.5) respektive höga utsläpp (RCP8.5, 2071–2100).</p>
+  <dl>
+    <dt>Högsommardygn och tropiska nätter</dt><dd>Dygn med högsta temperatur minst 25 °C, respektive nätter som inte går under 20 °C.</dd>
+    <dt>Dygn med minst 10 och 20 mm regn</dt><dd>Kraftig respektive extrem dygnsnederbörd.</dd>
+    <dt>Graddagar för uppvärmning och kylgraddagar</dt><dd>Mått på uppvärmnings- och kylbehovet över året.</dd>
+  </dl>
+  <p><b>Skyfall:</b> tjänsten har inga länsvärden för korta skyfall. SMHI:s nationella skyfallskartering räknar med att korta, kraftiga regn
+    blir 20 % (RCP4.5) respektive 40 % (RCP8.5) intensivare i slutet av seklet; det anges i kortet. En lokal skyfallskarta finns inte som
+    öppen tjänst.</p>
+  <p class="svag">Värdena är länsmedel, inte lokala. Tjänstens kartor anger bara klassade intervall och används därför inte.</p>
+
+  <h3 id="spar">Spår inom 300 m</h3>
+  <p>Spårlängd i OpenStreetMap inom 300 m, uppdelad på huvudspår, bangård, sidospår och anslutningsspår, samt elektrifierad längd.
+    Spårtyperna är frivilligt taggade i OSM. Trafikverkets järnvägsnät är den officiella källan.</p>
+
+  <h3 id="risker">Naturrisker och skyddad natur</h3>
+  <p>Om ett karterat översvämnings-, stabilitets- eller skredområde ligger inom 100 m från punkten, och jordarten i punkten.
+    Karteringarna täcker inte hela Sverige, så <b>"nej" betyder att inget är karterat där, inte att risk saknas</b>.
+    Skyddad natur är gällande skyddade områden i Naturvårdsregistret vars gräns ligger inom 500 m.</p>
+
+  <h3 id="kulturmiljo">Kulturmiljö inom 250 m</h3>
+  <p>Kulturhistoriska lämningar, inventerad bebyggelse och byggnadsminnen hos Riksantikvarieämbetet vars geometri ligger inom 250 m.
+    RAÄ påpekar att kvaliteten kan variera och att länsstyrelsen ska kontaktas inför planering eller markarbeten.</p>
+
+  <h2 id="tag">Tåg i rörelse</h2>
+  <p>Alla 4 215 tågturer en vanlig vardag (2026-11-10) enligt GTFS Sverige 2, alltså tidtabellen, inte realtid.</p>
+  <ul>
+    <li>Vid en station står tåget mellan ankomst och avgång; mellan stationerna rör det sig med jämn fart.</li>
+    <li>Vägen följer spåret: kortaste väg i OpenStreetMaps spårnät. På 18 av 809 sträckor saknas en rimlig väg, och där går tåget i rak linje.</li>
+    <li>Tåg som går över midnatt visas även tidigt på morgonen.</li>
+  </ul>
+  <p><span class="sw" style="background:#ff3ec9"></span>Snabbtåg &nbsp; <span class="sw" style="background:#ffffff"></span>Fjärr- och interregionala tåg
+    &nbsp; <span class="sw" style="background:#4fe3ff"></span>Regional- och pendeltåg</p>
+
+  <h2 id="saknas">Det som saknas</h2>
+  <ul>
+    <li><b>Fastighetsgränser</b> (Lantmäteriet) kräver juridisk prövning, och villkoren styr om de får publiceras.</li>
+    <li><b>Energideklarationer</b> (Boverket) kräver avtal och får inte lämnas vidare.</li>
+    <li><b>Arbetsplatser i stadskärnor</b> och dagbefolkning finare än kommun finns inte som öppna data.</li>
+    <li><b>Lokal skyfallskartering</b> finns inte som öppen tjänst.</li>
+    <li><b>Resandeflöden</b> per station ingår inte; trafiken är planerade avgångar.</li>
+  </ul>
+
+  <h2 id="kallor">Källor och licenser</h2>
+  <div class="tabell"><table>
+    <tr><th>Uppgift</th><th>Källa</th><th>Licens</th></tr>
+    <tr><td>Fastigheter, lokalarea</td><td>Jernhusen AB, <a href="https://www.datocms-assets.com/163536/1772552927-fastighetsforteckning-2025-1.pdf" target="_blank" rel="noopener">fastighetsförteckning 2025-12-31</a></td><td>© Jernhusen AB, återgiven med källhänvisning</td></tr>
+    <tr><td>Lägen, byggnader, stationer, service, spår</td><td><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> via Nominatim och Overpass</td><td>© OpenStreetMap-bidragsgivare, ODbL 1.0</td></tr>
+    <tr><td>Stationslägen</td><td>Trafikverket, stationsregister</td><td>CC0</td></tr>
+    <tr><td>Kollektivtrafik, restid, tåg i rörelse</td><td>GTFS Sverige 2, Samtrafiken via <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">Trafiklab</a></td><td>CC0 1.0</td></tr>
+    <tr><td>Befolkning, DeSO, arbetsplatser, dagbefolkning</td><td><a href="https://www.scb.se/vara-tjanster/oppna-data/" target="_blank" rel="noopener">SCB</a>: 1 km-rutor 2025, DeSO-statistik 2024, verksamhets- och handelsområden 2020, TAB1828</td><td>Öppna data, källa: SCB</td></tr>
+    <tr><td>Klimat 1991–2020</td><td><a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>, meteorologiska observationer</td><td>CC BY 4.0, bearbetad</td></tr>
+    <tr><td>Framtida klimat</td><td><a href="https://www.smhi.se/klimat/framtidens-klimat/klimatscenariotjansten" target="_blank" rel="noopener">SMHI Klimatscenariotjänsten</a>, länsvärden</td><td>Källa: SMHI, bearbetad. Tjänsten anger ingen egen licens; SMHI:s öppna data har CC BY 4.0</td></tr>
+    <tr><td>Skyfall, klimatfaktorer</td><td><a href="https://www.smhi.se/tema/hantera-vatten-och-klimat/hantera-oversvamning-till-foljd-av-skyfall/riskkartering-oversvamningskansliga-omraden-vid-skyfall" target="_blank" rel="noopener">SMHI, skyfallskartering</a></td><td>Källa: SMHI</td></tr>
+    <tr><td>Översvämning, stabilitet</td><td><a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF</a></td><td>Fri användning, källa: MCF</td></tr>
+    <tr><td>Skred, jordart</td><td><a href="https://www.sgu.se" target="_blank" rel="noopener">SGU</a></td><td>CC0 1.0</td></tr>
+    <tr><td>Skyddad natur</td><td>Naturvårdsverket, Naturvårdsregistret</td><td>CC0</td></tr>
+    <tr><td>Kulturmiljö</td><td><a href="https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/" target="_blank" rel="noopener">Riksantikvarieämbetet</a></td><td>CC0 / CC BY</td></tr>
+    <tr><td>Nod–plats-modellen</td><td>L. Bertolini (1999), <i>Spatial development patterns and public transport: the application of an analytical model in the Netherlands</i>, Planning Practice &amp; Research 14(2)</td><td>Egen tillämpning</td></tr>
+    <tr><td>Bakgrundskartor</td><td><a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> (© OpenMapTiles, data från OpenStreetMap); flygfoto Esri, Maxar, Earthstar Geographics</td><td>Enligt respektive villkor</td></tr>
+    <tr><td>Kartbibliotek</td><td><a href="https://maplibre.org" target="_blank" rel="noopener">MapLibre GL JS</a> 4.7.1</td><td>BSD-3-Clause</td></tr>
+    <tr><td>Kod</td><td>Lukas Posolda</td><td>MIT</td></tr>
+  </table></div>
+  <p class="svag">Fler tekniska detaljer finns i <a href="README.md">README</a>. © 2026 Lukas Posolda.</p>
+</main>
+</div>
+</body>
+</html>

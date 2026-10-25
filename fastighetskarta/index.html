@@ -205,7 +205,8 @@ const NP_TEXT = {
   "obalanserad nod": "mer trafik än stad runt stationen: utrymme för fler bostäder, arbetsplatser och service",
   "obalanserad plats": "mer stad än trafik: stationen kan behöva bättre trafik",
 };
-const TAGTYPER = [["Snabbtåg", "#ff5d8f"], ["Fjärr- och interregionala tåg", "#ffd166"], ["Regional- och pendeltåg", "#5ee7ff"]];
+// Färger valda för att skilja sig från de orange spåren och de blå fastighetspunkterna
+const TAGTYPER = [["Snabbtåg", "#ff3ec9"], ["Fjärr- och interregionala tåg", "#ffffff"], ["Regional- och pendeltåg", "#4fe3ff"]];
 // grupp = rubrik i menyn
 const IND = {
   omr:     { grupp: "Fastigheten", namn: "Affärsområde", kat: p => p["Affärsområde"], farger: () => Object.fromEntries(Object.entries(OMR).map(([k, v]) => [k, css(v)])) },
@@ -329,9 +330,9 @@ function egnaLager() {
   // Tåg i rörelse
   map.addSource("tag", { type: "geojson", data: tagFC });
   map.addLayer({ id: "tag-punkt", type: "circle", source: "tag", paint: {
-    "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 2.6, 9, 4.5, 14, 7],
+    "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 3, 9, 5, 14, 7.5],
     "circle-color": ["match", ["get", "typ"], 0, TAGTYPER[0][1], 1, TAGTYPER[1][1], TAGTYPER[2][1]],
-    "circle-stroke-color": K.halo, "circle-stroke-width": 0.8 } });
+    "circle-stroke-color": "#0d1117", "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, 1, 10, 1.8] } });
   map.addSource("fast", { type: "geojson", data: data });
   // Storlek efter lokalarea (radie ~ √LOA). Tydligt synliga redan i landsvyn och växer när man zoomar in.
   // Största fastigheten: 20 px över Sverige, 28 px i regionvy, 36 px i stadsvy, 44 px inzoomat.
@@ -581,7 +582,7 @@ function tagLoop(ts) {
   if (ts - senastRitad > 66) { senastRitad = ts; ritaTag(); }   // ca 15 bilder per sekund räcker
   requestAnimationFrame(tagLoop);
 }
-document.getElementById("tagtyper").innerHTML = TAGTYPER.map(([t, c]) => `<span class="sw" style="background:${c}"></span>${esc(t)}`).join(" &nbsp;");
+document.getElementById("tagtyper").innerHTML = TAGTYPER.map(([t, c]) => `<span class="sw" style="background:${c};box-shadow:0 0 0 1.5px #0d1117"></span>${esc(t)}`).join(" &nbsp;");
 document.getElementById("tagknapp").onclick = async e => {
   const k = e.currentTarget;
   tagPa = !tagPa; k.classList.toggle("on", tagPa); k.setAttribute("aria-pressed", tagPa);

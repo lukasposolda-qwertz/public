@@ -95,7 +95,14 @@
   .maplibregl-popup-tip { display: none; }
   .maplibregl-ctrl-attrib { background: rgba(16,20,28,.85) !important; color: var(--muted); font-size: 11px; }
   .maplibregl-ctrl-attrib a { color: var(--text); }
-  .maplibregl-ctrl-group { background: var(--panel-solid); } .maplibregl-ctrl-group button span { filter: invert(1); }
+  .maplibregl-ctrl-group { background: var(--panel-solid); border: 1px solid var(--line); } .maplibregl-ctrl-group button span { filter: invert(1); }
+  .maplibregl-ctrl-group button { width: 36px; height: 36px; }
+  .maplibregl-ctrl-group button + button { border-top: 1px solid var(--line); }
+  .maplibregl-ctrl-group button:hover { background-color: var(--hover); }
+  .maplibregl-ctrl-scale { background: rgba(16,20,28,.8); color: var(--text); border-color: var(--muted); }
+  .maplibregl-ctrl-bottom-right { right: 0; transition: right .2s; }
+  body.kortoppet .maplibregl-ctrl-bottom-right { right: 392px; }
+  body.kortoppet #tagpanel { right: 450px; }
 
   @media (max-width: 900px) {
     /* En rad som scrollar i sidled i stället för fem staplade rader */
@@ -108,6 +115,11 @@
     #legend { display: none; }
     #kort { left: 12px; right: 12px; width: auto; max-height: 55vh !important; }
     #tagpanel { left: 12px; right: 12px; }
+    body.kortoppet #tagpanel { right: 12px; }
+    body.kortoppet .maplibregl-ctrl-bottom-right { right: 0; }
+    /* Över listan (30 % av höjden) längst ner */
+    .maplibregl-ctrl-bottom-right { bottom: calc(30vh + 16px); }
+    body.taglage .maplibregl-ctrl-bottom-right { bottom: 96px; }
     body.taglage #lista { display: none; }
   }
 </style>
@@ -272,10 +284,20 @@ function ritaLegend() {
 // ---- karta -----------------------------------------------------------------------------
 const map = new maplibregl.Map({
   container: "map", style: KARTOR[karta].stil, ...SVERIGE, maxPitch: 75,
+  locale: { "NavigationControl.ZoomIn": "Zooma in", "NavigationControl.ZoomOut": "Zooma ut",
+            "NavigationControl.ResetBearing": "Norr uppåt (dra för att luta och vrida)",
+            "FullscreenControl.Enter": "Helskärm", "FullscreenControl.Exit": "Avsluta helskärm",
+            "AttributionControl.ToggleAttribution": "Visa källor", "ScrollZoomBlocker.CtrlMessage": "Håll ned Ctrl och scrolla för att zooma" },
   attributionControl: { compact: true, customAttribution:
     'Fastigheter: Jernhusen AB, fastighetsförteckning 2025-12-31 · © OpenStreetMap-bidragsgivare (ODbL) · fler källor under "Om"' },
 });
+// Kartknappar för den som inte har pekskärm: zoom, kompass (klick = norr upp, dra = luta/vrid), helskärm och skala
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+map.addControl(new maplibregl.FullscreenControl(), "bottom-right");
+map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
+// Knapparna flyttas åt sidan när kortet är öppet, så att de inte hamnar under det
+new MutationObserver(() => document.body.classList.toggle("kortoppet", document.getElementById("kort").style.display === "block"))
+  .observe(document.getElementById("kort"), { attributes: true, attributeFilter: ["style"] });
 
 let data, dataJarnvag, dataBygg, valdId = null, omrFilter = "";
 let valdaBasId = [];             // bakgrundskartans byggnads-id för byggnader kopplade till fastigheterna

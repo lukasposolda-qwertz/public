@@ -54,7 +54,10 @@
     <p><b>Nodvärde</b>: tågavgångar och avgångar med buss, spårvagn och tunnelbana inom 500 m en vardag, samt stationer och invånare
       som nås med tåg inom 30 minuter på morgonen. <b>Platsvärde</b>: invånare inom 1 km, anställda i SCB:s verksamhets- och handelsområden
       inom 1 km samt butiker, mat och dryck och service inom 500 m. Varje del skalas 0–1 (min–max på logaritmen) över stationslägena och
-      nod- respektive platsvärdet är medelvärdet av delarna. Balans: skillnad högst 0,15. Stress: båda minst 0,75. Beroende: båda högst 0,25.</p>
+      nod- respektive platsvärdet är medelvärdet av delarna. Balans: skillnad högst 0,15. Hög intensitet: båda minst 0,75. Låg intensitet: båda högst 0,25.
+      Bertolini kallar de två senare "stress" och "dependency". Gränsvärdena är projektets egna val; modellen ritar zonerna
+      men anger inga siffror. Hög intensitet betyder enligt modellen att trafik och stadsliv kan konkurrera om ytan, inte att
+      trängsel är uppmätt.</p>
     <p class="muted">Värdena är relativa inom Jernhusens stationslägen med en tågstation inom 1 km, inte ett nationellt mått. Fastigheter vid
       samma station räknas som ett läge. Anställda är ett golv eftersom stadskärnor inte ingår i SCB:s verksamhetsområden.
       Källor: GTFS Sverige 2, Samtrafiken via Trafiklab (CC0) · SCB, befolkning per 1 km-ruta 2025 och verksamhets- och handelsområden 2020 ·
@@ -64,7 +67,7 @@
 <script>
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const n = (v, d = 2) => v === null || v === undefined ? "–" : Number(v).toLocaleString("sv-SE", { maximumFractionDigits: d });
-const FARG = { "balans": "#4ade80", "stress": "#ff6b6b", "beroende": "#8b95a5", "obalanserad nod": "#f5a524", "obalanserad plats": "#6aa8ff" };
+const FARG = { "balans": "#4ade80", "hög intensitet": "#ff6b6b", "låg intensitet": "#8b95a5", "obalanserad nod": "#f5a524", "obalanserad plats": "#6aa8ff" };
 const kort = s => s.replace(/ Centralstation/g, " C").replace(/ station/g, "");
 const S = 640, P = 56, x = v => P + v * (S - 2 * P), y = v => S - P - v * (S - 2 * P);
 let lagen = [], vald = null, sortK = "nod", asc = false;

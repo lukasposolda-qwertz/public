@@ -62,6 +62,9 @@ långt från fastigheten. Sådana punkter förbättras i tur och ordning:
 
 Metoden och hur långt punkten flyttades visas för varje fastighet.
 
+Har flera fastigheter fått exakt samma punkt (16 fall, t.ex. tre fastigheter i Hagalund) ritas de som en punkt med
+summerad lokalarea, och ett klick visar fastigheterna att välja mellan.
+
 Punkterna är ungefärliga lägen, inte fastighetsgränser. Fastigheter utan
 godkänd träff saknar punkt och visas bara i listan.
 
@@ -149,7 +152,7 @@ tillbaka. Menyerna ligger överst: sök, affärsområde, bakgrundskarta, Huvudli
 | Bakgrund Mörk, Ljus, Standard | [OpenFreeMap](https://openfreemap.org) stilarna Dark, Positron och Liberty. © OpenMapTiles, data från OpenStreetMap |
 | Bakgrund Flygfoto | [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9). Källa: Esri, Maxar, Earthstar Geographics och GIS-användarsamfundet. Visas enligt Esris användarvillkor |
 | **Huvudlinjer** (knapp), stark färg | OpenStreetMap `railway=rail` + `usage=main`: stambanorna och andra stora linjer, i hela landet. Förenklat med 25 m tolerans. ODbL |
-| **Övriga spår** (knapp), dämpad färg | `usage=branch` (bandelar och sidolinjer) i hela landet, plus alla spår ur bakgrundskartan inzoomat (se nästa rad). ODbL |
+| **Övriga spår** (knapp), dämpad färg | `usage=branch` (bandelar och sidolinjer) och smalspår i trafik (`railway=narrow_gauge` utan museibanor och sidospår, t.ex. Roslagsbanan) i hela landet, plus alla spår ur bakgrundskartan inzoomat (se nästa rad). ODbL |
 | Alla spår inzoomat (bangårdar, sidospår, industrispår) | OpenFreeMap/OpenMapTiles `transportation`, `class=rail`, från zoom 12; servicespåren finns i vektorrutorna från ca zoom 14. © OpenMapTiles, data från OpenStreetMap |
 | Alla byggnader i 3D | OpenFreeMap/OpenMapTiles, höjd från `render_height` |
 | Kopplade byggnader (turkos) | OSM-byggnader som kopplats till fastigheten: byggnaden på adressen, byggnader med samma namn som fastigheten, stations-/trafikbyggnader inom 150 m och, för depåer, byggnader på järnvägs- eller depåmark inom 300 m. Färgen läggs på bakgrundskartans egen byggnad (id = OSM-id × 10 + 2), så form och höjd stämmer. En uppskattning, **inte** uppgift om ägande. ODbL |

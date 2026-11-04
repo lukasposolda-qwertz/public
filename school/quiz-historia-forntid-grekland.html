@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historia – Forntida högkulturer och Grekland</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --card-bg: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #64748b;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --correct-bg: #ecfdf5;
+  --correct-border: #059669;
+  --correct-text: #065f46;
+  --incorrect-bg: #fef2f2;
+  --incorrect-border: #dc2626;
+  --incorrect-text: #991b1b;
+  --partial: #d97706;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --card-radius: 16px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; line-height: 1.5; }
+.container { max-width: 720px; margin: 0 auto; padding: 1rem; }
+header { text-align: center; padding: 1rem 0 0.75rem; }
+h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.75rem; }
+#progress-text { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem; min-height: 1.3em; }
+.bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+.card { background: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: 2rem; margin-top: 1rem; }
+.qtext { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.5rem; }
+.qtype { font-size: 0.8rem; font-style: italic; color: var(--text-secondary); margin: 0 0 1rem; }
+.options { display: flex; flex-direction: column; gap: 0.75rem; }
+.opt, .row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.875rem 1rem; background: #fff; }
+.opt { display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer; font-size: 1rem; }
+.opt:hover { border-color: var(--accent); background: #f8f9ff; }
+.opt.sel { border-color: var(--accent); background: #eef2ff; }
+.opt input { accent-color: var(--accent); margin-top: 0.3rem; flex: none; width: 1rem; height: 1rem; }
+.mark { display: inline-block; min-width: 1.1em; font-weight: 700; }
+.right { border-color: var(--correct-border) !important; background: var(--correct-bg) !important; }
+.wrong { border-color: var(--incorrect-border) !important; background: var(--incorrect-bg) !important; }
+.rowtext .mark:empty { display: none; }
+.pool { margin: 0 0 1rem; padding: 0.75rem 1rem; background: #f8fafc; border-radius: 10px; font-size: 0.95rem; }
+.pool div { margin: 0.25rem 0; }
+.right .mark { color: var(--correct-border); }
+.wrong .mark { color: var(--incorrect-border); }
+.locked .opt { cursor: default; }
+.locked .opt:hover { background: #fff; border-color: #e2e8f0; }
+.locked .opt.sel:hover { background: #eef2ff; border-color: var(--accent); }
+.row { display: flex; flex-direction: column; gap: 0.5rem; }
+.rows { display: flex; flex-direction: column; gap: 0.75rem; }
+.rowtext { font-size: 1rem; }
+.note { font-size: 0.875rem; color: var(--correct-text); }
+select, input[type=text] { font: inherit; font-size: 1rem; padding: 0.5rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: var(--text-primary); max-width: 100%; }
+select:focus, input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+select:disabled, input[type=text]:disabled { opacity: 1; color: var(--text-primary); background: #f8fafc; }
+select.right, input.right { border-color: var(--correct-border); background: var(--correct-bg); }
+select.wrong, input.wrong { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+.tfbtns { display: flex; gap: 0.5rem; }
+.tfbtns label { flex: 1; text-align: center; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem; cursor: pointer; font-weight: 500; }
+.tfbtns label:hover { border-color: var(--accent); background: #f8f9ff; }
+.tfbtns label.sel { border-color: var(--accent); background: #eef2ff; }
+.tfbtns input { position: absolute; opacity: 0; pointer-events: none; }
+.tfbtns label.ans { border-color: var(--correct-border); background: var(--correct-bg); }
+.tfbtns label.bad { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+.locked .tfbtns label { cursor: default; }
+.orderrow { display: flex; align-items: center; gap: 0.75rem; }
+.orderrow .num { font-weight: 700; color: var(--text-secondary); min-width: 1.5rem; }
+.orderrow .rowtext { flex: 1; }
+.arrows { display: flex; gap: 0.35rem; }
+.arrows button { width: 2.2rem; height: 2.2rem; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; font-size: 1rem; cursor: pointer; color: var(--text-primary); }
+.arrows button:hover:not(:disabled) { border-color: var(--accent); background: #f8f9ff; }
+.arrows button:disabled { opacity: 0.35; cursor: not-allowed; }
+.cloze { font-size: 1.05rem; line-height: 2.4; }
+.cloze select { margin: 0 0.2rem; }
+.correct-line { margin-top: 0.75rem; font-size: 0.9rem; color: var(--correct-text); }
+.btn { background: var(--accent); color: #fff; border: 2px solid var(--accent); font: inherit; font-weight: 600; padding: 0.75rem 2rem; border-radius: 10px; cursor: pointer; }
+.btn:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.outline { background: transparent; color: var(--accent); }
+.btn.outline:hover:not(:disabled) { background: #eef2ff; border-color: var(--accent); }
+.actions { margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+.feedback { margin-top: 1.5rem; padding: 1rem 1.25rem; border-left: 4px solid; border-radius: 0 10px 10px 0; font-size: 0.95rem; }
+.feedback p { margin: 0.5rem 0 0; }
+.feedback.ok { border-color: var(--correct-border); background: rgba(5,150,105,0.05); }
+.feedback.no { border-color: var(--incorrect-border); background: rgba(220,38,38,0.05); }
+.feedback.mid { border-color: var(--partial); background: rgba(217,119,6,0.05); }
+.center { text-align: center; }
+.intro ul { padding-left: 1.2rem; margin: 0.5rem 0 0; }
+.intro li { margin-bottom: 0.35rem; }
+table.res { margin: 1rem auto 0; border-collapse: collapse; font-size: 0.95rem; }
+table.res td { padding: 0.3rem 1rem; border-bottom: 1px solid #e2e8f0; }
+table.res td:last-child { text-align: right; font-weight: 600; }
+@media (max-width: 480px) { .card { padding: 1.25rem; } .orderrow { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1 id="title"></h1>
+    <div id="progress-text"></div>
+    <div class="bar"><div class="bar-fill" id="bar"></div></div>
+  </header>
+  <main id="app"></main>
+</div>
+<script>
+(function () {
+'use strict';
+const META = {"id": "quiz-historia-forntid-grekland", "title": "Historia – Forntida högkulturer och Grekland", "intro": ["Quizet har 70 frågor i flera olika format. Läs varje fråga noga: antalet rätta svar och sättet att svara skiljer sig mellan frågorna.", "En fråga räknas som rätt först när alla delar är rätt. Efter varje fråga visas facit med förklaring."], "types": ["single", "multi", "tf", "match", "order", "cloze", "short", "sort"]};
+const quizData = [{"type": "single", "q": "En historiker jämför två dagböcker från samma krig. Den ena skrev en soldat enbart för sig själv. Den andra skrev en general som redan under kriget planerade att ge ut den som bok. Vilken slutsats är mest rimlig?", "options": ["Generalens dagbok är troligen mest tillförlitlig eftersom han hade högre rang och bättre överblick", "Soldatens dagbok är sannolikt ärligare eftersom han inte skrev för att påverka några läsare", "Båda är lika pålitliga eftersom båda bygger på författarens egna erfarenheter", "Ingen av dem kan användas som historisk källa eftersom dagböcker aldrig kan vara objektiva"], "correct": 1, "fb": "Soldaten hade ingen anledning att försköna något, eftersom ingen annan skulle läsa. Generalens dagbok skrevs för att publiceras, vilket ger ett starkt motiv att framställa sig själv och sin armé i god dager. Därför är frågan i vilket syfte en källa tillkom central i källkritiken.\nHög rang ger överblick men inte automatiskt ärlighet (A). Att båda bygger på egna erfarenheter gör dem till förstahandskällor, men det säger inget om hur ärliga de är (C). Ingen källa är helt objektiv, men det gör den inte oanvändbar: historikern granskar källan och jämför med andra (D)."}, {"type": "tf", "q": "Bedöm om varje påstående om historiska källor är sant eller falskt.", "items": [{"t": "En andrahandskälla bygger på vad någon annan har berättat eller upplevt.", "a": true}, {"t": "En förstahandskälla är alltid sann, eftersom personen själv var med.", "a": false}, {"t": "Alla spår av människor från förr kan vara historiska källor, även sådana som inte går att ta på.", "a": true}, {"t": "Ett föremål utan text, till exempel ett mynt, kan inte användas som historisk källa.", "a": false}], "fb": "Andrahandskällor återger vad andra har upplevt, och de är oftast mindre pålitliga än förstahandskällor.\nEn förstahandskälla är ofta bra, men personen kan minnas fel, ljuga eller ha ett eget syfte. Därför granskar man även förstahandskällor.\nHistoriska källor är alla spår av människor, till exempel mynt, skelett, tavlor, ljudinspelningar och ortnamn. Ett ortnamn som Visby, där första delen kommer från ett ord för en helig plats, kan berätta om vad som hänt på platsen för länge sedan."}, {"type": "order", "q": "Lägg utvecklingen mot de första högkulturerna i den ordning den skedde, från först till sist.", "items": ["Människor lever som jägare och samlare", "Klimatet blir varmare när den senaste istiden är över", "Vissa grupper börjar odla och tämja djur och blir bofasta", "Maten räcker till så att alla inte behöver arbeta på åkrarna", "Människor tar olika yrken, som hantverkare, präster och skrivare", "Städer med härskare och skriftspråk växer fram"], "fb": "Under större delen av mänsklighetens historia levde vi som jägare och samlare. Efter den senaste istiden blev klimatet varmare, havsnivåerna steg och många områden förändrades, vilket fick vissa grupper att börja odla och tämja djur och därmed bli bofasta.\nNär jordbruket gav överskott kunde en del människor sluta odla och i stället bli hantverkare, präster eller skrivare. Behovet av att hålla reda på skördar, handel och ordning gjorde att skriftspråk och städer med härskare växte fram."}, {"type": "match", "q": "Para ihop varje begrepp med rätt förklaring. En förklaring passar inget av begreppen.", "pairs": [["Förstahandskälla", "Berättelse av någon som själv var med om det som hänt"], ["Andrahandskälla", "Berättelse som bygger på vad andra har upplevt"], ["Tolka", "Försöka förstå och förklara vad en källa betyder"], ["Kontinuitet", "Något som hänger ihop och består över lång tid"]], "extra": ["Ett tidsavsnitt som slutar när människors sätt att leva förändras"], "fb": "Förstahandskälla och andrahandskälla skiljs åt av om berättaren själv var med. Att tolka är att försöka förstå vad en källa egentligen säger, till exempel vad ett kors på en runsten betyder. Kontinuitet är ett sammanhang som lever kvar över lång tid.\nDen överblivna förklaringen beskriver en epok, alltså ett tidsavsnitt som avslutas när människors sätt att leva förändras på ett grundläggande sätt."}, {"type": "multi", "q": "Vilka påståenden om hur historien delas in i epoker stämmer?", "options": ["Epokindelningen är densamma i alla delar av världen", "En epok slutar när människors sätt att leva förändras på ett grundläggande sätt", "Människor som lever mitt i en epok känner oftast redan till vilket namn forskare senare kommer att ge den", "Vikingatiden används som epok i all världens historieskrivning"], "correct": [1], "fb": "B är rätt. Stenåldern övergick till bronsåldern när människor lärde sig tillverka föremål av brons, och vikingatiden tog slut när Skandinavien delades upp i kungariken.\nA är fel: bronsåldern började till exempel tidigare kring Medelhavet än i Sverige, och Kina delar in sin historia efter kejsardynastier. C är fel: människor som levde på 900-talet visste inte att deras tid långt senare skulle kallas vikingatiden. D är fel eftersom vikingatiden är en epok i skandinavisk historia och saknas i många andra länders historia."}, {"type": "short", "q": "Vad kallas det med ett ord när människor i en stad tar olika yrken, som hantverkare eller präster, i stället för att alla odlar mat? Ordet börjar på s.", "answers": ["specialisering", "arbetsdelning", "specialisera"], "fb": "Rätt ord är specialisering (även kallat arbetsdelning). När jordbruket gav mer mat än alla behövde kunde vissa människor bli duktiga på något särskilt, till exempel att bygga hus, göra lerkrukor eller handla med varor. Det drev på utvecklingen av stora, välorganiserade städer."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Mesopotamien låg mellan floderna Eufrat och {0}, i ett område som till största delen ligger i dagens {1}. Sumererna, som byggde de första stora städerna där, skrev med en skrift som kallas {2}.", "blanks": [{"options": ["Tigris", "Jordan", "Nilen", "Indus"], "correct": 0}, {"options": ["Irak", "Egypten", "Pakistan", "Kina"], "correct": 0}, {"options": ["kilskrift", "hieroglyfer", "runor", "alfabetskrift"], "correct": 0}], "fb": "Mesopotamien betyder landet mellan två floder, Eufrat och Tigris. Området ligger till största delen i dagens Irak. Nilen hör till Egypten, Indus till dagens Pakistan och Jordan är en annan flod i Mellanöstern.\nSumererna skrev genom att trycka ner spetsiga vassrör i lerplattor. Märkena blev kilformade, därav namnet kilskrift."}, {"type": "sort", "q": "Placera varje påstående under den kultur det passar bäst för.", "categories": ["Mesopotamien", "Egypten", "Båda"], "items": [{"t": "Man skrev med spetsiga vassrör på plattor av lera.", "c": 0}, {"t": "Man tillverkade papper av en växt som växte vid en flod.", "c": 1}, {"t": "Jordbruket byggde på vatten från en stor flod och krävde samarbete kring bevattning.", "c": 2}, {"t": "Härskarna fick stora gravar byggda som pyramider.", "c": 1}, {"t": "Det fanns många stadsstater som var och en hade en egen kung.", "c": 0}, {"t": "Kvinnor kunde vara präster och ha viktiga uppgifter i templen.", "c": 2}], "fb": "Lerplattor med kilskrift hör till Mesopotamien, medan papyruspapper och pyramidgravar hör till Egypten. Egypten enades tidigt under en farao, medan Mesopotamien länge bestod av självständiga stadsstater.\nBåda kulturerna var flodkulturer där bevattning och samarbete var avgörande. I båda fanns kvinnliga präster, och i många tidiga skrivarskolor fick även flickor utbildning."}, {"type": "single", "q": "Faraos palats och egyptiernas hus byggdes av lertegel, men kungagravarna byggdes av stora stenblock. Vilken förklaring passar bäst?", "options": ["Gravarna skulle stå för evigt, eftersom faraos själ skulle leva för evigt", "Lertegel var förbjudet att använda till byggnader som hörde till gudarna", "Det fanns bara sten att tillgå nära Nilen, och lera saknades helt i landet", "Stenblocken var billigare än tegel, så bygget blev mindre kostsamt för folket"], "correct": 0, "fb": "Lertegel håller inte i tusentals år, men sten gör det. Eftersom faraos själ skulle leva för evigt byggde man gravarna, pyramiderna, av stora stenblock.\nDet fanns gott om lera längs Nilen, så B och C stämmer inte. Att bygga med enorma stenblock var mycket dyrt och krävde enormt arbete, så D är fel."}, {"type": "multi", "q": "Vilka påståenden om egyptiernas skrift och papper stämmer?", "options": ["Hieroglyferna började som en bildskrift där varje tecken stod för ett ord", "Papyrus, som användes som papper, tillverkades av en växt som växte vid Nilens stränder", "Ordet hieroglyf betyder ungefär helig skrift på sten", "Hieroglyferna var från början ett rent alfabet med omkring tjugo tecken"], "correct": [0, 1, 2], "fb": "A, B och C stämmer. Hieroglyferna började som bildskrift, där en bild kunde stå för ett ord, till exempel en fot för gå. Papyrus tillverkades av växten med samma namn, och ordet hieroglyf kommer från grekiskan och betyder helig skrift på sten.\nD är fel: hieroglyferna var en bildskrift med hundratals tecken, inte ett alfabet. Det var fenicierna som senare skapade ett skriftsystem med omkring 22 tecken för ljud."}, {"type": "tf", "q": "Bedöm om varje påstående om faraonernas gravar är sant eller falskt.", "items": [{"t": "Tutankhamuns grav hade aldrig plundrats när den hittades, och den innehöll tusentals föremål.", "a": true}, {"t": "Faraoner begravdes i pyramider under hela det forntida Egyptens historia.", "a": false}, {"t": "Konungarnas dal är ett område där gravkamrarna ligger under jord.", "a": true}, {"t": "I gravarna lade man bara själva kroppen, aldrig några föremål.", "a": false}], "fb": "Tutankhamuns grav var ovanligt väl bevarad, och den gav oss ett komplett exempel på hur en farao begravdes. Under senare tider begravdes faraonerna i gravkamrar under jord i Konungarnas dal i stället för i pyramider, delvis för att pyramiderna lockade till sig gravplundrare.\nGravarna fylldes med föremål som den döde kunde ha nytta av i dödsriket."}, {"type": "match", "q": "Para ihop varje person med rätt beskrivning. En beskrivning passar ingen av personerna.", "pairs": [["Hatschepsut", "Kvinna som regerade som farao"], ["Tutankhamun", "Farao som begravdes med en guldmask i en grav som hittades nästan orörd"], ["Kyros II", "Persisk kung som lät skriva om fred och religionsfrihet i erövrade Babylon"], ["Alexander den store", "Makedonsk kung som besegrade det stora Perserriket"]], "extra": ["Spartansk kung som stupade i strid mot perserna"], "fb": "Hatschepsut var en kvinnlig farao som regerade under en fredlig tid. Tutankhamuns grav blev känd just för att den var nästan orörd. Kyros II lät skriva en lercylinder som beskriver rättigheter och religionsfrihet i Babylonien, och Alexander den store erövrade Perserriket.\nDen överblivna beskrivningen passar Leonidas, Spartas kung."}, {"type": "order", "q": "Lägg dessa utvecklingar i antikens Grekland i den ordning de inträffade, från äldst till yngst.", "items": ["Den minoiska kulturen blomstrar på Kreta", "Den mykenska kulturen dominerar på det grekiska fastlandet", "Grekiska byar växer till stadsstater", "Greker grundar kolonier runt Medelhavet och Svarta havet", "Atens medborgare styr staden i en demokrati", "Alexander den store erövrar Perserriket"], "fb": "Den minoiska kulturen fanns ungefär 2000–1400 f.Kr. och följdes av den mykenska, som dominerade på 1400-talet f.Kr. Från 800-talet f.Kr. växte grekiska byar till stadsstater, och på 700-talet f.Kr. började grekerna grunda kolonier.\nAtens demokrati utvecklades på 400-talet f.Kr. Alexander den store erövrade Perserriket först på 300-talet f.Kr."}, {"type": "short", "q": "Vad kallas den omröstning i Aten där medborgarna ristade en persons namn på en krukskärva för att landsförvisa honom i tio år? Svara med det grekiska ordet.", "answers": ["ostrakism", "ostrakon", "ostraka", "ostracism", "ostrakismos", "ostracon"], "fb": "Rätt svar är ostrakism, efter ostrakon som betyder krukskärva. Metoden användes för att hindra att en enskild person fick för mycket makt. Den som fick flest röster landsförvisades under tio år."}, {"type": "single", "q": "Atens demokrati beskrivs ofta som världens första. Varför kan den ändå inte kallas folkstyre i modern mening?", "options": ["Besluten fattades av en kung som rådfrågade ett fåtal rika familjer", "Rösträtten hade bara de som ägde slavar och stora gårdar utanför staden", "Endast fria män som var födda i staden av atenska föräldrar hade rösträtt", "Folkförsamlingen sammanträdde bara vid krig, och då fick alla invånare rösta"], "correct": 2, "fb": "I Aten fick bara fria män födda i staden av atenska föräldrar rösta. Kvinnor, invandrare och slavar var inte medborgare, så ungefär en person av tio hade rösträtt.\nAten styrdes inte av en kung (A), rösträtten hängde inte på slavägande (B), och folkförsamlingen samlades regelbundet, ungefär 40 gånger om året (D). Ändå var det en stor nyhet att medborgarna själva fattade besluten."}, {"type": "multi", "q": "Vilka påståenden om Sparta stämmer?", "options": ["Pojkar flyttades till träningsläger för att bli krigare redan som barn", "Samhället vilade på att underkuvade folk tvingades arbeta åt spartanerna", "Kvinnor hade större frihet än kvinnor i de flesta andra grekiska stadsstater", "Kvinnor fick sitta i folkförsamlingen och rösta tillsammans med männen"], "correct": [0, 1, 2], "fb": "A, B och C stämmer. Spartanska pojkar skickades till träningsläger vid sju års ålder, och underkuvade heloter arbetade åt spartanerna. Spartas kvinnor fick utbildning, idrottade, kunde ärva egendom och skilja sig, vilket var ovanligt i Grekland.\nD är fel: i folkförsamlingen satt bara män."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Aten blev känt för sin {0}, där medborgarna själva fattade besluten, medan Sparta byggde sitt samhälle kring {1}. Medborgarna i Aten samlades på torget, som kallades {2}.", "blanks": [{"options": ["demokrati", "monarki", "diktatur", "kejsarmakt"], "correct": 0}, {"options": ["militär träning", "handel och sjöfart", "filosofiska skolor", "konstnärligt skapande"], "correct": 0}, {"options": ["agoran", "akropolis", "forum", "Olympen"], "correct": 0}], "fb": "Aten utvecklade demokratin, där medborgarna samlades på agoran, torget, för att diskutera och rösta. Sparta var tvärtom ett militärt samhälle där alla män skulle vara soldater och pojkarna fostrades hårt till krigare.\nAkropolis är en kulle med tempel, forum var Roms torg och Olympen var gudarnas berg."}, {"type": "tf", "q": "Bedöm om varje påstående om Perserriket och grekerna är sant eller falskt.", "items": [{"t": "Perserriket sträckte sig vid sin storhetstid från Egypten i väster till floden Indus i öster.", "a": true}, {"t": "Perserna tvingade alla erövrade folk att överge sin religion och sitt språk.", "a": false}, {"t": "Aten lyckades behålla sin självständighet i konflikterna med perserna.", "a": true}, {"t": "Slaget vid Marathon stod mellan Sparta och Perserriket.", "a": false}], "fb": "Perserriket blev det största välde som dittills funnits. Befolkningen i erövrade områden fick oftast leva ungefär som förut, men betalade skatt till den persiska kungen.\nAten satsade stora resurser på att rusta sig och behöll sin självständighet. Slaget vid Marathon stod mellan perserna och atenarna, inte spartanerna."}, {"type": "sort", "q": "Placera varje påstående under den kultur det passar bäst för.", "categories": ["Minoisk kultur", "Mykensk kultur", "Fenicier"], "items": [{"t": "Ett jättelikt palats med över 300 rum, vattenledningar och väggmålningar av delfiner och tjurar.", "c": 0}, {"t": "Ett krigiskt samhälle med kung och stormän högst upp, och kungagravar med guldmasker.", "c": 1}, {"t": "Sjömän som navigerade efter stjärnorna och byggde skepp med köl.", "c": 2}, {"t": "Ett samhälle där arkeologer inte funnit stadsmurar eller vapen, vilket kan tyda på fred.", "c": 0}, {"t": "Kultur som tog över minoernas handelskontakter och vars handel dog ut på 1100-talet f.Kr.", "c": 1}, {"t": "Köpmän från området kring dagens Libanon som sålde cederträ och färgade tyger.", "c": 2}], "fb": "Minoerna levde på Kreta och byggde palatset i Knossos. Mykenarna var krigiska, hade en samhällspyramid och lämnade guldföremål i kungagravar. Fenicierna var skickliga sjöfarare och handlare från dagens Libanon.\nSkillnaden i att leva fredligt eller krigiskt är en viktig del av hur forskare beskriver de två första kulturerna."}, {"type": "multi", "q": "Vilka påståenden om Induskulturen stämmer?", "options": ["Städerna hade hus av tegel och avloppssystem", "Man tillverkade kläder av bomullstyg och smycken av guld", "Städerna var ibland självständiga och ibland enade under en gemensam kung", "Kulturen växte fram vid en flod i det som idag är Pakistan"], "correct": [0, 1, 2, 3], "fb": "Alla fyra påståenden stämmer. Induskulturen hade planerade städer med tegelhus, avlopp och badhus, och befolkningen tillverkade bomullstyg och guldsmycken. Städerna var periodvis självständiga och periodvis enade under en kung. Kulturen uppstod runt floden Indus, i området som i dag ligger i Pakistan."}, {"type": "single", "q": "Mayafolket övertog en kalender och delar av sin kultur från ett tidigare folk i samma region. Det tidigare folket räknas som en av Amerikas äldsta högkulturer. Vilket folk var det?", "options": ["Aztekerna", "Inkafolket", "Toltekerna", "Olmekerna"], "correct": 3, "fb": "Olmekerna grundade omkring 1500 f.Kr. en av Amerikas äldsta högkulturer. De hade stadsstater, skriftspråk, kalender, pyramider och handel med keramik, kakao och gummi. Mayafolket tog över deras kalender och utvecklade den.\nAztekerna och inkafolket kom långt senare."}, {"type": "match", "q": "Para ihop varje beskrivning av en forntida högkultur med den flod den växte fram vid. En flod passar ingen av beskrivningarna.", "pairs": [["Kultur med de äldsta kända pyramiderna", "Nilen"], ["Kultur där sumerer och babylonier bodde", "Eufrat och Tigris"], ["Kultur vars städer låg i dagens Pakistan", "Indus"], ["Kultur där Shangdynastin styrde under bronsåldern", "Huang He"]], "extra": ["Amazonfloden"], "fb": "De fyra första flodkulturerna växte fram vid Nilen (Egypten), Eufrat och Tigris (Mesopotamien), Indus (Induskulturen i dagens Pakistan) och Huang He (Kina). Amazonfloden ligger i Sydamerika och hör inte till dessa tidiga högkulturer."}, {"type": "short", "q": "Vad kallas den metall som man får genom att smälta ihop koppar och tenn?", "answers": ["brons"], "fb": "Legeringen heter brons. När sumererna lärde sig smälta ihop koppar och tenn blev brons det viktigaste materialet, eftersom det var hårdare och höll längre än koppar. Därför räknas bronsåldern i Mesopotamien från omkring 3000 f.Kr."}, {"type": "multi", "q": "Vilka påståenden om talsystemet som användes i det forntida Mesopotamien stämmer?", "options": ["Det byggde bland annat på talet 60, vilket vi fortfarande ser i klockan", "Det ligger bakom att vi delar in cirkeln i 360 grader", "Det var ett rent tiosystem som var identiskt med vårt moderna talsystem", "Det användes enbart för att räkna dagar och aldrig för att hålla reda på varor"], "correct": [0, 1], "fb": "A och B stämmer. Talsystemet utgick från talen 6 och 10 och hade bland annat tecken för 60. Därifrån har vi ärvt indelningen av timmen i 60 minuter och cirkeln i 360 grader.\nC är fel eftersom systemet inte var rent decimalt, och D är fel eftersom talsystemet användes i handel och för att hålla reda på varor, till exempel mat som samlades in i templen."}, {"type": "single", "q": "Vilket påstående om de tidiga bosättningarna Catal Hüyük och Jericho stämmer **INTE**?", "options": ["Båda var stora bosättningar redan för mer än 8 000 år sedan", "I Catal Hüyük styrdes staden av en kung med en egen armé", "Ingen av dem räknas som högkultur, eftersom de saknade skriftspråk", "I Jericho byggdes en skyddsmur, vilket kan tyda på att staden hotades"], "correct": 1, "fb": "B är det felaktiga påståendet. I Catal Hüyük finns inga spår av kung, militär eller rika och fattiga, och därför räknas staden inte som högkultur.\nA, C och D stämmer: båda bosättningarna hade runt tusentals invånare redan för över 8 000 år sedan, ingen av dem lämnade efter sig skrift, och Jericho hade en skyddsmur."}, {"type": "order", "q": "Lägg händelserna i Mesopotamiens historia i tidsordning, från äldst till yngst.", "items": ["Skriftspråk börjar användas i sumeriska städer", "Bronsåldern börjar i Mesopotamien", "En Hedu’anna verkar som högsta prästinna i Ur", "Babylonierna erövrar sumerernas städer", "Nebukadnessar II regerar i Babylon"], "fb": "Skriften började användas omkring 3500 f.Kr. och bronsåldern omkring 3000 f.Kr. En Hedu’anna levde på 2200-talet f.Kr. och är den äldsta författare vi känner till vid namn. Babylonierna erövrade sumerernas städer omkring 1800 f.Kr., och Nebukadnessar II regerade i Babylon på 600-talet f.Kr."}, {"type": "tf", "q": "Bedöm om varje påstående om samhället i Mesopotamien är sant eller falskt.", "items": [{"t": "Templen var viktiga centra där mat samlades in och där skrivarna arbetade.", "a": true}, {"t": "Både flickor och pojkar kunde gå i skrivarskola.", "a": true}, {"t": "Babylonierna ersatte helt sumerernas kultur och avskaffade kilskriften.", "a": false}, {"t": "Gifta kvinnor i Babylonien förbjöds att ha något yrke.", "a": false}], "fb": "I templen samlades mat från odlingarna in som offer till gudarna, och skrivarna arbetade där. Både flickor och pojkar gick i skrivarskola.\nBabylonierna tog över mycket av sumerernas kultur i stället för att avskaffa den: kilskriften levde kvar, och sumeriska levde kvar som ett slags vetenskapsspråk. I Babylonien kunde kvinnor behålla ett yrke efter giftermålet, men samhället var strikt uppdelat mellan rika och fattiga, fria och slavar, män och kvinnor."}, {"type": "single", "q": "Vad är Hammurabis lagar?", "options": ["Reglerna för de olympiska spelen i Grekland", "En grekisk lagsamling som lade grunden för Atens demokrati", "En av de äldsta bevarade nedskrivna lagsamlingarna, från Babylonien", "En samling hymner skrivna av en sumerisk prästinna"], "correct": 2, "fb": "Hammurabi var kung i Babylonien, och hans lagar räknas som en av de äldsta bevarade lagsamlingarna. De bevisar att babylonierna hade ett utvecklat samhälle med nedskrivna regler.\nGrekerna levde långt senare (A, B), och hymnerna i D hör till En Hedu’anna."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Nilens årliga översvämningar lämnade kvar näringsrik {0} på åkrarna, som fungerade som gödsel. Egyptens kung kallades {1} och ansågs vara son till solguden {2}.", "blanks": [{"options": ["slam", "sand", "salt", "aska"], "correct": 0}, {"options": ["farao", "kejsare", "sultan", "konsul"], "correct": 0}, {"options": ["Ra", "Zeus", "Inanna", "Poseidon"], "correct": 0}], "fb": "När Nilen svämmade över lämnade den kvar slam som gjorde de annars torra markerna bördiga. Kungen kallades farao och sågs som son till solguden Ra, vilket gav honom en gudomlig ställning.\nZeus och Poseidon var grekiska gudar och Inanna var en mesopotamisk gudinna."}, {"type": "multi", "q": "Vilka av följande är källkritiska frågor som en historiker kan ställa till en skriftlig källa?", "options": ["Hur många personer har läst källan sedan den skrevs?", "Skrevs källan för att övertyga eller påverka någon?", "Är källan skriven på samma språk som historikern talar?", "Bygger berättelsen på något som författaren själv var med om?"], "correct": [1, 3], "fb": "B och D är källkritiska frågor. Syftet med källan påverkar hur ärlig den är, och en berättelse som bygger på egna upplevelser (förstahandskälla) är oftast mer pålitlig än en återberättelse.\nA och C säger inget om hur trovärdig källan är. Övriga källkritiska frågor handlar om när källan tillkom och om den är äkta."}, {"type": "single", "q": "Ett 350 år gammalt rättegångsprotokoll visar att flera personer vittnade om att de sett en häxa. Vad kan en historiker rimligen dra för slutsats av protokollet?", "options": ["Att människor på den tiden trodde på häxor, och hur de resonerade kring det", "Att häxor verkligen fanns, eftersom vittnena svor inför domstolen", "Att alla rättegångar vid den här tiden var orättvisa och byggde på lögner", "Att protokollet måste vara förfalskat, eftersom häxor inte kan finnas"], "correct": 0, "fb": "Protokollet är en äkta och intressant källa till hur människor tänkte och trodde, även om häxor inte fanns. Källans värde ligger i vad den visar om människornas föreställningar.\nAtt flera vittnat bevisar inte att häxor fanns (B), att en rättegång byggde på en vanföreställning betyder inte att alla rättegångar var orättvisa (C), och protokollet är inte förfalskat bara för att innehållet strider mot vad vi vet (D)."}, {"type": "short", "q": "I vilken fenicisk stad köpte man papyrus, så att namnet gav oss orden bibel och bibliotek?", "answers": ["byblos"], "fb": "Staden hette Byblos. Dit kom många för att köpa papyrus, ett slags papper som egyptierna tillverkade. Från namnet Byblos härstammar de grekiska orden för bok, och därmed orden bibel och bibliotek."}, {"type": "multi", "q": "Vilka påståenden om fenicierna stämmer?", "options": ["De använde stjärnhimlen för att navigera till sjöss", "Deras skriftspråk bestod av tusentals bildtecken, ett för varje ord", "De styrde över Egypten och Mesopotamien från sin huvudstad Babylon", "De skrev på lerplattor med kilskrift som de lärt sig av sumererna"], "correct": [0], "fb": "Bara A stämmer. Fenicierna navigerade efter stjärnorna och kunde segla långt ut på Medelhavet och till och med Atlanten.\nB är fel: fenicierna skapade ett alfabet med omkring 22 tecken som stod för ljud. C är fel eftersom Babylon inte var deras huvudstad. D är fel, för de skrev med ett eget alfabet."}, {"type": "order", "q": "Ordna dessa personer efter när de levde, från äldst till yngst.", "items": ["En Hedu’anna", "Hammurabi", "Hatschepsut", "Tutankhamun", "Kyros II", "Alexander den store"], "fb": "En Hedu’anna levde på 2200-talet f.Kr., Hammurabi omkring 1700-talet f.Kr., Hatschepsut och Tutankhamun under 1400- respektive 1300-talet f.Kr., Kyros II på 500-talet f.Kr. och Alexander den store på 300-talet f.Kr."}, {"type": "sort", "q": "Placera varje påstående under den stadsstat det passar bäst för.", "categories": ["Sparta", "Aten", "Båda"], "items": [{"t": "Kvinnor hade rätt att ärva och att skilja sig.", "c": 0}, {"t": "Medborgare kunde landsförvisas efter en omröstning där namn ristades på krukskärvor.", "c": 1}, {"t": "Underkuvade eller förslavade människor utförde en stor del av arbetet.", "c": 2}, {"t": "Folkförsamlingen röstade genom att skrika, och den som hördes mest vann.", "c": 0}, {"t": "Kvinnor var uteslutna från folkförsamlingen.", "c": 2}, {"t": "Rika pojkar tränade idrott på gymnasier, och män diskuterade politik på torget.", "c": 1}], "fb": "Spartas kvinnor hade stora rättigheter och folkförsamlingen röstade genom skrik. Aten använde ostrakism och hade offentliga torg och gymnasier för rika män.\nI båda stadsstaterna utförde slavar eller underkuvade folk mycket av arbetet, och kvinnor fick inte delta i folkförsamlingen."}, {"type": "single", "q": "Vad kännetecknar den hellenistiska tiden?", "options": ["Grekiska stadsstater enades under en gemensam demokratisk regering som styrde hela Medelhavsområdet", "Perserriket flyttade sin huvudstad till Aten och spred sin kultur i hela Grekland", "Fenicierna införde ett nytt alfabet som ersatte det grekiska", "Grekisk kultur blandades med andra kulturer i Alexanders gamla välde"], "correct": 3, "fb": "Den hellenistiska tiden började när Alexander den stores rike delades efter hans död. Grekisk kultur och vetenskap spreds till Mellanöstern, där den blandades med persiska och egyptiska traditioner.\nDe grekiska stadsstaterna enades aldrig i en gemensam demokrati (A), och det var Alexander som besegrade perserna, inte tvärtom (B). Fenicierna hade skapat alfabetet som grekerna senare lånade (C)."}, {"type": "tf", "q": "Bedöm om varje påstående om Alexander den store och hans tid är sant eller falskt.", "items": [{"t": "Alexander kom från Makedonien och hade fått undervisning av filosofen Aristoteles.", "a": true}, {"t": "Alexander besegrade Perserriket med enbart soldater från Sparta.", "a": false}, {"t": "Efter Alexanders död talades grekiska av överklassen i städer långt österut i hans gamla välde.", "a": true}, {"t": "Grekiska böcker förstördes helt i Mellanöstern, så de blev okända för senare tiders Europa.", "a": false}], "fb": "Alexander var kung av Makedonien och undervisades av Aristoteles. Han besegrade perserna med hjälp av grekernas duktiga krigare och fina stridsfartyg, och inte bara av spartaner. I hans gamla välde byggdes grekiska städer, teatrar och skolor.\nGrekisk litteratur och vetenskap bevarades i Mellanöstern och översattes till arabiska, och senare vidare till latin."}, {"type": "match", "q": "Para ihop varje grekiskt begrepp med rätt förklaring. En förklaring passar inget av begreppen.", "pairs": [["Polis", "Grekiskt ord för stadsstat"], ["Hybris", "Övermod som ansågs straffas av gudarna"], ["Hellas", "Det område där grekernas stadsstater låg"], ["Barbarer", "Grekernas ord för människor som inte talade grekiska"]], "extra": ["Ett tempel tillägnat guden Apollon"], "fb": "Polis betyder stadsstat och är ursprunget till ordet politik. Hybris var övermod, att tro att man var lika bra som en gud. Hellas var det område där stadsstaterna låg, och barbarer var vad grekerna kallade andra folk.\nTemplet till Apollon i Delfi hörde till oraklet, men det är ingen av förklaringarna ovan."}, {"type": "multi", "q": "Vilka påståenden om de olympiska spelen i antikens Grekland stämmer?", "options": ["De hölls vart fjärde år till Zeus ära", "Under spelen gällde vapenvila så att deltagarna kunde resa tryggt", "Segraren belönades med en krans av olivkvistar", "Man tävlade bland annat i löpning, brottning och kappkörning med hästar"], "correct": [0, 1, 2, 3], "fb": "Alla fyra påståenden stämmer. Spelen hölls vart fjärde år i Olympia, nära Zeus tempel. Under spelen gällde vapenvila, segraren fick en krans av olivkvistar från ett heligt träd, och grenarna var bland annat löpning, diskus- och spjutkastning, brottning, boxning och kappkörning med hästar."}, {"type": "match", "q": "Para ihop varje grekisk gud eller gudinna med rätt beskrivning. En beskrivning passar ingen av dem.", "pairs": [["Zeus", "Den störste guden, som bodde på berget Olympen"], ["Poseidon", "Havets gud"], ["Demeter", "Jordbrukets gudinna"], ["Hera", "Gudinna som var gift med den störste guden"]], "extra": ["Underjordens gud"], "fb": "Zeus var den störste guden och Hera hans fru. Poseidon styrde över havet, som grekerna levde nära, och Demeter var jordbrukets gudinna. Underjordens gud var Hades, som inte finns bland de fyra."}, {"type": "single", "q": "Vilket påstående om Sparta stämmer **INTE**?", "options": ["Teater, konst och lyxig mat uppmuntrades som en del av stadens prestige", "Pojkar flyttades vid sju års ålder till träningsläger för att där fostras till krigare", "Männens huvuduppgift var att vara soldater och vara redo vid uppror", "Kvinnor fick lära sig läsa och skriva, och de fick idrotta"], "correct": 0, "fb": "A är det felaktiga påståendet. I Sparta förbjöds lyx, teater och konstverk, och till och med god mat ansågs onödig.\nB, C och D stämmer: pojkar fostrades hårt till krigare från sju års ålder, alla män var soldater, och Spartas kvinnor fick skola och idrott."}, {"type": "short", "q": "Hur gammal var en spartansk pojke när han tvingades flytta till ett träningsläger? Svara med en siffra.", "answers": ["7", "sju"], "fb": "Pojkarna flyttade till träningsläger redan som sjuåringar. Där fostrades de till hårda krigare som skulle tåla köld, hunger och smärta."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Den minoiska kulturen fanns på ön {0}, och dess största palats hette {1}. Minoernas skrift har {2} tydas, medan den mykenska kulturen skrev en tidig form av {3}.", "blanks": [{"options": ["Kreta", "Cypern", "Sicilien", "Rhodos"], "correct": 0}, {"options": ["Knossos", "Mykene", "Delfi", "Olympia"], "correct": 0}, {"options": ["ännu inte kunnat", "redan helt kunnat"], "correct": 0}, {"options": ["grekiska", "latin", "fenicisk skrift", "kilskrift"], "correct": 0}], "fb": "Minoerna levde på Kreta och byggde det jättelika palatset Knossos. Deras skrift har forskare ännu inte kunnat tyda. Mykenarna, som erövrade Kreta, skrev en tidig form av grekiska, och deras skrift har kunnat tolkas.\nMykene var en stad på det grekiska fastlandet, Delfi hade oraklet och Olympia var platsen för de olympiska spelen."}, {"type": "multi", "q": "Vilka påståenden om den mykenska kulturen stämmer?", "options": ["Samhället var en strikt pyramid med kung och stormän överst", "Mykenarna var fredliga och bestämde sig för att aldrig föra krig", "Kulturen var Europas första högkultur och kom före den minoiska", "Mykenarnas viktigaste handelsvara var kilskrifttavlor som de skickade till Babylonien"], "correct": [0], "fb": "Bara A stämmer. Mykenarnas samhälle var strikt uppdelat: kungen och några stormän högst upp, en mellanklass med olika yrken och många fattiga som tvingades arbeta hårt.\nB är fel eftersom krig spelade en stor roll. C är fel eftersom den minoiska kulturen var Europas första högkultur. D är fel, för mykenarna handlade med guld och brons."}, {"type": "order", "q": "Ordna händelserna i Greklands historia under 400-talet f.Kr. och strax därefter, från först till sist.", "items": ["Aten och andra grekiska städer försvarar sig mot det persiska hotet", "Atens kultur blomstrar med teater och filosofi", "Krig utbryter mellan Sparta och Aten", "Aten är utfattigt och hela Grekland försvagat efter kriget", "Makedoniens kung lägger de grekiska stadsstaterna under sitt välde"], "fb": "Konflikterna med perserna drabbade grekerna tidigt på 400-talet f.Kr. Därefter följde Atens guldålder med dramer och filosofi. År 431 f.Kr. bröt kriget mellan Sparta och Aten ut och varade i 27 år. Aten besegrades och Grekland var försvagat, vilket gav Makedoniens kung chansen att ta över."}, {"type": "single", "q": "Hur behandlade Perserriket i regel de folk och städer som det erövrade, till exempel Babylon?", "options": ["Befolkningen fördes bort som slavar och städerna revs", "Alla fick persiskt medborgarskap och rätt att rösta", "Städerna fick behålla sina kungar men tvingades byta språk och religion till persiska", "Folken fick leva ungefär som förut men betalade skatt"], "correct": 3, "fb": "Perserna lät de erövrade folken fortsätta leva ungefär som tidigare, mot att de betalade skatt till den persiske kungen. Kyros II lät skriva att folket i Babylonien skulle få leva i trygghet med rättigheter och religionsfrihet.\nAtt ta alla som slavar eller riva städerna (A) beskriver inte perserna, och de erövrade fick inte persiskt medborgarskap (B) eller tvingas byta språk (C)."}, {"type": "tf", "q": "Bedöm om varje påstående om grekernas religion är sant eller falskt.", "items": [{"t": "Varje stadsstat hade sin egen skyddsgud eller skyddsgudinna.", "a": true}, {"t": "Grekerna trodde på en enda gud som styrde över hela världen.", "a": false}, {"t": "Man offrade djur i templen och höll festligheter och tävlingar till gudarnas ära.", "a": true}, {"t": "Grekernas gudar framställdes som felfria och straffade aldrig människor.", "a": false}], "fb": "Varje stadsstat hade en skyddsgud, till exempel Aten med gudinnan Athena. Grekerna trodde på många gudar, offrade djur i templen och ordnade festligheter och tävlingar till deras ära.\nGudarna i myterna var inte felfria, och de kunde straffa människor, särskilt den som visade övermod."}, {"type": "single", "q": "En person visar upp en gammal dräkt och säger att den bevisar att vårt land alltid har varit något särskilt. Vad är detta ett exempel på?", "options": ["Källkritik, eftersom dräktens äkthet granskas", "Epokindelning, eftersom dräkten placeras i en tidsperiod", "Historieanvändning, eftersom historia används för att övertyga", "Kontinuitet, eftersom dräkten visar att allt är oförändrat"], "correct": 2, "fb": "Detta är historieanvändning: någon använder historia för att övertyga andra om en åsikt. Politiker, företag och föreningar gör det ofta.\nKällkritik handlar om att granska hur trovärdig en källa är (A), och epokindelning om att dela in historien i tidsavsnitt (B). Kontinuitet betyder ett sammanhang över tid, men en dräkt bevisar inte att allt är oförändrat (D)."}, {"type": "multi", "q": "Vilka av följande är exempel på historieanvändning, alltså att historia används utanför forskningen för att övertyga eller skapa gemenskap?", "options": ["Ett företag marknadsför sig med att ha funnits längre än sina konkurrenter", "En förening framhåller hur gammal den är för att visa att den är viktig", "En arkeolog undersöker ett skelett för att ta reda på hur gammalt det är och vad personen åt", "En läkare läser igenom en patients journal för att kunna ställa en rätt diagnos"], "correct": [0, 1], "fb": "A och B är historieanvändning: företag och föreningar skryter gärna med hur länge de funnits för att verka bättre eller viktigare än andra.\nC är forskning om det förflutna, inte användning av historia för att övertyga. D är medicinskt arbete som inte handlar om att använda historia på det sättet."}, {"type": "sort", "q": "Placera varje källa under den typ av källa den är i det angivna sammanhanget.", "categories": ["Förstahandskälla", "Andrahandskälla"], "items": [{"t": "En soldats dagbok som han skrev under kriget.", "c": 0}, {"t": "En bok skriven femtio år senare av en historiker om samma krig.", "c": 1}, {"t": "Soldatens barns berättelse om vad deras pappa sa att han gjorde i kriget.", "c": 1}, {"t": "Ett brev där en kvinna berättar om något hon själv såg på en marknad.", "c": 0}, {"t": "Ett vittnes berättelse inför en domstol om något hen såg med egna ögon.", "c": 0}, {"t": "Ett uppslagsverk som sammanfattar vad andra forskare har kommit fram till.", "c": 1}], "fb": "En förstahandskälla bygger på att berättaren själv varit med om det som beskrivs: dagboken, brevet och vittnesmålet. En andrahandskälla återger vad andra har upplevt eller kommit fram till: barnens berättelse, historikerns bok och uppslagsverket.\nFörstahandskällor är ofta mer pålitliga, men de måste också granskas."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "År 2019 f.Kr. ligger {0} tillbaka i tiden än år 219 f.Kr. Förkortningen f.v.t. betyder {1}. Epoken som kallas medeltiden infaller ungefär mellan år {2}.", "blanks": [{"options": ["längre", "kortare"], "correct": 0}, {"options": ["före vår tideräkning", "från vår tideräkning", "framför varje tid"], "correct": 0}, {"options": ["500 och 1500 e.Kr.", "0 och 500 e.Kr.", "1500 och 1800 e.Kr.", "1800 och 2000 e.Kr."], "correct": 0}], "fb": "Åren före Kristi födelse räknas baklänges, så ju högre siffra, desto längre tillbaka i tiden: 2019 f.Kr. ligger alltså längre bak än 219 f.Kr. F.v.t. betyder före vår tideräkning och används i stället för f.Kr.\nMedeltiden räknas ungefär från år 500 till 1500, och följs av tidigmodern tid (1500–1800) och modern tid."}, {"type": "tf", "q": "Bedöm om varje påstående om högkulturer i Asien och Amerika är sant eller falskt.", "items": [{"t": "Kejsar Shi Huangdi enade Kina till ett av världens största riken på 200-talet f.Kr.", "a": true}, {"t": "Namnet Kina kommer från Qindynastin.", "a": true}, {"t": "Konfucianismen grundades av Shi Huangdi och byggde på en lagsamling.", "a": false}, {"t": "Mayakulturen blomstrade flera hundra år före olmekerna.", "a": false}], "fb": "Shi Huangdi enade Kina efter att Qin besegrat de andra provinserna, och från Qin har vi namnet Kina. Han var en hårdhänt diktator, men skapade förutsättningar för att Kina skulle hålla ihop.\nKonfucianismen bygger på tänkaren Kong Fuzis (Konfucius) idéer om moral och ordning. Olmekerna kom före mayafolket, som tog över deras kalender."}, {"type": "match", "q": "Para ihop varje namn med rätt beskrivning. En beskrivning passar inget av namnen.", "pairs": [["Shi Huangdi", "Kejsare som enade Kina till ett enda stort rike"], ["Kong Fuzi", "Tänkare vars idéer om moral och ordning påverkade Kina under lång tid"], ["Olmekerna", "En av de äldsta högkulturerna i Amerika, med handel med kakao och gummi"], ["Mayafolket", "Folk i Mesoamerika som hade astronomer och tillverkade papper av bark"]], "extra": ["Härskare som lät bygga Ishtarporten i Babylon"], "fb": "Shi Huangdi enade Kina, medan Kong Fuzi (Konfucius) påverkade kinesernas syn på moral. Olmekerna handlade med kakao och gummi, och mayafolket hade astronomer och papper av bark.\nIshtarporten byggdes under Nebukadnessar II i Babylon, som inte finns bland namnen."}, {"type": "single", "q": "Vad var oraklet i Delfi?", "options": ["En idrottsarena i Olympia där de största tävlingarna hölls vart fjärde år", "Ett tempel där en kvinna förmedlade Apollons svar", "En domstol där Atens medborgare dömde i brottmål", "Ett bibliotek där filosofer samlade grekiska skrifter"], "correct": 1, "fb": "Oraklet i Delfi låg vid guden Apollons tempel. En kvinna ställde frågor från folket till guden och förmedlade hans svar. När hon dog valde stadsborna ett nytt orakel.\nTävlingarna vart fjärde år hölls i Olympia (A), och domstolar och bibliotek hörde inte till Delfi (C, D)."}, {"type": "short", "q": "Det grekiska ordet demos ingår i ordet demokrati. Vad betyder demos på svenska? Svara med ett ord.", "answers": ["folk", "folket"], "fb": "Demos betyder folk. Demokrati kommer av demos (folk) och kratein (styra eller härska), alltså folkstyre. I Aten gällde det dock bara en liten del av befolkningen."}, {"type": "multi", "q": "Vilka påståenden om de egyptiska pyramiderna stämmer?", "options": ["De byggdes som bostäder åt faraonerna medan de levde", "De äldsta pyramiderna hade släta sidor utan trappsteg", "De byggdes av lertegel eftersom tegel håller längre än sten", "Tutankhamun begravdes i en av pyramiderna vid Giza"], "correct": [], "fb": "Inget av påståendena stämmer. Pyramiderna var gravar, inte bostäder (A). Den äldsta pyramiden, byggd åt farao Djoser, var en trappstegspyramid (B). Man valde sten eftersom lertegel inte håller för evigt (C). Tutankhamun begravdes i Konungarnas dal, i en gravkammare under jord (D)."}, {"type": "single", "q": "Vilka två huvudsakliga sorters pjäser utvecklades i antikens Grekland och ligger bakom dagens teater?", "options": ["Tragedi och komedi", "Opera och balett", "Epos och ode", "Saga och fabel"], "correct": 0, "fb": "Grekerna utvecklade tragedin (allvarliga, ofta sorgliga pjäser) och komedin (lustiga pjäser). Under Atens guldålder skrevs skådespel som fortfarande spelas.\nOpera och balett kom mycket senare, och epos, ode, saga och fabel är andra litterära former."}, {"type": "multi", "q": "Vilka påståenden om grekernas kolonisering stämmer?", "options": ["Den tog fart på 700-talet f.Kr. när jordbruket inte räckte till för alla", "Många kolonier blev egna stadsstater som handlade med moderstaden", "Kolonierna låg enbart runt Egeiska havet", "Kolonierna styrdes av kungar som skickats från Mykene"], "correct": [0, 1], "fb": "A och B stämmer. Landet var bergigt, och när befolkningen växte började greker på 700-talet f.Kr. söka nya platser att odla och bygga städer på. Kolonierna blev egna stadsstater som handlade med moderstaden.\nC är fel eftersom kolonierna fanns runt hela Medelhavet och Svarta havet. D är fel: Mykene hade förlorat sin betydelse sedan länge."}, {"type": "single", "q": "Vad är en viktig anledning till att vi vet förhållandevis lite om Induskulturens religion och samhälle?", "options": ["Dess städer har aldrig kunnat grävas fram", "Folket saknade skriftspråk helt och hållet", "Alla byggnader var gjorda av trä som har förmultnat", "Dess skrift har ännu inte kunnat tydas"], "correct": 3, "fb": "Induskulturen hade ett skriftspråk, men forskarna har inte lyckats tyda det. Därför kan vi inte läsa vad folket själva skrev om sin religion och sitt samhälle.\nStäderna har grävts fram (A), skriften fanns (B), och byggnaderna var ofta av tegel (C)."}, {"type": "sort", "q": "Avgör om varje påstående visar en kontinuitet (något som lever kvar) eller en förändring (något nytt ersätter något gammalt).", "categories": ["Kontinuitet", "Förändring"], "items": [{"t": "Vi skriver med ett alfabet som bygger på det som fenicierna skapade.", "c": 0}, {"t": "Dagens demokratier bygger på idén att medborgare styr sig själva, som i Aten.", "c": 0}, {"t": "Idrottstävlingar med deltagare från många länder hålls fortfarande vart fjärde år.", "c": 0}, {"t": "Människor gick från att leva som jägare och samlare till att bli bofasta bönder.", "c": 1}, {"t": "Små stadsstater ersattes av ett enda stort välde under en makedonsk kung.", "c": 1}, {"t": "Sumerernas stadsstater ersattes av ett rike med Babylon som huvudstad.", "c": 1}], "fb": "Kontinuitet är något som lever kvar: vårt alfabet, tanken på folkstyre och de internationella idrottstävlingarna har rötter i antiken. Förändring är när något nytt ersätter något gammalt: bofast jordbruk ersatte jägar- och samlarlivet, och mindre stadsstater ersattes av större välden.\nAtt se både kontinuitet och förändring hjälper oss att förstå vår egen tid."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "För att en död farao skulle kunna leva vidare balsamerades kroppen av {0} och lades i en kista i en {1}. Där ställde man också föremål som den döde kunde ha nytta av i {2}.", "blanks": [{"options": ["präster", "bönder", "soldater", "skrivare"], "correct": 0}, {"options": ["gravkammare", "bostad", "tempelträdgård", "hamn"], "correct": 0}, {"options": ["dödsriket", "nästa krig", "handeln", "landet"], "correct": 0}], "fb": "Prästerna balsamerade farao och andra rika personer. Kistan ställdes i en gravkammare tillsammans med föremål som den döde kunde behöva i dödsriket, eftersom egyptierna trodde på ett liv efter döden."}, {"type": "short", "q": "Vilken engelsk arkeolog hittade år 1922 gravkammaren som tillhörde farao Tutankhamun i Konungarnas dal? Svara med efternamnet.", "answers": ["carter", "howard carter"], "fb": "Arkeologen hette Howard Carter. Han hittade en dörr som förmodligen ingen hade öppnat på 3 000 år, och bakom den fanns gravkammaren med guldstatyer, en guldmask och omkring 5 000 föremål."}, {"type": "tf", "q": "Bedöm om varje påstående om samhället i det forntida Egypten är sant eller falskt.", "items": [{"t": "Människor föddes in i en samhällsklass i Egypten, och det var svårt att byta.", "a": true}, {"t": "Fattiga bönder gjorde ibland uppror i svåra tider.", "a": true}, {"t": "Farao valdes av folket och fick styra under en bestämd tid.", "a": false}, {"t": "Rika och fattiga begravdes ofta i lika påkostade gravar.", "a": false}], "fb": "Samhället var uppdelat i klasser, och i svåra tider kunde bönderna göra uppror. Farao ärvde makten och sågs som en gud, och han valdes inte av folket.\nDe rikas gravar var påkostade, och därför vet vi mycket mer om de rika än om de fattiga, vars gravar inte finns kvar på samma sätt."}, {"type": "single", "q": "Vilket fynd ger starkast stöd för att en forntida bosättning var en högkultur och inte bara en stor by?", "options": ["Rester av hus byggda av tegel och sten, i ett område där flera tusen människor bodde", "Skrivna lertavlor och spår av många olika yrken", "Rester av odlad säd och ben från tamdjur", "En skyddsmur runt bosättningen"], "correct": 1, "fb": "En högkultur kännetecknas av en stad med många yrken, rika och fattiga, och oftast ett skriftspråk. Skrivna lertavlor och spår av många yrken (till exempel präster, hantverkare och skrivare) visar just det.\nStora bosättningar med hus (A), odling (C) eller en skyddsmur (D) finns även i samhällen som inte räknas som högkulturer, som Catal Hüyük eller Jericho."}, {"type": "multi", "q": "Vilka påståenden om Alexander den store stämmer?", "options": ["Han föddes i Sparta och fostrades till soldat där", "Han erövrade Romarriket och blev dess kejsare", "Hans rike styrdes av hans söner i flera hundra år efter hans död", "Han dog innan han hann erövra något utanför Makedonien"], "correct": [], "fb": "Inget av påståendena stämmer. Alexander kom från Makedonien, inte Sparta (A). Han erövrade Perserriket, inte Romarriket (B). Efter hans död år 323 f.Kr. delades riket mellan makedoniska generaler (C), och han hade då redan erövrat hela Perserriket (D)."}, {"type": "order", "q": "Lägg stegen i en historikers arbete i den ordning de naturligt följer.", "items": ["Historikern ställer en fråga om vad som hänt i det förflutna", "Historikern letar efter och samlar många olika sorters källor", "Källorna granskas med källkritiska frågor", "Källorna tolkas så att de kan förklara vad som hände", "Historikern lägger fram förklaringar till vad som hände och varför"], "fb": "Historikern börjar med en fråga, precis som en polis som utreder ett brott. Sedan samlas källor in, granskas källkritiskt och tolkas. Först därefter kan historikern ge en förklaring. Eftersom en enda källa sällan är tillräcklig är det viktigt att samla många olika sorter."}, {"type": "single", "q": "Hur kom det sig att mycket av den grekiska vetenskapen och litteraturen levde kvar och senare nådde Europa igen?", "options": ["Böckerna bevarades i Aten, som aldrig drabbades av krig eller förstörelse", "Perserna tog med sig bibliotek till Persepolis, där de bevarades i tusen år", "Böckerna översattes till arabiska i Mellanöstern och senare vidare till latin", "Alexander lät gömma böckerna i pyramiderna i Egypten"], "correct": 2, "fb": "Grekisk litteratur och vetenskap bevarades i Mellanöstern, där många böcker översattes till arabiska. Senare översattes de vidare till latin och upptäcktes på nytt i Europa under medeltiden.\nAten drabbades av krig och nederlag (A), och varken perserna eller Alexander bevarade böckerna på de sätt som beskrivs (B, D)."}, {"type": "sort", "q": "Placera varje påstående om kvinnors liv under den kultur det passar bäst för.", "categories": ["Mesopotamien", "Egypten", "Aten"], "items": [{"t": "Gifta kvinnor skulle dölja sig med slöja, men de kunde ändå behålla sitt yrke.", "c": 0}, {"t": "Kvinnor kunde äga egendom och bestämma över den själva.", "c": 1}, {"t": "Kvinnor fick inte delta i folkförsamlingen och sågs som mannens ägodel.", "c": 2}, {"t": "Prästinnor kunde tillhöra kungens familj, men fick mindre makt när krig blev vanligare.", "c": 0}, {"t": "Flickor och pojkar ärvde lika mycket.", "c": 1}, {"t": "Nyfödda flickor kunde lämnas att dö om det var ont om mat.", "c": 2}], "fb": "I Mesopotamien hade kvinnor betydelsefulla roller som prästinnor, men fick sämre chanser i oroliga tider, och i Babylonien skulle gifta kvinnor bära slöja. Egyptiska kvinnor hade jämförelsevis stora rättigheter, med egen egendom och lika arv. Kvinnorna i Aten var förtryckta: de var uteslutna från politiken och behandlades ofta illa redan som nyfödda."}, {"type": "tf", "q": "Bedöm om varje påstående om farao Hatschepsut och kvinnliga faraoner är sant eller falskt.", "items": [{"t": "Hatschepsut regerade som farao trots att hon var kvinna, och hennes tid beskrivs som fredlig och rik på byggnadsverk.", "a": true}, {"t": "Efter hennes död försökte man utplåna hennes namn och bilder.", "a": true}, {"t": "Hatschepsut är den enda kvinna som någonsin har varit farao i Egypten.", "a": false}, {"t": "Hatschepsut lät bygga den äldsta pyramiden, trappstegspyramiden åt farao Djoser.", "a": false}], "fb": "Hatschepsut tog kontrollen över militären och utropade sig själv till farao. Hennes tid var fredlig, och många mäktiga monument byggdes. Efter hennes död ville hennes efterträdare att ingen skulle minnas henne, så hennes namn brändes i texter och ansiktet hackades bort från statyerna.\nHon var inte den enda kvinnliga faraon, och trappstegspyramiden byggdes åt Djoser, lång före hennes tid."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Enligt legenden sprang en {0} från staden {1} till Aten för att berätta om segern mot perserna. Det moderna maratonloppet är ungefär {2} kilometer långt.", "blanks": [{"options": ["budbärare", "kung", "filosof", "präst"], "correct": 0}, {"options": ["Marathon", "Sparta", "Delfi", "Olympia"], "correct": 0}, {"options": ["42", "10", "100", "26"], "correct": 0}], "fb": "Maratonloppet minner om en legend om en budbärare som sprang från Marathon till Aten för att berätta att Atens soldater segrat mot perserna, och sedan föll ihop och dog. Sträckan, drygt 42 kilometer, bygger på avståndet i legenden."}];
+const KEY = 'quiz-progress-' + META.id;
+const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const TYPE_LABEL = {
+  single: 'Enval – välj ett alternativ',
+  multi: 'Flerval – ett eller flera alternativ kan vara rätta, och ibland inget',
+  tf: 'Sant eller falskt – bedöm varje påstående för sig',
+  match: 'Para ihop – välj rätt förklaring till varje begrepp. Alla förklaringar behöver inte användas.',
+  order: 'Ordna – flytta posterna med pilarna till rätt ordning',
+  cloze: 'Lucktext – välj rätt ord för varje lucka',
+  short: 'Kort svar – skriv svaret',
+  sort: 'Sortera – placera varje påstående i rätt kategori'
+};
+const TYPE_NAME = { single: 'Enval', multi: 'Flerval', tf: 'Sant eller falskt', match: 'Para ihop', order: 'Ordna', cloze: 'Lucktext', short: 'Kort svar', sort: 'Sortera' };
+
+const app = document.getElementById('app');
+const bar = document.getElementById('bar');
+const progressText = document.getElementById('progress-text');
+document.getElementById('title').textContent = META.title;
+document.title = META.title;
+
+let idx = 0, score = 0, answers = [];
+
+/* ---------- helpers ---------- */
+function h(tag, props) {
+  const e = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (let i = 2; i < arguments.length; i++) {
+    const kids = [].concat(arguments[i]);
+    for (const c of kids) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  }
+  return e;
+}
+function rich(text) { // **fet** -> <strong>
+  const frag = document.createDocumentFragment();
+  String(text).split('**').forEach((part, i) => {
+    if (!part) return;
+    frag.append(i % 2 ? h('strong', null, part) : document.createTextNode(part));
+  });
+  return frag;
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function norm(s) { return String(s).toLowerCase().replace(/[^0-9a-zåäöéü]/g, ''); }
+function same(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
+function select(options, onChange, placeholder) {
+  const s = h('select', { onchange: onChange }, h('option', { value: '' }, placeholder || 'Välj …'));
+  options.forEach(o => s.append(h('option', { value: o.v }, o.t)));
+  return s;
+}
+function mark(el, sym) { const m = el.querySelector('.mark'); if (m) m.textContent = sym; }
+
+/* ---------- question builders ----------
+   Each returns { el, complete(), evaluate() -> {correct, partial}, reveal() } */
+function buildSingle(q, change) {
+  const name = 'q' + idx, labels = [], inputs = [];
+  const wrap = h('div', { class: 'options' });
+  q.options.forEach((t, i) => {
+    const inp = h('input', { type: 'radio', name, value: i, onchange: () => { sync(); change(); } });
+    const lab = h('label', { class: 'opt' }, inp, h('span', { class: 'mark' }), h('span', null, LETTERS[i] + ') ' + t));
+    inputs.push(inp); labels.push(lab); wrap.append(lab);
+  });
+  function sync() { labels.forEach((l, i) => l.classList.toggle('sel', inputs[i].checked)); }
+  return {
+    el: wrap,
+    complete: () => inputs.some(i => i.checked),
+    evaluate() { return { correct: inputs[q.correct].checked, partial: false }; },
+    reveal() {
+      wrap.classList.add('locked');
+      inputs.forEach((inp, i) => {
+        inp.disabled = true;
+        if (i === q.correct) { labels[i].classList.add('right'); mark(labels[i], '✓'); }
+        else if (inp.checked) { labels[i].classList.add('wrong'); mark(labels[i], '✗'); }
+      });
+    }
+  };
+}
+function buildMulti(q, change) {
+  const labels = [], inputs = [];
+  const wrap = h('div', { class: 'options' });
+  q.options.forEach((t, i) => {
+    const inp = h('input', { type: 'checkbox', value: i, onchange: () => { sync(); change(); } });
+    const lab = h('label', { class: 'opt' }, inp, h('span', { class: 'mark' }), h('span', null, LETTERS[i] + ') ' + t));
+    inputs.push(inp); labels.push(lab); wrap.append(lab);
+  });
+  function sync() { labels.forEach((l, i) => l.classList.toggle('sel', inputs[i].checked)); }
+  const picked = () => inputs.map((x, i) => x.checked ? i : -1).filter(i => i >= 0);
+  return {
+    el: wrap,
+    complete: () => true,
+    evaluate() {
+      const p = picked(), exact = same(p, q.correct);
+      return { correct: exact, partial: !exact && p.some(i => q.correct.includes(i)) };
+    },
+    reveal() {
+      wrap.classList.add('locked');
+      inputs.forEach((inp, i) => {
+        inp.disabled = true;
+        const c = q.correct.includes(i);
+        if (c) { labels[i].classList.add('right'); mark(labels[i], '✓'); }
+        else if (inp.checked) { labels[i].classList.add('wrong'); mark(labels[i], '✗'); }
+      });
+    }
+  };
+}
+function buildTF(q, change) {
+  const rows = h('div', { class: 'rows' }), state = [], items = [];
+  q.items.forEach((it, i) => {
+    const name = 'tf' + idx + '_' + i;
+    const mk = (val, text) => {
+      const inp = h('input', { type: 'radio', name, value: val, onchange: () => { state[i] = val; sync(i); change(); } });
+      return { inp, lab: h('label', null, inp, text), val };
+    };
+    const yes = mk('1', 'Sant'), no = mk('0', 'Falskt');
+    const note = h('div', { class: 'note' });
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), (i + 1) + '. ' + it.t),
+      h('div', { class: 'tfbtns' }, yes.lab, no.lab), note);
+    items.push({ yes, no, row, note, it }); rows.append(row);
+  });
+  function sync(i) { const r = items[i]; r.yes.lab.classList.toggle('sel', state[i] === '1'); r.no.lab.classList.toggle('sel', state[i] === '0'); }
+  return {
+    el: rows,
+    complete: () => q.items.every((_, i) => state[i] != null),
+    evaluate() {
+      const n = q.items.filter((it, i) => (state[i] === '1') === it.a).length;
+      return { correct: n === q.items.length, partial: n > 0 && n < q.items.length };
+    },
+    reveal() {
+      rows.classList.add('locked');
+      items.forEach((r, i) => {
+        r.yes.inp.disabled = r.no.inp.disabled = true;
+        const ok = (state[i] === '1') === r.it.a;
+        r.row.classList.add(ok ? 'right' : 'wrong'); mark(r.row, ok ? '✓ ' : '✗ ');
+        (r.it.a ? r.yes : r.no).lab.classList.add('ans');
+        if (!ok) { (r.it.a ? r.no : r.yes).lab.classList.add('bad'); r.note.textContent = 'Rätt svar: ' + (r.it.a ? 'Sant' : 'Falskt'); }
+      });
+    }
+  };
+}
+function buildMatch(q, change) {
+  const rights = q.pairs.map(p => p[1]).concat(q.extra || []);
+  const order = shuffle(rights.map((t, i) => ({ i, t })));
+  const letterOf = {}; order.forEach((o, k) => { letterOf[o.i] = LETTERS[k]; });
+  const opts = order.map((o, k) => ({ v: o.i, t: LETTERS[k] }));
+  const pool = h('div', { class: 'pool' }, order.map((o, k) => h('div', null, LETTERS[k] + ') ' + o.t)));
+  const rows = h('div', { class: 'rows' }), sels = [], notes = [], rowEls = [];
+  q.pairs.forEach((p, i) => {
+    const s = select(opts, change); sels.push(s);
+    const note = h('div', { class: 'note' }); notes.push(note);
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), p[0]), s, note);
+    rowEls.push(row); rows.append(row);
+  });
+  const all = h('div', null, pool, rows);
+  return {
+    el: all,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const n = sels.filter((s, i) => Number(s.value) === i).length;
+      return { correct: n === sels.length, partial: n > 0 && n < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, i) => {
+        s.disabled = true;
+        const ok = Number(s.value) === i;
+        rowEls[i].classList.add(ok ? 'right' : 'wrong'); mark(rowEls[i], ok ? '✓ ' : '✗ ');
+        if (!ok) notes[i].textContent = 'Rätt: ' + letterOf[i] + ') ' + q.pairs[i][1];
+      });
+    }
+  };
+}
+function buildOrder(q, change) {
+  const n = q.items.length;
+  let arr = shuffle([...q.items.keys()]);
+  while (n > 1 && arr.every((v, i) => v === i)) arr = shuffle(arr);
+  const list = h('div', { class: 'rows' });
+  let locked = false;
+  function draw() {
+    list.replaceChildren();
+    arr.forEach((v, pos) => {
+      const up = h('button', { type: 'button', 'aria-label': 'Flytta upp', disabled: locked || pos === 0, onclick: () => { [arr[pos - 1], arr[pos]] = [arr[pos], arr[pos - 1]]; draw(); } }, '↑');
+      const down = h('button', { type: 'button', 'aria-label': 'Flytta ner', disabled: locked || pos === n - 1, onclick: () => { [arr[pos + 1], arr[pos]] = [arr[pos], arr[pos + 1]]; draw(); } }, '↓');
+      const row = h('div', { class: 'row orderrow' }, h('span', { class: 'num' }, (pos + 1) + '.'), h('span', { class: 'rowtext' }, q.items[v]), locked ? null : h('div', { class: 'arrows' }, up, down));
+      if (locked) { const ok = v === pos; row.classList.add(ok ? 'right' : 'wrong'); row.prepend(h('span', { class: 'mark' }, ok ? '✓' : '✗')); }
+      list.append(row);
+    });
+  }
+  draw();
+  return {
+    el: list,
+    complete: () => true,
+    evaluate() {
+      const k = arr.filter((v, i) => v === i).length;
+      return { correct: k === n, partial: k > 0 && k < n };
+    },
+    reveal() {
+      locked = true; draw();
+      list.append(h('div', { class: 'correct-line' }, 'Rätt ordning: ' + q.items.map((t, i) => (i + 1) + '. ' + t).join('  →  ')));
+    }
+  };
+}
+function buildCloze(q, change) {
+  const wrap = h('div'), line = h('div', { class: 'cloze' }), sels = [];
+  q.text.split(/\{(\d+)\}/).forEach((part, i) => {
+    if (i % 2 === 0) { line.append(document.createTextNode(part)); return; }
+    const b = q.blanks[Number(part)];
+    const opts = shuffle(b.options.map((t, k) => ({ v: k, t })));
+    const s = select(opts, change, '…'); sels[Number(part)] = s; line.append(s);
+  });
+  wrap.append(line);
+  return {
+    el: wrap,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const k = sels.filter((s, i) => Number(s.value) === q.blanks[i].correct).length;
+      return { correct: k === sels.length, partial: k > 0 && k < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, i) => { s.disabled = true; s.classList.add(Number(s.value) === q.blanks[i].correct ? 'right' : 'wrong'); });
+      const full = q.text.replace(/\{(\d+)\}/g, (m, n) => q.blanks[Number(n)].options[q.blanks[Number(n)].correct]);
+      wrap.append(h('div', { class: 'correct-line' }, 'Rätt: ' + full));
+    }
+  };
+}
+function buildShort(q, change) {
+  const inp = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', oninput: change, 'aria-label': 'Ditt svar' });
+  const wrap = h('div', null, inp);
+  return {
+    el: wrap,
+    complete: () => inp.value.trim() !== '',
+    evaluate() { return { correct: q.answers.map(norm).includes(norm(inp.value)), partial: false }; },
+    reveal() {
+      inp.disabled = true;
+      const ok = q.answers.map(norm).includes(norm(inp.value));
+      inp.classList.add(ok ? 'right' : 'wrong');
+      if (!ok) wrap.append(h('div', { class: 'correct-line' }, 'Rätt svar: ' + q.answers[0]));
+    }
+  };
+}
+function buildSort(q, change) {
+  const cats = q.categories.map((t, i) => ({ v: i, t }));
+  const rows = h('div', { class: 'rows' }), sels = [], notes = [], rowEls = [];
+  const order = shuffle([...q.items.keys()]);
+  const pos = {};
+  order.forEach((orig, p) => {
+    const it = q.items[orig];
+    const s = select(cats, change); sels[p] = s; pos[p] = orig;
+    const note = h('div', { class: 'note' }); notes[p] = note;
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), it.t), s, note);
+    rowEls[p] = row; rows.append(row);
+  });
+  return {
+    el: rows,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const k = sels.filter((s, p) => Number(s.value) === q.items[pos[p]].c).length;
+      return { correct: k === sels.length, partial: k > 0 && k < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, p) => {
+        s.disabled = true;
+        const ok = Number(s.value) === q.items[pos[p]].c;
+        rowEls[p].classList.add(ok ? 'right' : 'wrong'); mark(rowEls[p], ok ? '✓ ' : '✗ ');
+        if (!ok) notes[p].textContent = 'Rätt: ' + q.categories[q.items[pos[p]].c];
+      });
+    }
+  };
+}
+const BUILDERS = { single: buildSingle, multi: buildMulti, tf: buildTF, match: buildMatch, order: buildOrder, cloze: buildCloze, short: buildShort, sort: buildSort };
+
+/* ---------- storage ---------- */
+function load() { try { const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ currentQuestion: idx + 1, score, answers })); } catch (e) {} }
+function clear() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+/* ---------- screens ---------- */
+function setProgress(text, pct) { progressText.textContent = text; bar.style.width = pct + '%'; }
+function show(card) { app.replaceChildren(card); window.scrollTo(0, 0); }
+
+function showIntro() {
+  setProgress('', 0);
+  const card = h('div', { class: 'card intro' },
+    h('p', { class: 'qtext' }, META.title),
+    (META.intro || []).map(t => h('p', null, t)),
+    h('p', null, 'Frågetyperna i det här quizet:'),
+    h('ul', null, META.types.map(t => h('li', null, h('strong', null, TYPE_NAME[t] + ': '), TYPE_LABEL[t].split(' – ').slice(1).join(' – ')))),
+    h('div', { class: 'actions' }, h('button', { class: 'btn', type: 'button', onclick: () => { idx = 0; score = 0; answers = []; showQuestion(); } }, 'Starta')));
+  show(card);
+}
+function showResume(saved) {
+  setProgress('', 0);
+  show(h('div', { class: 'card center' },
+    h('p', { class: 'qtext' }, 'Du har kommit till fråga ' + (saved.currentQuestion + 1) + ' av ' + quizData.length + ' (' + saved.score + ' rätt hittills)'),
+    h('div', { class: 'actions' },
+      h('button', { class: 'btn', type: 'button', onclick: () => { idx = saved.currentQuestion; score = saved.score; answers = saved.answers; showQuestion(); } }, 'Fortsätt'),
+      h('button', { class: 'btn outline', type: 'button', onclick: () => { clear(); showIntro(); } }, 'Börja om'))));
+}
+function showQuestion() {
+  const q = quizData[idx];
+  setProgress('Fråga ' + (idx + 1) + ' av ' + quizData.length, (idx / quizData.length) * 100);
+  const checkBtn = h('button', { class: 'btn', type: 'button', disabled: true }, 'Kontrollera');
+  const fbBox = h('div');
+  const actions = h('div', { class: 'actions' }, checkBtn);
+  const ctl = BUILDERS[q.type](q, () => { checkBtn.disabled = !ctl.complete(); });
+  checkBtn.disabled = !ctl.complete();
+  checkBtn.addEventListener('click', () => {
+    const res = ctl.evaluate();
+    ctl.reveal();
+    answers[idx] = res.correct ? 1 : 0;
+    if (res.correct) score++;
+    save();
+    const cls = res.correct ? 'ok' : res.partial ? 'mid' : 'no';
+    const head = res.correct ? 'Rätt.' : res.partial ? 'Delvis rätt.' : 'Fel.';
+    fbBox.className = 'feedback ' + cls;
+    fbBox.replaceChildren(h('strong', null, head), ...String(q.fb).split('\n').map(p => h('p', null, rich(p))));
+    const last = idx === quizData.length - 1;
+    actions.replaceChildren(h('button', { class: 'btn', type: 'button', onclick: () => { if (last) showResults(); else { idx++; showQuestion(); } } }, last ? 'Visa resultat' : 'Nästa fråga →'));
+    fbBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  show(h('div', { class: 'card' }, h('p', { class: 'qtext' }, rich(q.q)), h('p', { class: 'qtype' }, TYPE_LABEL[q.type]), ctl.el, actions, fbBox));
+}
+function showResults() {
+  clear();
+  setProgress('Klart', 100);
+  const by = {};
+  quizData.forEach((q, i) => { by[q.type] = by[q.type] || [0, 0]; by[q.type][1]++; if (answers[i]) by[q.type][0]++; });
+  const wrongNums = quizData.map((q, i) => answers[i] ? null : i + 1).filter(Boolean);
+  show(h('div', { class: 'card center' },
+    h('p', { class: 'qtext' }, 'Resultat'),
+    h('p', null, 'Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor'),
+    h('table', { class: 'res' }, META.types.filter(t => by[t]).map(t => h('tr', null, h('td', null, TYPE_NAME[t]), h('td', null, by[t][0] + ' av ' + by[t][1])))),
+    wrongNums.length ? h('p', { class: 'qtype' }, 'Frågor att repetera: ' + wrongNums.join(', ')) : null,
+    h('div', { class: 'actions' }, h('button', { class: 'btn', type: 'button', onclick: () => { clear(); showIntro(); } }, 'Starta om'))));
+}
+
+/* ---------- start ---------- */
+const saved = load();
+if (saved && saved.currentQuestion < quizData.length && saved.currentQuestion > 0) showResume(saved); else showIntro();
+})();
+</script>
+</body>
+</html>

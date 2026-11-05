@@ -48,6 +48,7 @@
   /* Järnvägsknapparna i spårens färg: stark för huvudlinjer, dämpad för övriga */
   #huvudknapp.on { background: var(--rail); color: #0d1117; font-weight: 600; }
   #ovrigaknapp.on { background: color-mix(in srgb, var(--rail) 45%, transparent); color: var(--text); font-weight: 600; }
+  #solknapp.on { background: #ffc83d; color: #0d1117; font-weight: 600; }
   #platt.on { background: none; color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); font-weight: 600; }
   .knapp:disabled { opacity: .45; cursor: default; }
   .hoger { margin-left: auto; display: flex; gap: 8px; align-items: center; }
@@ -145,6 +146,10 @@
       title="Övriga spår i dämpad färg: bandelar och sidolinjer i hela landet, och inzoomat (från ca zoom 14) även bangårdar, sidospår och industrispår.">Övriga spår</button>
     <button id="tagknapp" aria-pressed="false" class="on"
       title="Alla tåg en vanlig vardag enligt tidtabellen (GTFS), animerade längs spåren. Inte realtid.">Tåg i rörelse</button>
+  </div>
+  <div class="seg" role="group" aria-label="Soltimmar">
+    <button id="solknapp" aria-pressed="false"
+      title="Visar fastigheterna som solar. Större sol = fler soltimmar per år, snitt 2006–2025. Uppskattning för området runt punkten, inte mätt på varje fastighet.">☀ Soltimmar (uppskattning)</button>
   </div>
   <div class="falt" title="Välj vilken uppgift punkterna på kartan färgas efter"><label for="ind">Färga</label><select id="ind"></select></div>
   <div class="hoger">
@@ -251,6 +256,32 @@ const IND = {
   lamn:    { grupp: "Kulturmiljö", namn: "Kulturhistoriska lämningar inom 250 m", num: p => p.kulturmiljo?.antal_lamningar, kalla: "RAÄ" },
   bminne:  { grupp: "Kulturmiljö", namn: "Byggnadsminne inom 250 m", kat: p => p.kulturmiljo ? (p.kulturmiljo.byggnadsminnen.length ? "Ja" : "Nej") : null, farger: () => jaNej("#e9a873"), kalla: "RAÄ" },
 };
+// Soltimmar: fem klasser, 100 timmar breda eller mer eftersom metoden typiskt missar med ca 80 timmar
+const SOL_KLASSER = [
+  { fran: 2000, skala: 1,    text: "2 000 eller fler" },
+  { fran: 1900, skala: 0.85, text: "1 900–1 999" },
+  { fran: 1800, skala: 0.7,  text: "1 800–1 899" },
+  { fran: 1700, skala: 0.55, text: "1 700–1 799" },
+  { fran: 0,    skala: 0.4,  text: "Under 1 700" },
+];
+const solKlass = h => SOL_KLASSER.find(k => h >= k.fran);
+function solBild(px) {
+  const c = document.createElement("canvas"); c.width = c.height = px;
+  const g = c.getContext("2d"), m = px / 2, kant = px * 0.035;
+  g.lineCap = "round";
+  for (const [bredd, farg] of [[px * 0.105, "#5c3a00"], [px * 0.055, "#ffc83d"]]) {
+    g.strokeStyle = farg; g.lineWidth = bredd;
+    for (let i = 0; i < 8; i++) {
+      const v = i * Math.PI / 4;
+      g.beginPath(); g.moveTo(m + Math.cos(v) * px * 0.33, m + Math.sin(v) * px * 0.33);
+      g.lineTo(m + Math.cos(v) * px * 0.45, m + Math.sin(v) * px * 0.45); g.stroke();
+    }
+  }
+  g.beginPath(); g.arc(m, m, px * 0.25, 0, 2 * Math.PI);
+  g.fillStyle = "#ffc83d"; g.fill(); g.strokeStyle = "#5c3a00"; g.lineWidth = kant; g.stroke();
+  return c;
+}
+let solPa = false;
 let ind = "omr", brytpunkter = [], minVarde = 0;
 function beraknaBryt() {
   const I = IND[ind]; brytpunkter = [];
@@ -271,18 +302,26 @@ function ritaLegend() {
   const f = x => heltal ? Math.round(x).toLocaleString("sv-SE") : Number(x).toLocaleString("sv-SE", { maximumFractionDigits: I.dec ?? 1 });
   const e = I.enhet ? " " + I.enhet : "";
   const sw = c => `<span class="sw" style="background:${c}"></span>`;
-  let h = `<div style="margin-bottom:2px">Punkterna färgas efter</div><div style="color:var(--text);font-weight:600;margin-bottom:4px">${esc(I.namn)}</div>`;
-  h += I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
+  let h = solPa ? solLegend() : `<div style="margin-bottom:2px">Punkterna färgas efter</div><div style="color:var(--text);font-weight:600;margin-bottom:4px">${esc(I.namn)}</div>`;
+  if (!solPa) h += I.kat ? Object.entries(I.farger()).map(([k, c]) => `<div>${sw(c)}${esc(k)}</div>`).join("")
     : [minVarde, ...brytpunkter].map((fr, i) => {
         const till = i < brytpunkter.length ? brytpunkter[i] : null;
         const t = till === null ? f(fr) + e + " och mer" : heltal ? (fr === till - 1 ? f(fr) : f(fr) + "–" + f(till - 1)) + e : f(fr) + " till under " + f(till) + e;
         return `<div>${sw(klassFarg(i))}${t}</div>`; }).join("");
-  if (ind !== "omr") h += `<div>${sw(SAKNAS)}${esc(I.saknas || "Uppgift saknas")}</div><div style="margin-top:3px">Källa: ${esc(I.kalla)}</div>`;
-  h += `<div style="margin-top:8px">Punktens storlek visar lokalarean. Där flera fastigheter har samma punkt visas en punkt med summan.</div>`;
+  if (!solPa && ind !== "omr") h += `<div>${sw(SAKNAS)}${esc(I.saknas || "Uppgift saknas")}</div><div style="margin-top:3px">Källa: ${esc(I.kalla)}</div>`;
+  if (!solPa) h += `<div style="margin-top:8px">Punktens storlek visar lokalarean. Där flera fastigheter har samma punkt visas en punkt med summan.</div>`;
   h += `<div style="margin-top:4px"><span class="rail"></span>Huvudlinjer (stambanor m.fl.)</div>`;
   h += `<div><span class="rail" style="opacity:.5;box-shadow:none"></span>Övriga spår; inzoomat även bangårdar och sidospår</div>`;
   h += `<div><span class="sw" style="background:var(--accent);border-radius:2px"></span>Byggnad kopplad till fastigheten (OSM)</div>`;
   document.getElementById("legend").innerHTML = h;
+}
+
+function solLegend() {
+  const bild = solBild(96).toDataURL();
+  return `<div style="color:var(--text);font-weight:600;margin-bottom:2px">Soltimmar per år, uppskattning</div>
+    <div style="margin-bottom:6px">Ungefärligt snitt 2006–2025 för området runt punkten, inte mätt på fastigheten. Typiskt fel ca 80 timmar.</div>
+    ${SOL_KLASSER.map(k => `<div style="display:flex;align-items:center;gap:6px;min-height:24px"><span style="width:26px;text-align:center;line-height:0"><img src="${bild}" alt="" style="width:${Math.round(26 * k.skala)}px;height:${Math.round(26 * k.skala)}px"></span>${k.text}</div>`).join("")}
+    <div style="margin-top:3px">Källa: SMHI, bearbetad. <a href="om.html#sol">Så räknas det</a></div>`;
 }
 
 // ---- karta -----------------------------------------------------------------------------
@@ -365,10 +404,22 @@ function egnaLager() {
   const rot = ["sqrt", ["get", "_loa"]];
   const radie = ["interpolate", ["linear"], ["zoom"],
                  4, ["+", 6, ["/", rot, 18]], 8, ["+", 8, ["/", rot, 12.5]], 13, ["+", 10, ["/", rot, 9.6]], 17, ["+", 12, ["/", rot, 7.8]]];
-  map.addLayer({ id: "fast", type: "circle", source: "fast", paint: {
+  map.addLayer({ id: "fast", type: "circle", source: "fast", layout: { visibility: syn(!solPa) }, paint: {
     "circle-radius": radie, "circle-color": ["get", "_farg"], "circle-opacity": 0.95,
     "circle-stroke-color": ["case", ["==", ["get", "id"], markerad()], "#ffffff", "rgba(255,255,255,.65)"],
     "circle-stroke-width": ["case", ["==", ["get", "id"], markerad()], 3, 1.2] } });
+  // Soltimmar: samma punkter som solar, storlek efter klass
+  if (!map.hasImage("sol")) {
+    const c = solBild(128);
+    map.addImage("sol", c.getContext("2d").getImageData(0, 0, 128, 128), { pixelRatio: 2 });
+  }
+  const solS = ["get", "_solskala"];
+  const solZoom = (k, plus = 0) => ["interpolate", ["linear"], ["zoom"], 4, ["+", plus, ["*", k * 0.38, solS]], 8, ["+", plus, ["*", k * 0.55, solS]],
+                                    13, ["+", plus, ["*", k * 0.75, solS]], 17, ["+", plus, ["*", k * 0.95, solS]]];
+  map.addLayer({ id: "fast-sol", type: "symbol", source: "fast", layout: { visibility: syn(solPa),
+    "icon-image": "sol", "icon-size": solZoom(1), "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": solS } });
+  map.addLayer({ id: "fast-sol-vald", type: "circle", source: "fast", filter: ["==", ["get", "id"], markerad()], layout: { visibility: syn(solPa) },
+    paint: { "circle-radius": solZoom(32, 2), "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2.5 } });
   map.addLayer({ id: "fast-namn", type: "symbol", source: "fast", minzoom: 9, layout: {
     "text-field": ["coalesce", ["get", "_etikett"], ["get", "Fastighetsbeskrivning"]], "text-font": ["Noto Sans Regular"], "text-size": 12,
     "text-offset": [0, 1.3], "text-anchor": "top", "text-optional": true },
@@ -408,12 +459,14 @@ map.on("style.load", async () => {
   }
 });
 let startat = false;
-map.on("click", "fast", e => {
-  const p = data.features.find(f => f.properties.id === e.features[0].properties.id).properties;
-  p._grupp ? visaGrupp(p) : valj(p.id);
-});
-map.on("mouseenter", "fast", () => map.getCanvas().style.cursor = "pointer");
-map.on("mouseleave", "fast", () => map.getCanvas().style.cursor = "");
+for (const lager of ["fast", "fast-sol"]) {
+  map.on("click", lager, e => {
+    const p = data.features.find(f => f.properties.id === e.features[0].properties.id).properties;
+    p._grupp ? visaGrupp(p) : valj(p.id);
+  });
+  map.on("mouseenter", lager, () => map.getCanvas().style.cursor = "pointer");
+  map.on("mouseleave", lager, () => map.getCanvas().style.cursor = "");
+}
 // Platt-knappen markeras när kartan är lutad eller vriden, så att det syns att den gör något
 const uppdateraPlatt = () => document.getElementById("platt").classList.toggle("on", map.getPitch() >= 1 || Math.abs(map.getBearing()) >= 1);
 map.on("pitchend", uppdateraPlatt); map.on("rotateend", uppdateraPlatt); map.on("moveend", uppdateraPlatt);
@@ -422,6 +475,7 @@ function markeraVald() {
   if (map.getLayer("fast")) {
     map.setPaintProperty("fast", "circle-stroke-color", ["case", ["==", ["get", "id"], markerad()], "#ffffff", "rgba(255,255,255,.65)"]);
     map.setPaintProperty("fast", "circle-stroke-width", ["case", ["==", ["get", "id"], markerad()], 3, 1.2]);
+    map.setFilter("fast-sol-vald", ["==", ["get", "id"], markerad()]);
   }
   if (map.getLayer("hus-3d")) {
     const K = KARTOR[karta];
@@ -438,6 +492,7 @@ function grupperaSammaPunkt() {
   const g = new Map();
   for (const f of data.features) {
     f.properties._loa = f.properties["Lokalarea Summa"] || 0;
+    f.properties._solskala = solKlass(f.properties.sol.ar_h).skala;
     const k = f.geometry.coordinates.join(",");
     g.set(k, [...(g.get(k) || []), f.properties]);
   }
@@ -474,13 +529,15 @@ function urval() {
 }
 function ritaLista() {
   const fs = urval(), maxLoa = Math.max(...data.features.map(f => f.properties["Lokalarea Summa"] || 0));
+  // Med soltimmar på sorteras listan från soligast. Ingen plats anges, eftersom närliggande värden i praktiken är lika.
+  if (solPa) fs.sort((a, b) => b.properties.sol.ar_h - a.properties.sol.ar_h || a.properties.rank - b.properties.rank);
   document.getElementById("antal").textContent = `${fs.length} av ${data.features.length} med läge`;
   const s = document.getElementById("sok").value.trim();
   document.getElementById("fastlista").innerHTML = fs.map(({ properties: p }) => `
-    <li data-id="${esc(p.id)}" class="${p.id === valdId ? "vald" : ""}"><span class="nr">${p.rank}</span>
-      <span><span class="sw" style="background:${p._farg}"></span>${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}</span>
-      <span class="meta">${esc(p.Kommun)} · ${n(p["Lokalarea Summa"])} kvm</span>
-      <span class="stapel"><span style="width:${100 * (p["Lokalarea Summa"] || 0) / maxLoa}%;background:${css(OMR[p["Affärsområde"]])}"></span></span></li>`).join("") +
+    <li data-id="${esc(p.id)}" class="${p.id === valdId ? "vald" : ""}"><span class="nr">${solPa ? "" : p.rank}</span>
+      <span><span class="sw" style="background:${solPa ? "#ffc83d" : p._farg}"></span>${esc(p.Fastighetsbeskrivning || p.Fastighetsbeteckning)}</span>
+      <span class="meta">${esc(p.Kommun)} · ${solPa ? "ca " + n(p.sol.ar_h) + " soltimmar/år" : n(p["Lokalarea Summa"]) + " kvm"}</span>
+      ${solPa ? "" : `<span class="stapel"><span style="width:${100 * (p["Lokalarea Summa"] || 0) / maxLoa}%;background:${css(OMR[p["Affärsområde"]])}"></span></span>`}</li>`).join("") +
     (data.utan_lage?.length && !s && !omrFilter ? `<li class="utan" style="display:block;cursor:default">Saknar läge och visas inte på kartan:
       ${data.utan_lage.map(u => esc(u.namn || u.beteckning) + " (" + esc(u.kommun) + ")").join(", ")}.</li>` : "");
   document.querySelectorAll("#fastlista li[data-id]").forEach(li => li.onclick = () => valj(li.dataset.id));
@@ -490,8 +547,18 @@ function filtrera() {
   if (!map.getLayer("fast")) return;
   // En fastighet som delar punkt med andra visas genom gruppens punkt
   const f = ["in", ["get", "id"], ["literal", [...new Set(urval().map(f => f.properties._ledare || f.properties.id))]]];
-  map.setFilter("fast", f); map.setFilter("fast-namn", f);
+  map.setFilter("fast", f); map.setFilter("fast-namn", f); map.setFilter("fast-sol", f);
 }
+document.getElementById("solknapp").onclick = () => {
+  solPa = !solPa;
+  const k = document.getElementById("solknapp"), v = document.getElementById("ind");
+  k.classList.toggle("on", solPa); k.setAttribute("aria-pressed", solPa);
+  v.disabled = solPa; v.parentElement.style.opacity = solPa ? 0.5 : "";
+  v.parentElement.title = solPa ? "Solarna har en egen färg. Stäng av soltimmar för att färga punkterna." : "Välj vilken uppgift punkterna på kartan färgas efter";
+  map.setLayoutProperty("fast", "visibility", solPa ? "none" : "visible");
+  for (const l of ["fast-sol", "fast-sol-vald"]) map.setLayoutProperty(l, "visibility", solPa ? "visible" : "none");
+  ritaLegend(); ritaLista(); placeraPaneler();
+};
 document.getElementById("sok").oninput = filtrera;
 document.querySelectorAll("#omrval button").forEach(b => b.onclick = () => {
   omrFilter = b.dataset.o;
@@ -750,6 +817,11 @@ function kortHtml(p) {
     ${rad("Årsmedeltemperatur", n(kl.arsmedel_temp) + " °C")}${rad("Januari / juli", n(kl.jan_temp) + " / " + n(kl.jul_temp) + " °C")}${rad("Årsnederbörd", n(kl.arsnederbord_mm) + " mm")}</table>
     <div class="kalla">Station: ${esc(kl.temp_station || "–")}${kl.neder_station && kl.neder_station !== kl.temp_station ? "; nederbörd " + esc(kl.neder_station) : ""}.
     SMHI, CC BY 4.0, bearbetad. ${metod("klimat")}</div></div>`;
+  const sol = p.sol;
+  if (sol) h += `<div class="sektion"><h2>Soltimmar, uppskattning</h2><div class="stor">ca ${n(sol.ar_h)} timmar per år</div>
+    <div class="liten" style="margin-top:4px">Det blir ca ${n(Math.round(sol.ar_h / 36.525) / 10)} soltimmar per dag, räknat över hela året.</div>
+    <div class="kalla">Ungefärligt snitt 2006–2025 för området runt punkten, inte mätt på fastigheten. Typiskt fel ca 80 timmar${sol.fjall ? ", och mer i fjällen" : ""}. Skugga från byggnader och tak ingår inte.
+    SMHI, STRÅNG och solskensstationer, CC BY 4.0, bearbetad. ${metod("sol")}</div></div>`;
   const fk = p.framtidsklimat;
   if (fk) {
     const fm = v => v === null || v === undefined ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toLocaleString("sv-SE", { maximumFractionDigits: 1 });

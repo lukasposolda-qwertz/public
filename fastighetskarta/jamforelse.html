@@ -84,6 +84,7 @@ const KOL = [
   ["Nod", "0–1", p => p.nodplats?.nod, "num"],
   ["Plats", "0–1", p => p.nodplats?.plats, "num"],
   ["Nod–plats", "typ", p => p.nodplats?.typ, "text"],
+  ["Soltimmar per år", "uppskattning, snitt 2006–2025, typiskt fel ca 80 h", p => p.sol?.ar_h, "num"],
   ["Högsommardygn", "ökning 2071–2100, RCP8.5, län", p => p.framtidsklimat?.su?.rcp85_2071?.forandring, "num"],
   ["Dygn ≥ 20 mm", "ökning 2071–2100, RCP8.5, län", p => p.framtidsklimat?.r20mm?.rcp85_2071?.forandring, "num"],
   ["Service", "inom 500 m", p => p.service_500m && (p.service_500m.butiker + p.service_500m.mat_dryck + p.service_500m.service), "num"],

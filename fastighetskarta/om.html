@@ -197,6 +197,26 @@
   <p>Normalvärden 1991–2020 för temperatur och nederbörd, beräknade ur SMHI:s kvalitetskontrollerade månadsvärden vid närmaste station
     med minst 300 av 360 månader, högst 60 km bort. Station anges i kortet.</p>
 
+  <h3 id="sol">Soltimmar (uppskattning)</h3>
+  <p><b>Värdet är en uppskattning, inte en mätning på fastigheten.</b> Det visar ungefär hur många timmar per år solen skiner i området
+    runt punkten, i snitt 2006–2025. Värdet är avrundat till 10 timmar, och skillnader under ca 100 timmar bör inte läsas som verkliga.</p>
+  <p>SMHI mäter solskenstid vid bara 19 aktiva stationer. Modellen STRÅNG ger värden för vilken plats som helst men avviker från mätningarna,
+    och avvikelsen ändras över åren. Därför används modellen för skillnaden mellan platser och stationerna för nivån:</p>
+  <ol>
+    <li>Modellens värde för varje månad hämtas för punkten.</li>
+    <li>Varje månad justeras med hur mycket modellen avvek från stationerna den månaden. Högfjällsstationen Tarfala ingår inte.</li>
+    <li>Varje kalendermånad får ett medelvärde, och de tolv medelvärdena läggs ihop till ett år. Månader som saknas i modellen räknas alltså inte som noll sol.</li>
+  </ol>
+  <p><b>Hur bra stämmer det?</b> Varje station har i tur och ordning lämnats utanför beräkningen och förutsagts av de andra. Över 18 stationer var felet
+    i snitt 79 timmar (4,2 %), mot 114 timmar utan justering. Det största felet var 269 timmar.</p>
+  <dl>
+    <dt>Ofta för högt i inlandet och i städer</dt><dd>Till exempel Växjö +105, Göteborg +100, Stockholm +96 och Luleå +93 timmar.</dd>
+    <dt>Ofta för lågt vid kusten och på öar</dt><dd>Till exempel Svenska Högarna −269, Hoburg −180 och Visby −74 timmar.</dd>
+    <dt>Osäkrast i fjällen</dt><dd>Felet var +151 timmar vid Tarfala (som inte ingår i justeringen) och −161 timmar vid Storlien. Katterjåkks värde är därför särskilt grovt.</dd>
+  </dl>
+  <p class="svag">Skugga från byggnader, tak och terräng ingår inte, så en plattform under tak får samma värde som öppen mark intill. Närliggande platser kan också
+    skilja sig på grund av modellen. Soltimmar säger inte heller vad solceller skulle ge. Solarnas storlek visar fem klasser, 100 timmar breda eller mer.</p>
+
   <h3 id="framtidsklimat">Framtida klimat och skyfall</h3>
   <p>Länets värden i SMHI:s Klimatscenariotjänst: medelvärdet av många klimatmodeller (EURO-CORDEX), jämfört med referensperioden 1971–2000.
     Kortet visar förändringen för tre fall: mitten av seklet med höga utsläpp (RCP8.5, 2041–2070) och slutet av seklet med begränsade
@@ -252,6 +272,7 @@
     <tr><td>Kollektivtrafik, restid, tåg i rörelse</td><td>GTFS Sverige 2, Samtrafiken via <a href="https://www.trafiklab.se/api/gtfs-datasets/gtfs-sverige-2/" target="_blank" rel="noopener">Trafiklab</a></td><td>CC0 1.0</td></tr>
     <tr><td>Befolkning, DeSO, arbetsplatser, dagbefolkning</td><td><a href="https://www.scb.se/vara-tjanster/oppna-data/" target="_blank" rel="noopener">SCB</a>: 1 km-rutor 2025, DeSO-statistik 2024, verksamhets- och handelsområden 2020, TAB1828</td><td>Öppna data, källa: SCB</td></tr>
     <tr><td>Klimat 1991–2020</td><td><a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>, meteorologiska observationer</td><td>CC BY 4.0, bearbetad</td></tr>
+    <tr><td>Soltimmar (uppskattning)</td><td><a href="https://www.smhi.se/data" target="_blank" rel="noopener">SMHI</a>, modellen STRÅNG och solskenstid vid stationer</td><td>CC BY 4.0, bearbetad</td></tr>
     <tr><td>Framtida klimat</td><td><a href="https://www.smhi.se/klimat/framtidens-klimat/klimatscenariotjansten" target="_blank" rel="noopener">SMHI Klimatscenariotjänsten</a>, länsvärden</td><td>Källa: SMHI, bearbetad. Tjänsten anger ingen egen licens; SMHI:s öppna data har CC BY 4.0</td></tr>
     <tr><td>Skyfall, klimatfaktorer</td><td><a href="https://www.smhi.se/tema/hantera-vatten-och-klimat/hantera-oversvamning-till-foljd-av-skyfall/riskkartering-oversvamningskansliga-omraden-vid-skyfall" target="_blank" rel="noopener">SMHI, skyfallskartering</a></td><td>Källa: SMHI</td></tr>
     <tr><td>Översvämning, stabilitet</td><td><a href="https://www.mcf.se/sv/verktyg--tjanster/oversvamningsportalen/" target="_blank" rel="noopener">MCF</a></td><td>Fri användning, källa: MCF</td></tr>

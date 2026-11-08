@@ -2,7 +2,7 @@
 
 En interaktiv karta över Sveriges järnvägsstationer: de som används i dag, de som har lagts ned och de som planeras. Kartan visar också spårnätet, foton och historik. Live: https://lukasposolda-qwertz.github.io/public/stationskarta/
 
-Kartan är gjord av Lukas Posolda och senast uppdaterad 2026-11-08.
+© 2026 Lukas Posolda · senast uppdaterad 2026-11-08
 
 ## Filer
 

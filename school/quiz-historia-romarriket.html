@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historia – Det romerska riket</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --card-bg: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #64748b;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --correct-bg: #ecfdf5;
+  --correct-border: #059669;
+  --correct-text: #065f46;
+  --incorrect-bg: #fef2f2;
+  --incorrect-border: #dc2626;
+  --incorrect-text: #991b1b;
+  --partial: #d97706;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --card-radius: 16px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; line-height: 1.5; }
+.container { max-width: 720px; margin: 0 auto; padding: 1rem; }
+header { text-align: center; padding: 1rem 0 0.75rem; }
+h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.75rem; }
+#progress-text { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem; min-height: 1.3em; }
+.bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+.card { background: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: 2rem; margin-top: 1rem; }
+.qtext { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.5rem; }
+.qtype { font-size: 0.8rem; font-style: italic; color: var(--text-secondary); margin: 0 0 1rem; }
+.options { display: flex; flex-direction: column; gap: 0.75rem; }
+.opt, .row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.875rem 1rem; background: #fff; }
+.opt { display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer; font-size: 1rem; }
+.opt:hover { border-color: var(--accent); background: #f8f9ff; }
+.opt.sel { border-color: var(--accent); background: #eef2ff; }
+.opt input { accent-color: var(--accent); margin-top: 0.3rem; flex: none; width: 1rem; height: 1rem; }
+.mark { display: inline-block; min-width: 1.1em; font-weight: 700; }
+.right { border-color: var(--correct-border) !important; background: var(--correct-bg) !important; }
+.wrong { border-color: var(--incorrect-border) !important; background: var(--incorrect-bg) !important; }
+.rowtext .mark:empty { display: none; }
+.pool { margin: 0 0 1rem; padding: 0.75rem 1rem; background: #f8fafc; border-radius: 10px; font-size: 0.95rem; }
+.pool div { margin: 0.25rem 0; }
+.right .mark { color: var(--correct-border); }
+.wrong .mark { color: var(--incorrect-border); }
+.locked .opt { cursor: default; }
+.locked .opt:hover { background: #fff; border-color: #e2e8f0; }
+.locked .opt.sel:hover { background: #eef2ff; border-color: var(--accent); }
+.row { display: flex; flex-direction: column; gap: 0.5rem; }
+.rows { display: flex; flex-direction: column; gap: 0.75rem; }
+.rowtext { font-size: 1rem; }
+.note { font-size: 0.875rem; color: var(--correct-text); }
+select, input[type=text] { font: inherit; font-size: 1rem; padding: 0.5rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: var(--text-primary); max-width: 100%; }
+select:focus, input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+select:disabled, input[type=text]:disabled { opacity: 1; color: var(--text-primary); background: #f8fafc; }
+select.right, input.right { border-color: var(--correct-border); background: var(--correct-bg); }
+select.wrong, input.wrong { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+.tfbtns { display: flex; gap: 0.5rem; }
+.tfbtns label { flex: 1; text-align: center; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem; cursor: pointer; font-weight: 500; }
+.tfbtns label:hover { border-color: var(--accent); background: #f8f9ff; }
+.tfbtns label.sel { border-color: var(--accent); background: #eef2ff; }
+.tfbtns input { position: absolute; opacity: 0; pointer-events: none; }
+.tfbtns label.ans { border-color: var(--correct-border); background: var(--correct-bg); }
+.tfbtns label.bad { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+.locked .tfbtns label { cursor: default; }
+.orderrow { display: flex; align-items: center; gap: 0.75rem; }
+.orderrow .num { font-weight: 700; color: var(--text-secondary); min-width: 1.5rem; }
+.orderrow .rowtext { flex: 1; }
+.arrows { display: flex; gap: 0.35rem; }
+.arrows button { width: 2.2rem; height: 2.2rem; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; font-size: 1rem; cursor: pointer; color: var(--text-primary); }
+.arrows button:hover:not(:disabled) { border-color: var(--accent); background: #f8f9ff; }
+.arrows button:disabled { opacity: 0.35; cursor: not-allowed; }
+.cloze { font-size: 1.05rem; line-height: 2.4; }
+.cloze select { margin: 0 0.2rem; }
+.correct-line { margin-top: 0.75rem; font-size: 0.9rem; color: var(--correct-text); }
+.btn { background: var(--accent); color: #fff; border: 2px solid var(--accent); font: inherit; font-weight: 600; padding: 0.75rem 2rem; border-radius: 10px; cursor: pointer; }
+.btn:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.outline { background: transparent; color: var(--accent); }
+.btn.outline:hover:not(:disabled) { background: #eef2ff; border-color: var(--accent); }
+.actions { margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+.feedback { margin-top: 1.5rem; padding: 1rem 1.25rem; border-left: 4px solid; border-radius: 0 10px 10px 0; font-size: 0.95rem; }
+.feedback p { margin: 0.5rem 0 0; }
+.feedback.ok { border-color: var(--correct-border); background: rgba(5,150,105,0.05); }
+.feedback.no { border-color: var(--incorrect-border); background: rgba(220,38,38,0.05); }
+.feedback.mid { border-color: var(--partial); background: rgba(217,119,6,0.05); }
+.center { text-align: center; }
+.intro ul { padding-left: 1.2rem; margin: 0.5rem 0 0; }
+.intro li { margin-bottom: 0.35rem; }
+table.res { margin: 1rem auto 0; border-collapse: collapse; font-size: 0.95rem; }
+table.res td { padding: 0.3rem 1rem; border-bottom: 1px solid #e2e8f0; }
+table.res td:last-child { text-align: right; font-weight: 600; }
+@media (max-width: 480px) { .card { padding: 1.25rem; } .orderrow { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1 id="title"></h1>
+    <div id="progress-text"></div>
+    <div class="bar"><div class="bar-fill" id="bar"></div></div>
+  </header>
+  <main id="app"></main>
+</div>
+<script>
+(function () {
+'use strict';
+const META = {"id": "quiz-historia-romarriket", "title": "Historia – Det romerska riket", "intro": ["Quizet har 40 frågor i flera olika format. Läs varje fråga noga: antalet rätta svar och sättet att svara skiljer sig mellan frågorna.", "En fråga räknas som rätt först när alla delar är rätt. Efter varje fråga visas facit med förklaring."], "types": ["single", "multi", "tf", "match", "order", "cloze", "short", "sort"]};
+const quizData = [{"type": "single", "q": "Efter att den etruskiske kungen avsatts valde romarna att inte längre ha en kung. Vilken tanke låg bakom den nya styrelseformen, republiken?", "options": ["Alla invånare i staden, även slavar och kvinnor, skulle få rösta om alla beslut i riket", "Makten skulle delas så att ingen enskild person fick bli för mäktig", "Staten skulle ledas av en diktator som valdes på livstid", "Prästerna skulle styra staden på uppdrag av gudarna"], "correct": 1, "fb": "Romarna hatade kungar och ville förhindra att en enda person fick för stor makt. Därför delades makten mellan senaten, folkförsamlingen och två konsuler. Ordet republik kommer från latin och betyder en stat som inte styrs av en kung eller drottning.\nRösträtten var inte allmän, för bara fria män var medborgare (A). Diktatorer valdes bara vid kriser och för ett halvår i taget (C). Prästerna styrde inte staten (D)."}, {"type": "tf", "q": "Bedöm om varje påstående om etruskerna och Rom är sant eller falskt.", "items": [{"t": "Etruskerna styrde Rom på 500-talet f.Kr., innan romarna avsatte den etruskiske kungen.", "a": true}, {"t": "Romarna lärde sig av etruskerna bland annat att bygga vägar och vattenledningar.", "a": true}, {"t": "Etruskernas kvinnor hade mycket lägre status än kvinnor i resten av Medelhavsområdet.", "a": false}, {"t": "Etruskerna var ett grekiskt folk som hade flyttat till Rom från Aten.", "a": false}], "fb": "Rom styrdes under 500-talet f.Kr. av etruskerna, ett rikt folk i Italien. Romarna lärde sig mycket av dem, till exempel att bygga vägar och vattenledningar, innan de gjorde uppror och avsatte kungen.\nEtruskernas samhälle verkar ha varit ovanligt jämställt: kvinnor och män avbildas som jämlika, och kvinnor deltog i festligheter. Etruskerna var inte greker."}, {"type": "order", "q": "Ordna dessa skeden i Roms historia från äldst till yngst.", "items": ["Etruskiska kungar styr Rom", "Romarna avsätter kungen och inför en republik", "Julius Caesar blir diktator på livstid", "Augustus blir den förste kejsaren", "Kristendomen blir statsreligion"], "fb": "Etruskerna styrde Rom på 500-talet f.Kr., och därefter blev Rom en republik som varade i ungefär 450 år. Caesar blev diktator på livstid 44 f.Kr. Under hans efterträdare Augustus (från 30 f.Kr. ensam härskare) blev riket ett kejsardöme. Kristendomen blev statsreligion i slutet av 300-talet e.Kr."}, {"type": "multi", "q": "Vilka påståenden om hur grekernas kultur påverkade romarna stämmer?", "options": ["Romarna tog över det grekiska alfabetet och anpassade det till latinets ljud", "Romarna lät många grekiska gudar få latinska namn", "Romarna ansåg att grekisk filosofi och vetenskap var värdelösa", "Alla romare vägrade lära sig grekiska, eftersom språket ansågs mindre värt än latin"], "correct": [0, 1], "fb": "A och B stämmer. Romarna tog efter mycket av grekernas kultur: de anpassade alfabetet till latinet, gav gudarna latinska namn, läste grekisk filosofi och vetenskap och byggde teatrar för grekiska skådespel.\nC är fel: romarna imponerades av grekernas bibliotek och verk. D är fel: grekiska blev tvärtom ett språk som alla i Rom ville kunna."}, {"type": "short", "q": "Vilken romersk krigsgud har gett namn åt både en av planeterna och en av årets månader? Svara med ett ord.", "answers": ["mars"], "fb": "Mars, krigets gud, har gett namn åt planeten Mars och åt månaden mars. Ursprungligen var mars årets första månad hos romarna, och varje år offrades djur till guden. Romarna tyckte att Mars var viktigare än grekerna tyckte att deras motsvarighet Ares var."}, {"type": "single", "q": "Vilka var gladiatorerna oftast?", "options": ["Frivilliga soldater som tränade på fritiden för att få ära", "Präster som offrade djur på arenan", "Kejsarens livvakt som underhöll folket", "Starka slavar som tränats för att slåss"], "correct": 3, "fb": "Gladiatorerna var oftast starka slavar som tränades för att slåss. För att det skulle bli omväxling fick de olika vapen och kämpade även mot djur. Gladiatorspel var populär underhållning på amfiteatrar."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "I den romerska republiken styrdes Rom av {0}, en folkförsamling och två {1}. När det var kris kunde en {2} få all makt, men bara under ett halvår.", "blanks": [{"options": ["senaten", "kungen", "prästerna", "soldaterna"], "correct": 0}, {"options": ["konsuler", "kejsare", "tyranner", "pretorer"], "correct": 0}, {"options": ["diktator", "kung", "kejsare", "senator"], "correct": 0}], "fb": "Senaten bestod av 300 män från de rikaste familjerna. Folkförsamlingen bestod av Roms fria medborgare och valde de två konsulerna. Vid en kris kunde en diktator utses med all makt, men bara under ett halvår. Ordet diktator kommer från latin."}, {"type": "sort", "q": "Placera varje påstående under den stadsstat eller det rike det passar bäst för.", "categories": ["Aten", "Rom", "Båda"], "items": [{"t": "Kvinnor fick inte bli politiker.", "c": 2}, {"t": "Slavar utförde en stor del av arbetet.", "c": 2}, {"t": "Medborgare kunde landsförvisas efter en omröstning där man ristade namn på krukskärvor.", "c": 0}, {"t": "Rika män samlades på torget för att diskutera politik och lyssna på talare.", "c": 0}, {"t": "Under kejsartiden fick kvinnor större frihet och kunde behålla makten över sina pengar.", "c": 1}, {"t": "Fadern i familjen kunde enligt lag bestämma vilka nyfödda som fick leva.", "c": 1}], "fb": "I både Aten och Rom var kvinnor utestängda från politiken och slavar utförde mycket av arbetet. Ostrakism (omröstning med krukskärvor) och diskussionerna på torget Agoran hör till Aten. I Rom hade fadern, pater familias, nästan obegränsad makt, och under kejsartiden fick kvinnor mer frihet, till exempel genom att slippa en förmyndare."}, {"type": "multi", "q": "Vilka påståenden om Roms erövringar stämmer?", "options": ["Vid 200-talets början hade Rom segrat över hela den italienska halvön", "Många av grannfolken på halvön blev romerska medborgare", "Efter över hundra år av krig hade romarna erövrat alla Kartagos handelsstäder runt Medelhavet", "Romarna lät de grekiska städerna vara självständiga och erövrade dem aldrig"], "correct": [0, 1, 2], "fb": "A, B och C stämmer. Rom behandlade ofta de besegrade grannfolken på halvön väl, och många blev romerska medborgare. Folk längre bort fick vara provinser och betala skatt. Kartago, en feniciskt grundad stad som kontrollerade västra Medelhavet, besegrades efter över hundra år av krig. Romarna erövrade även de grekiska städerna.\nD är därför fel."}, {"type": "match", "q": "Para ihop varje romersk gud med sin grekiska motsvarighet. En grekisk gud passar ingen av romarnas gudar.", "pairs": [["Jupiter", "Zeus"], ["Neptunus", "Poseidon"], ["Venus", "Afrodite"], ["Minerva", "Athena"]], "extra": ["Hades"], "fb": "Jupiter var den störste guden, motsvarigheten till Zeus. Neptunus var havets gud (Poseidon), Venus kärlekens gudinna (Afrodite) och Minerva visdomens gudinna (Athena). Hades, dödsrikets gud, hette Pluto hos romarna."}, {"type": "single", "q": "Vad menades med taktiken ”Bröd och skådespel” i Rom?", "options": ["Mat och underhållning delades ut för att hålla de arbetslösa lugna", "Soldaterna fick mat och teaterbiljetter som lön för sin tjänst", "Bönderna skulle sälja sitt spannmål billigt till staten och få gratis teater i utbyte", "Kejsaren straffade alla som inte kom till arenan genom att dra in deras mat"], "correct": 0, "fb": "Rika senatorer delade ut bröd och bjöd på underhållning på arenorna för att få röster och för att de många arbetslösa inte skulle bli upproriska. Taktiken användes i flera hundra år."}, {"type": "tf", "q": "Bedöm om varje påstående om den romerska armén och underhållningen är sant eller falskt.", "items": [{"t": "Den romerska armén bestod från början av bönder, men blev med tiden en armé av avlönade yrkessoldater.", "a": true}, {"t": "När fler bönder lämnade sina jordbruk blev det lättare att hitta soldater.", "a": false}, {"t": "Många arbetslösa i staden kunde bli soldater, men de krävde då betalt.", "a": true}, {"t": "Gladiatorspel hölls i små privata hus utan publik.", "a": false}], "fb": "Bönder utgjorde först armén. När fler lämnade jordbruken och flyttade till städerna blev det svårare att hitta soldater, och då fick arbetslösa bli soldater mot betalning. Så blev armén med tiden avlönade yrkessoldater.\nGladiatorspelen hölls på stora amfiteatrar inför publik."}, {"type": "short", "q": "Vilket tal skrivs XIV med romerska siffror? Svara med en siffra.", "answers": ["14"], "fb": "X är 10 och IV är 4, så XIV är 14. Romarna räknade på fingrarna: ett streck för ett finger, V för fem och X för tio. Systemet blev krångligt i längden, och därför använder vi i stället arabernas siffror."}, {"type": "multi", "q": "Vilka påståenden om Roms arbetslösa stämmer?", "options": ["De hade rösträtt och var därför farliga för ordningen i staden", "Senatorerna bjöd på mat och underhållning för att få deras röster", "Slavarnas gratisarbete gjorde det svårt att få jobb i Rom", "Arbetslösheten berodde på att Rom hade förlorat kriget mot Kartago"], "correct": [0, 1, 2], "fb": "A, B och C stämmer. Många bönder hade flyttat till Rom eftersom billigt spannmål från Nordafrika gjorde att de inte kunde sälja sitt eget. Det fanns få jobb eftersom slavarna arbetade gratis. De arbetslösa var medborgare med rösträtt, så senatorerna köpte deras stöd med bröd och skådespel.\nD är fel: Rom besegrade Kartago."}, {"type": "single", "q": "Senaten kallade hem Julius Caesar, men han kom med hela sin armé i stället för att lyda. Vad blev följden?", "options": ["Senaten lyckades få honom att lämna ifrån sig armén och återvända som privatperson", "Armén gick över till senaten och Caesar fängslades", "Ett inbördeskrig som Caesar vann", "Caesar tvingades fly till Egypten där han blev farao"], "correct": 2, "fb": "När Caesar kom med sin armé blev det inbördeskrig. Caesar segrade och utropade sig till diktator på livstid. Det väckte oro bland senatorerna, och år 44 f.Kr. mördades han."}, {"type": "order", "q": "Ordna händelserna under maktkampen i Rom, från äldst till yngst.", "items": ["Caesar utropas till diktator på livstid", "Caesar mördas av några senatorer", "Octavianus och Antonius delar riket mellan sig", "Octavianus segrar i ett sjöslag utanför Greklands kust", "Kleopatra tar sitt liv och Egypten tas över av Octavianus"], "fb": "Caesar blev diktator på livstid och mördades 44 f.Kr. Därefter delade Octavianus (västra delen) och Antonius (östra delen) riket. Octavianus förklarade krig mot Kleopatra och Antonius och segrade i ett sjöslag utanför Greklands kust. Kleopatra tog sitt liv, och Octavianus tog makten över Egypten."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Julius Caesar införde en kalender med {0} dagar och en extra skottdag vart fjärde år. Förebilden kom från {1}, och kalendern kallas den {2} kalendern.", "blanks": [{"options": ["365", "355", "360", "400"], "correct": 0}, {"options": ["Egypten", "Grekland", "Persien", "Kartago"], "correct": 0}, {"options": ["julianska", "gregorianska", "augustiska", "etruskiska"], "correct": 0}], "fb": "Det romerska året hade först 355 dagar. När Caesar lärt känna den egyptiska kalendern, som stämde bättre med solens år, bestämde han att året skulle ha 365 dagar och en skottdag vart fjärde år. Den kallas den julianska kalendern efter honom."}, {"type": "tf", "q": "Bedöm om varje påstående om Kleopatra är sant eller falskt.", "items": [{"t": "Kleopatra tog hjälp av Caesar för att ta makten över Egypten från sin bror.", "a": true}, {"t": "Kleopatra och Antonius besegrades av Octavianus i ett sjöslag.", "a": true}, {"t": "Egypten var redan en romersk provins när Kleopatra blev drottning.", "a": false}, {"t": "Kleopatra blev Roms drottning efter att ha gift sig med Octavianus.", "a": false}], "fb": "Kleopatra och hennes lillebror hade ärvt makten, men broderns rådgivare gjorde uppror. Hon använde Caesar för att själv ta makten. Hon gifte sig senare med Antonius, och de besegrades av Octavianus flotta. Egypten var det rikaste landet vid Medelhavet och kontrollerades då inte av romarna. Först efter Kleopatras död tog Octavianus makten över landet, och Kleopatra blev Egyptens sista drottning."}, {"type": "sort", "q": "Placera varje påstående under den styrelseform det passar bäst för.", "categories": ["Republik", "Kejsardöme", "Båda"], "items": [{"t": "Två konsuler som folkförsamlingen valde ledde staten.", "c": 0}, {"t": "En envåldshärskare styrde på livstid.", "c": 1}, {"t": "Vid en kris kunde en diktator få all makt i ett halvår.", "c": 0}, {"t": "Senaten fanns kvar men hade snart ingenting att säga till om.", "c": 1}, {"t": "Erövrade områden styrdes som provinser.", "c": 2}, {"t": "Slavar utförde en stor del av arbetet.", "c": 2}], "fb": "I republiken styrdes Rom av senaten, folkförsamlingen och konsulerna, med diktatorn som nödlösning. I kejsardömet styrde kejsaren som envåldshärskare, och senaten hade snart ingenting att säga till om. Provinser och slavar fanns i båda."}, {"type": "multi", "q": "Vilka påståenden om pax romana, den romerska freden, stämmer?", "options": ["Under pax romana förekom inga strider alls i hela riket", "Fredsperioden varade bara i ett tjugotal år", "Handeln mellan provinserna minskade kraftigt", "Romarna förbjöd både latin och grekiska i provinserna"], "correct": [], "fb": "Inget av påståendena stämmer. Pax romana varade i ungefär 200 år, men det pågick nästan jämt strider i gränstrakterna (A, B). Handeln mellan provinserna gick bra och många vägar byggdes (C). Latin och grekiska användes överallt, och kulturen blomstrade (D)."}, {"type": "single", "q": "Octavianus hade all makt efter striderna, men han utropade sig inte till diktator. Varför?", "options": ["Han hade lärt sig av Caesars öde och lät senaten ge honom en vördnadsvärd titel", "Senaten hade förbjudit titeln diktator med ett lagbud som även kejsaren måste lyda", "Han var redan farao i Egypten och behövde inga fler titlar", "Folkförsamlingen valde en ny diktator varje halvår"], "correct": 0, "fb": "Octavianus hade lärt sig av Caesars misstag. I stället för att ta makten öppet delade han ut pengar till soldater och Roms befolkning, och senaten gav honom namnet Augustus (den vördnadsvärde). Med tiden tog han allt mer makt, och Romarriket blev ett kejsardöme där kejsarna styrde som envåldshärskare på livstid."}, {"type": "short", "q": "Vilken romersk kejsare bestämde år 321 att söndagen skulle bli helgdag? Svara med förnamnet.", "answers": ["konstantin", "konstantin den store"], "fb": "Kejsar Konstantin den store bestämde att söndagen skulle vara helgdag, eftersom Jesus uppstått på en söndag. Veckan fick då sju dagar i stället för åtta, och dagarna döptes efter de sju viktigaste himlakropparna: solen, månen, Mars, Merkurius, Jupiter, Venus och Saturnus."}, {"type": "order", "q": "Ordna kristendomens väg i Romarriket, från äldst till yngst.", "items": ["Kristendomen börjar spridas, mest bland fattiga, slavar och kvinnor", "De kristna förföljs och deras texter bränns", "En kejsare ger byggnader och pengar till kyrkan", "Kristendomen blir statsreligion och andra religioner förbjuds"], "fb": "Kristendomen spreds först bland människor som ingen brydde sig om. När kristna blev fler blev folk irriterade, och de förföljdes, trots att de blev allt fler. Till slut insåg rikets ledare att det inte lönade sig att jaga dem. En kejsare gav pengar och byggnader till kyrkan på 300-talet, och i slutet av 300-talet blev kristendomen statsreligion."}, {"type": "sort", "q": "Placera varje orsak till Romarrikets undergång under rätt kategori.", "categories": ["Yttre orsak (utanför riket)", "Inre orsak (inom riket)"], "items": [{"t": "Perser i öster blev starkare och farligare än förr.", "c": 0}, {"t": "Germanska folk i norr angrep gränserna allt oftare.", "c": 0}, {"t": "Skatterna höjdes för att betala fler soldater, men de rikaste klarade sig undan.", "c": 1}, {"t": "Silverhalten i mynten minskade så att pengarna förlorade i värde.", "c": 1}, {"t": "Soldater gjorde uppror och utropade egna kejsare.", "c": 1}, {"t": "Handeln minskade och butiker och hantverk i städerna stängdes.", "c": 1}], "fb": "Perser och germaner var yttre hot. Höjda skatter, silverbrist, minskad handel och soldaternas uppror är inre problem. Orsakerna hänger ihop: höjda skatter gjorde småbönder fattiga, silverbrist gjorde pengarna värdelösa, och då minskade handeln."}, {"type": "multi", "q": "Vilka påståenden om vad vi har kvar från romarna stämmer?", "options": ["Det romerska rättssystemet lever delvis vidare i dagens lagböcker och domstolar", "Latin används än i dag för viktiga ord inom vetenskap", "Spanska, franska och italienska har utvecklats ur olika latinska dialekter", "De latinska bokstäverna används i hundratals språk och utvecklades från grekiska bokstäver"], "correct": [0, 1, 2, 3], "fb": "Alla fyra stämmer. Det västromerska riket gick under, men romersk kultur levde vidare: delar av rättssystemet, kristendomen, latinet som vetenskapsspråk, de romanska språken och alfabetet som du läser nu."}, {"type": "single", "q": "Hur förändrades de romerska kvinnornas situation under kejsartiden jämfört med republikens tid?", "options": ["De fick rätt att bli politiker och sitta i senaten", "De förlorade alla rättigheter och fick inte längre äga något", "De fick bestämma över vilka nyfödda som skulle få leva", "De blev mer fria, och fler kunde slippa stå under mannens förmyndarskap"], "correct": 3, "fb": "I Roms äldsta lag skulle kvinnor stå under förmyndare. Under kejsartiden blev de friare, kanske för att de tog större ansvar när männen var borta för att försvara riket. Det blev vanligare att en kvinna slapp mannens förmyndarskap, och en rik änka behöll makten över sina pengar. Kvinnor fick ändå inte bli politiker, och det var fadern (pater familias) som hade makten över de nyfödda."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Fadern i en romersk familj kallades {0}. Han hade enligt lagen {1} makt över familjemedlemmarna, och familjen omfattade även {2}.", "blanks": [{"options": ["pater familias", "konsul", "senator", "pedagog"], "correct": 0}, {"options": ["all", "mycket liten", "delad", "ingen"], "correct": 0}, {"options": ["släktingar och tjänare", "bara barnen", "bara hustrun", "bara slavarna"], "correct": 0}], "fb": "En romersk familj var en hel släkt med tillhörande tjänare, och fadern, pater familias, hade all makt. Han bestämde vilka nyfödda som fick leva, vem döttrarna fick gifta sig med och hade rätt att straffa familjemedlemmarna."}, {"type": "single", "q": "Vilket påstående om slaveriet i Rom stämmer **INTE**?", "options": ["Slavar kunde ha olika uppgifter, från gruvarbete till undervisning av barn", "Slavar som gjorde uppror kunde skickas till gruvor eller korsfästas", "Slavarna var en liten grupp, och de flesta arbeten utfördes av fria romare", "De flesta slavar var människor som tillfångatagits i krig och sålts på slavmarknader"], "correct": 2, "fb": "Påstående C är fel. Rom var ett slavsamhälle: under Augustus tid var nästan var tredje invånare i Rom slav, och de utförde en stor del av arbetet.\nA, B och D stämmer. Utbildade greker kunde bli pedagoger, andra blev musikerslavar eller arbetsslavar. Slavar som gjorde uppror kunde skickas till gruvor eller korsfästas."}, {"type": "tf", "q": "Bedöm om varje påstående om vägar och städer i Romarriket är sant eller falskt.", "items": [{"t": "Uttrycket ”alla vägar bär till Rom” syftar på att Rom var centrum i ett rike där många vägar ledde dit.", "a": true}, {"t": "Romarna byggde vägar bara för att kunna skicka brev.", "a": false}, {"t": "Städer som London och Wien växte upp där romarna grundat städer eller läger.", "a": true}, {"t": "Under pax romana byggdes inga nya vägar eftersom riket var färdigbyggt.", "a": false}], "fb": "Rom var centrum för riket, och under pax romana byggdes massor av vägar som användes för handel och för att flytta soldater och varor. Vid stora floder, som kunde frakta soldater och varor, grundade romarna städer, och en del av dem finns kvar än i dag, till exempel London (Londinium) och Wien (Vindobona)."}, {"type": "match", "q": "Para ihop varje begrepp med rätt förklaring. En förklaring passar inget av begreppen.", "pairs": [["Provins", "Erövrat område som styrdes av Rom"], ["Imperium", "Rike som ett folk har erövrat och styr över"], ["Pater familias", "Familjens överhuvud, med all makt över medlemmarna"], ["Pedagog", "Utbildad grekisk slav som undervisade romerska barn"]], "extra": ["Byggnad där gladiatorer kämpade inför publik"], "fb": "Provins är ett erövrat område, till exempel Britannien. Imperium betydde från början att befalla eller ha makt, och betyder nu ett rike som ett folk har erövrat. Pater familias var fadern i en romersk familj. Pedagoger var utbildade slavar, ofta greker. Byggnaden där gladiatorerna kämpade kallas amfiteater."}, {"type": "single", "q": "Varför bestämde kejsaren i slutet av 300-talet att kristendomen skulle vara statsreligion?", "options": ["Alla romare hade redan blivit kristna, så ingen annan religion fanns kvar", "Kyrkan var den organisation som fungerade bäst och kunde hålla ihop riket", "Perserna hade krävt det i ett fredsavtal", "Senaten hade valt det i en omröstning efter Caesars död"], "correct": 1, "fb": "Kyrkan hade vuxit till en välorganiserad organisation med präster och biskopar, och den verkade vara den enda organisationen som fungerade i det oroliga riket. Kejsare och biskopar hjälptes åt att hålla ordning på folket. Kyrkor byggdes där tempel tidigare stått, och alla andra religioner förbjöds."}, {"type": "short", "q": "Vad hette Roms största avloppsledning, som leder ut i floden Tibern och finns kvar än i dag? Svara med det latinska namnet.", "answers": ["cloaca maxima"], "fb": "Den hette cloaca maxima, den stora kloaken. Romarna använde enorma mängder vatten i fontäner och badhus, och smutsigt vatten rann ut i Tibern genom stora avloppsledningar."}, {"type": "multi", "q": "Vilka påståenden om kristendomen i Romarriket stämmer?", "options": ["Kristendomen började spridas från det område som då kallades Palestina och som tillhörde Romarriket", "Kejsarna uppmuntrade kristendomen från första början", "Kristna fick alltid fira de romerska gudarna", "Kyrkans organisation avskaffades när kristendomen blev statsreligion"], "correct": [0], "fb": "Bara A stämmer. Kristendomen började spridas från det lilla judiska Palestina, som tillhörde Romarriket. I början förföljdes de kristna, och de som vägrade tillbe kejsaren som gud avrättades (B, C). När kristendomen blev statsreligion byggdes kyrkor där tempel tidigare stått, och kyrkans organisation fick fungera som en sammanhållande kraft (D)."}, {"type": "order", "q": "Ordna orsakskedjan som bidrog till Romarrikets svårigheter, från först till sist.", "items": ["Perser och germaner blir starkare än förr", "Skatterna höjs för att betala fler soldater", "Småbönder och köpmän blir fattiga och säljer sina gårdar", "Silverhalten i mynten minskar så att pengarna förlorar värde", "Handeln minskar och butiker och hantverk stängs"], "fb": "Hotet vid gränserna gjorde att kejsaren behövde fler soldater, så skatterna höjdes. Det blev tungt för vanliga småbönder och köpmän, som blev fattiga och sålde sina gårdar. Samtidigt blev det brist på silver, så mynten förlorade i värde. Då började folk byta varor, handeln minskade och butiker stängde."}, {"type": "tf", "q": "Bedöm om varje påstående om Romarrikets delning och fall är sant eller falskt.", "items": [{"t": "År 395 delades riket i två delar: Västrom och Östrom.", "a": true}, {"t": "Västrom styrdes från Konstantinopel.", "a": false}, {"t": "Västrom gick under år 476, när den västromerske kejsaren avsattes av en av sina egna generaler.", "a": true}, {"t": "Östrom gick under samtidigt som Västrom.", "a": false}], "fb": "År 395 delades riket. Västrom styrdes fortfarande från Rom och föll år 476. Östrom styrdes från den nya staden Konstantinopel (i dag Istanbul) och levde vidare i ungefär tusen år till."}, {"type": "single", "q": "Caesar skrev själv en bok om kriget i Gallien där han beskriver sig som hänsynslös mot en gallisk stam. Hur bör en historiker bedöma boken som källa?", "options": ["Som en förstahandskälla, men författaren hade egna motiv att påverka hur han framställdes", "Som en helt tillförlitlig andrahandskälla, eftersom Caesar var en kunnig general och ledare", "Som en oanvändbar källa, eftersom den är skriven på latin", "Som en förfalskning, eftersom ingen kan skriva en bok under ett krig"], "correct": 0, "fb": "Caesar berättar om det han själv var med om, så boken är en förstahandskälla. Men han skrev som en part i kriget, och beskriver gallerna som barbarer, så historikern måste ställa frågan i vilket syfte källan skrevs och jämföra med andra källor."}, {"type": "match", "q": "Para ihop varje månad med det den är uppkallad efter. En förklaring passar ingen av månaderna.", "pairs": [["Januari", "Guden Janus, som brukade avbildas med två ansikten"], ["Juli", "Julius Caesar"], ["Augusti", "Kejsar Augustus"], ["Juni", "Gudinnan Juno"]], "extra": ["Guden Jupiter"], "fb": "Januari är uppkallad efter Janus, vars ena ansikte såg mot framtiden och det andra mot det förgångna. Juli fick sitt namn efter Julius Caesar och augusti efter kejsar Augustus. Juni är uppkallad efter gudinnan Juno."}, {"type": "multi", "q": "Vilka påståenden om romarnas vattenhantering stämmer?", "options": ["Akvedukter ledde vatten med svag lutning från källor eller sjöar högt upp ner till städerna", "Badhusen var samlingsplatser där både fattiga och rika möttes", "Vattnet pumpades uppför med ångmaskiner", "Bara kejsaren och senatorerna fick använda vattenledningarna"], "correct": [0, 1], "fb": "A och B stämmer. Ingenjörer och lantmätare räknade ut hur mycket en akvedukt skulle luta, så att vattnet rann av sig självt. Ibland byggdes tunnlar under jord och vattenbroar, som kunde bli jättehöga. Badhusen användes av alla medborgare.\nC är fel eftersom ångmaskiner inte fanns, och D är fel eftersom många fontäner och badhus var tillgängliga för vanligt folk."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Vid sin största utbredning nådde Romarriket över tre världsdelar: Europa, {0} och {1}. Staden Londinium är dagens {2}.", "blanks": [{"options": ["Afrika", "Sydamerika", "Oceanien", "Antarktis"], "correct": 0}, {"options": ["Asien", "Nordamerika", "Australien", "Grönland"], "correct": 0}, {"options": ["London", "Paris", "Wien", "Köln"], "correct": 0}], "fb": "Romarriket låg runt Medelhavet och omfattade delar av Europa, Nordafrika (till exempel Egypten och Mauretanien) och Asien (till exempel Armenien och Mesopotamien). Londinium blev London, Lutetia Paris och Vindobona Wien."}, {"type": "sort", "q": "Placera varje påstående under rätt kategori om de kristna i Romarriket.", "categories": ["Därför lockades människor att bli kristna", "Därför förföljdes de kristna"], "items": [{"t": "Alla fick vara med i gemenskapen och känna sig betydelsefulla, även kvinnor och slavar.", "c": 0}, {"t": "Den nya tron lovade ett liv efter döden där allt skulle bli bra.", "c": 0}, {"t": "Kristna soldater vägrade döda rikets fiender.", "c": 1}, {"t": "De kristna vägrade tillbe kejsaren som en gud.", "c": 1}, {"t": "Flickor som blivit kristna vägrade gifta sig med de män som deras fäder valt.", "c": 1}, {"t": "Man såg kristna som skyldiga till rikets problem.", "c": 1}], "fb": "Kristendomen lockade eftersom den gav betydelse åt dem som annars var utanför, och eftersom den lovade ett bättre liv efter döden. De kristna förföljdes av flera skäl: de vägrade tillbe kejsaren och döda i krig, kvinnor vägrade gifta sig som deras fäder bestämt, och många menade att kristna orsakat rikets problem."}];
+const KEY = 'quiz-progress-' + META.id;
+const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const TYPE_LABEL = {
+  single: 'Enval – välj ett alternativ',
+  multi: 'Flerval – ett eller flera alternativ kan vara rätta, och ibland inget',
+  tf: 'Sant eller falskt – bedöm varje påstående för sig',
+  match: 'Para ihop – välj rätt förklaring till varje begrepp. Alla förklaringar behöver inte användas.',
+  order: 'Ordna – flytta posterna med pilarna till rätt ordning',
+  cloze: 'Lucktext – välj rätt ord för varje lucka',
+  short: 'Kort svar – skriv svaret',
+  sort: 'Sortera – placera varje påstående i rätt kategori'
+};
+const TYPE_NAME = { single: 'Enval', multi: 'Flerval', tf: 'Sant eller falskt', match: 'Para ihop', order: 'Ordna', cloze: 'Lucktext', short: 'Kort svar', sort: 'Sortera' };
+
+const app = document.getElementById('app');
+const bar = document.getElementById('bar');
+const progressText = document.getElementById('progress-text');
+document.getElementById('title').textContent = META.title;
+document.title = META.title;
+
+let idx = 0, score = 0, answers = [];
+
+/* ---------- helpers ---------- */
+function h(tag, props) {
+  const e = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (let i = 2; i < arguments.length; i++) {
+    const kids = [].concat(arguments[i]);
+    for (const c of kids) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  }
+  return e;
+}
+function rich(text) { // **fet** -> <strong>
+  const frag = document.createDocumentFragment();
+  String(text).split('**').forEach((part, i) => {
+    if (!part) return;
+    frag.append(i % 2 ? h('strong', null, part) : document.createTextNode(part));
+  });
+  return frag;
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function norm(s) { return String(s).toLowerCase().replace(/[^0-9a-zåäöéü]/g, ''); }
+function same(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
+function select(options, onChange, placeholder) {
+  const s = h('select', { onchange: onChange }, h('option', { value: '' }, placeholder || 'Välj …'));
+  options.forEach(o => s.append(h('option', { value: o.v }, o.t)));
+  return s;
+}
+function mark(el, sym) { const m = el.querySelector('.mark'); if (m) m.textContent = sym; }
+
+/* ---------- question builders ----------
+   Each returns { el, complete(), evaluate() -> {correct, partial}, reveal() } */
+function buildSingle(q, change) {
+  const name = 'q' + idx, labels = [], inputs = [];
+  const wrap = h('div', { class: 'options' });
+  q.options.forEach((t, i) => {
+    const inp = h('input', { type: 'radio', name, value: i, onchange: () => { sync(); change(); } });
+    const lab = h('label', { class: 'opt' }, inp, h('span', { class: 'mark' }), h('span', null, LETTERS[i] + ') ' + t));
+    inputs.push(inp); labels.push(lab); wrap.append(lab);
+  });
+  function sync() { labels.forEach((l, i) => l.classList.toggle('sel', inputs[i].checked)); }
+  return {
+    el: wrap,
+    complete: () => inputs.some(i => i.checked),
+    evaluate() { return { correct: inputs[q.correct].checked, partial: false }; },
+    reveal() {
+      wrap.classList.add('locked');
+      inputs.forEach((inp, i) => {
+        inp.disabled = true;
+        if (i === q.correct) { labels[i].classList.add('right'); mark(labels[i], '✓'); }
+        else if (inp.checked) { labels[i].classList.add('wrong'); mark(labels[i], '✗'); }
+      });
+    }
+  };
+}
+function buildMulti(q, change) {
+  const labels = [], inputs = [];
+  const wrap = h('div', { class: 'options' });
+  q.options.forEach((t, i) => {
+    const inp = h('input', { type: 'checkbox', value: i, onchange: () => { sync(); change(); } });
+    const lab = h('label', { class: 'opt' }, inp, h('span', { class: 'mark' }), h('span', null, LETTERS[i] + ') ' + t));
+    inputs.push(inp); labels.push(lab); wrap.append(lab);
+  });
+  function sync() { labels.forEach((l, i) => l.classList.toggle('sel', inputs[i].checked)); }
+  const picked = () => inputs.map((x, i) => x.checked ? i : -1).filter(i => i >= 0);
+  return {
+    el: wrap,
+    complete: () => true,
+    evaluate() {
+      const p = picked(), exact = same(p, q.correct);
+      return { correct: exact, partial: !exact && p.some(i => q.correct.includes(i)) };
+    },
+    reveal() {
+      wrap.classList.add('locked');
+      inputs.forEach((inp, i) => {
+        inp.disabled = true;
+        const c = q.correct.includes(i);
+        if (c) { labels[i].classList.add('right'); mark(labels[i], '✓'); }
+        else if (inp.checked) { labels[i].classList.add('wrong'); mark(labels[i], '✗'); }
+      });
+    }
+  };
+}
+function buildTF(q, change) {
+  const rows = h('div', { class: 'rows' }), state = [], items = [];
+  q.items.forEach((it, i) => {
+    const name = 'tf' + idx + '_' + i;
+    const mk = (val, text) => {
+      const inp = h('input', { type: 'radio', name, value: val, onchange: () => { state[i] = val; sync(i); change(); } });
+      return { inp, lab: h('label', null, inp, text), val };
+    };
+    const yes = mk('1', 'Sant'), no = mk('0', 'Falskt');
+    const note = h('div', { class: 'note' });
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), (i + 1) + '. ' + it.t),
+      h('div', { class: 'tfbtns' }, yes.lab, no.lab), note);
+    items.push({ yes, no, row, note, it }); rows.append(row);
+  });
+  function sync(i) { const r = items[i]; r.yes.lab.classList.toggle('sel', state[i] === '1'); r.no.lab.classList.toggle('sel', state[i] === '0'); }
+  return {
+    el: rows,
+    complete: () => q.items.every((_, i) => state[i] != null),
+    evaluate() {
+      const n = q.items.filter((it, i) => (state[i] === '1') === it.a).length;
+      return { correct: n === q.items.length, partial: n > 0 && n < q.items.length };
+    },
+    reveal() {
+      rows.classList.add('locked');
+      items.forEach((r, i) => {
+        r.yes.inp.disabled = r.no.inp.disabled = true;
+        const ok = (state[i] === '1') === r.it.a;
+        r.row.classList.add(ok ? 'right' : 'wrong'); mark(r.row, ok ? '✓ ' : '✗ ');
+        (r.it.a ? r.yes : r.no).lab.classList.add('ans');
+        if (!ok) { (r.it.a ? r.no : r.yes).lab.classList.add('bad'); r.note.textContent = 'Rätt svar: ' + (r.it.a ? 'Sant' : 'Falskt'); }
+      });
+    }
+  };
+}
+function buildMatch(q, change) {
+  const rights = q.pairs.map(p => p[1]).concat(q.extra || []);
+  const order = shuffle(rights.map((t, i) => ({ i, t })));
+  const letterOf = {}; order.forEach((o, k) => { letterOf[o.i] = LETTERS[k]; });
+  const opts = order.map((o, k) => ({ v: o.i, t: LETTERS[k] }));
+  const pool = h('div', { class: 'pool' }, order.map((o, k) => h('div', null, LETTERS[k] + ') ' + o.t)));
+  const rows = h('div', { class: 'rows' }), sels = [], notes = [], rowEls = [];
+  q.pairs.forEach((p, i) => {
+    const s = select(opts, change); sels.push(s);
+    const note = h('div', { class: 'note' }); notes.push(note);
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), p[0]), s, note);
+    rowEls.push(row); rows.append(row);
+  });
+  const all = h('div', null, pool, rows);
+  return {
+    el: all,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const n = sels.filter((s, i) => Number(s.value) === i).length;
+      return { correct: n === sels.length, partial: n > 0 && n < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, i) => {
+        s.disabled = true;
+        const ok = Number(s.value) === i;
+        rowEls[i].classList.add(ok ? 'right' : 'wrong'); mark(rowEls[i], ok ? '✓ ' : '✗ ');
+        if (!ok) notes[i].textContent = 'Rätt: ' + letterOf[i] + ') ' + q.pairs[i][1];
+      });
+    }
+  };
+}
+function buildOrder(q, change) {
+  const n = q.items.length;
+  let arr = shuffle([...q.items.keys()]);
+  while (n > 1 && arr.every((v, i) => v === i)) arr = shuffle(arr);
+  const list = h('div', { class: 'rows' });
+  let locked = false;
+  function draw() {
+    list.replaceChildren();
+    arr.forEach((v, pos) => {
+      const up = h('button', { type: 'button', 'aria-label': 'Flytta upp', disabled: locked || pos === 0, onclick: () => { [arr[pos - 1], arr[pos]] = [arr[pos], arr[pos - 1]]; draw(); } }, '↑');
+      const down = h('button', { type: 'button', 'aria-label': 'Flytta ner', disabled: locked || pos === n - 1, onclick: () => { [arr[pos + 1], arr[pos]] = [arr[pos], arr[pos + 1]]; draw(); } }, '↓');
+      const row = h('div', { class: 'row orderrow' }, h('span', { class: 'num' }, (pos + 1) + '.'), h('span', { class: 'rowtext' }, q.items[v]), locked ? null : h('div', { class: 'arrows' }, up, down));
+      if (locked) { const ok = v === pos; row.classList.add(ok ? 'right' : 'wrong'); row.prepend(h('span', { class: 'mark' }, ok ? '✓' : '✗')); }
+      list.append(row);
+    });
+  }
+  draw();
+  return {
+    el: list,
+    complete: () => true,
+    evaluate() {
+      const k = arr.filter((v, i) => v === i).length;
+      return { correct: k === n, partial: k > 0 && k < n };
+    },
+    reveal() {
+      locked = true; draw();
+      list.append(h('div', { class: 'correct-line' }, 'Rätt ordning: ' + q.items.map((t, i) => (i + 1) + '. ' + t).join('  →  ')));
+    }
+  };
+}
+function buildCloze(q, change) {
+  const wrap = h('div'), line = h('div', { class: 'cloze' }), sels = [];
+  q.text.split(/\{(\d+)\}/).forEach((part, i) => {
+    if (i % 2 === 0) { line.append(document.createTextNode(part)); return; }
+    const b = q.blanks[Number(part)];
+    const opts = shuffle(b.options.map((t, k) => ({ v: k, t })));
+    const s = select(opts, change, '…'); sels[Number(part)] = s; line.append(s);
+  });
+  wrap.append(line);
+  return {
+    el: wrap,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const k = sels.filter((s, i) => Number(s.value) === q.blanks[i].correct).length;
+      return { correct: k === sels.length, partial: k > 0 && k < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, i) => { s.disabled = true; s.classList.add(Number(s.value) === q.blanks[i].correct ? 'right' : 'wrong'); });
+      const full = q.text.replace(/\{(\d+)\}/g, (m, n) => q.blanks[Number(n)].options[q.blanks[Number(n)].correct]);
+      wrap.append(h('div', { class: 'correct-line' }, 'Rätt: ' + full));
+    }
+  };
+}
+function buildShort(q, change) {
+  const inp = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', oninput: change, 'aria-label': 'Ditt svar' });
+  const wrap = h('div', null, inp);
+  return {
+    el: wrap,
+    complete: () => inp.value.trim() !== '',
+    evaluate() { return { correct: q.answers.map(norm).includes(norm(inp.value)), partial: false }; },
+    reveal() {
+      inp.disabled = true;
+      const ok = q.answers.map(norm).includes(norm(inp.value));
+      inp.classList.add(ok ? 'right' : 'wrong');
+      if (!ok) wrap.append(h('div', { class: 'correct-line' }, 'Rätt svar: ' + q.answers[0]));
+    }
+  };
+}
+function buildSort(q, change) {
+  const cats = q.categories.map((t, i) => ({ v: i, t }));
+  const rows = h('div', { class: 'rows' }), sels = [], notes = [], rowEls = [];
+  const order = shuffle([...q.items.keys()]);
+  const pos = {};
+  order.forEach((orig, p) => {
+    const it = q.items[orig];
+    const s = select(cats, change); sels[p] = s; pos[p] = orig;
+    const note = h('div', { class: 'note' }); notes[p] = note;
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), it.t), s, note);
+    rowEls[p] = row; rows.append(row);
+  });
+  return {
+    el: rows,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const k = sels.filter((s, p) => Number(s.value) === q.items[pos[p]].c).length;
+      return { correct: k === sels.length, partial: k > 0 && k < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, p) => {
+        s.disabled = true;
+        const ok = Number(s.value) === q.items[pos[p]].c;
+        rowEls[p].classList.add(ok ? 'right' : 'wrong'); mark(rowEls[p], ok ? '✓ ' : '✗ ');
+        if (!ok) notes[p].textContent = 'Rätt: ' + q.categories[q.items[pos[p]].c];
+      });
+    }
+  };
+}
+const BUILDERS = { single: buildSingle, multi: buildMulti, tf: buildTF, match: buildMatch, order: buildOrder, cloze: buildCloze, short: buildShort, sort: buildSort };
+
+/* ---------- storage ---------- */
+function load() { try { const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ currentQuestion: idx + 1, score, answers })); } catch (e) {} }
+function clear() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+/* ---------- screens ---------- */
+function setProgress(text, pct) { progressText.textContent = text; bar.style.width = pct + '%'; }
+function show(card) { app.replaceChildren(card); window.scrollTo(0, 0); }
+
+function showIntro() {
+  setProgress('', 0);
+  const card = h('div', { class: 'card intro' },
+    h('p', { class: 'qtext' }, META.title),
+    (META.intro || []).map(t => h('p', null, t)),
+    h('p', null, 'Frågetyperna i det här quizet:'),
+    h('ul', null, META.types.map(t => h('li', null, h('strong', null, TYPE_NAME[t] + ': '), TYPE_LABEL[t].split(' – ').slice(1).join(' – ')))),
+    h('div', { class: 'actions' }, h('button', { class: 'btn', type: 'button', onclick: () => { idx = 0; score = 0; answers = []; showQuestion(); } }, 'Starta')));
+  show(card);
+}
+function showResume(saved) {
+  setProgress('', 0);
+  show(h('div', { class: 'card center' },
+    h('p', { class: 'qtext' }, 'Du har kommit till fråga ' + (saved.currentQuestion + 1) + ' av ' + quizData.length + ' (' + saved.score + ' rätt hittills)'),
+    h('div', { class: 'actions' },
+      h('button', { class: 'btn', type: 'button', onclick: () => { idx = saved.currentQuestion; score = saved.score; answers = saved.answers; showQuestion(); } }, 'Fortsätt'),
+      h('button', { class: 'btn outline', type: 'button', onclick: () => { clear(); showIntro(); } }, 'Börja om'))));
+}
+function showQuestion() {
+  const q = quizData[idx];
+  setProgress('Fråga ' + (idx + 1) + ' av ' + quizData.length, (idx / quizData.length) * 100);
+  const checkBtn = h('button', { class: 'btn', type: 'button', disabled: true }, 'Kontrollera');
+  const fbBox = h('div');
+  const actions = h('div', { class: 'actions' }, checkBtn);
+  const ctl = BUILDERS[q.type](q, () => { checkBtn.disabled = !ctl.complete(); });
+  checkBtn.disabled = !ctl.complete();
+  checkBtn.addEventListener('click', () => {
+    const res = ctl.evaluate();
+    ctl.reveal();
+    answers[idx] = res.correct ? 1 : 0;
+    if (res.correct) score++;
+    save();
+    const cls = res.correct ? 'ok' : res.partial ? 'mid' : 'no';
+    const head = res.correct ? 'Rätt.' : res.partial ? 'Delvis rätt.' : 'Fel.';
+    fbBox.className = 'feedback ' + cls;
+    fbBox.replaceChildren(h('strong', null, head), ...String(q.fb).split('\n').map(p => h('p', null, rich(p))));
+    const last = idx === quizData.length - 1;
+    actions.replaceChildren(h('button', { class: 'btn', type: 'button', onclick: () => { if (last) showResults(); else { idx++; showQuestion(); } } }, last ? 'Visa resultat' : 'Nästa fråga →'));
+    fbBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  show(h('div', { class: 'card' }, h('p', { class: 'qtext' }, rich(q.q)), h('p', { class: 'qtype' }, TYPE_LABEL[q.type]), ctl.el, actions, fbBox));
+}
+function showResults() {
+  clear();
+  setProgress('Klart', 100);
+  const by = {};
+  quizData.forEach((q, i) => { by[q.type] = by[q.type] || [0, 0]; by[q.type][1]++; if (answers[i]) by[q.type][0]++; });
+  const wrongNums = quizData.map((q, i) => answers[i] ? null : i + 1).filter(Boolean);
+  show(h('div', { class: 'card center' },
+    h('p', { class: 'qtext' }, 'Resultat'),
+    h('p', null, 'Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor'),
+    h('table', { class: 'res' }, META.types.filter(t => by[t]).map(t => h('tr', null, h('td', null, TYPE_NAME[t]), h('td', null, by[t][0] + ' av ' + by[t][1])))),
+    wrongNums.length ? h('p', { class: 'qtype' }, 'Frågor att repetera: ' + wrongNums.join(', ')) : null,
+    h('div', { class: 'actions' }, h('button', { class: 'btn', type: 'button', onclick: () => { clear(); showIntro(); } }, 'Starta om'))));
+}
+
+/* ---------- start ---------- */
+const saved = load();
+if (saved && saved.currentQuestion < quizData.length && saved.currentQuestion > 0) showResume(saved); else showIntro();
+})();
+</script>
+</body>
+</html>

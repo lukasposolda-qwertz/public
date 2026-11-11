@@ -1,0 +1,383 @@
+<!doctype html>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Otter in Väntsal</title>
+<style>
+  :root {
+    --paper: #E6ECE9;
+    --paper-raised: #FFFFFF;
+    --ink: #1B2422;
+    --ink-muted: #56625F;
+    --spruce: #23605F;
+    --spruce-fill: #FFFFFF;
+    --fog: #D6DAD5;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #13201F;
+      --paper-raised: #1A2928;
+      --ink: #E4EAE7;
+      --ink-muted: #A3B0AC;
+      --spruce: #6FB3AF;
+      --spruce-fill: #13201F;
+      --fog: #2C3B39;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #13201F;
+    --paper-raised: #1A2928;
+    --ink: #E4EAE7;
+    --ink-muted: #A3B0AC;
+    --spruce: #6FB3AF;
+    --spruce-fill: #13201F;
+    --fog: #2C3B39;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .stage { position: fixed; inset: 0; }
+  #stage { width: 100%; height: 100%; display: block; }
+  .card {
+    position: absolute;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    width: min(380px, calc(100% - 32px));
+    background: var(--paper-raised);
+    border: 1px solid var(--fog);
+    padding: 20px 22px;
+    box-sizing: border-box;
+  }
+  .label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px; line-height: 16px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--spruce); margin: 0 0 10px;
+  }
+  h1 {
+    font-weight: 300; font-size: 30px; line-height: 36px;
+    letter-spacing: -0.02em; margin: 0 0 10px; text-wrap: balance;
+  }
+  p.body { font-size: 15px; line-height: 24px; margin: 0 0 16px; color: var(--ink); }
+  button {
+    font: inherit; font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px; letter-spacing: 0.04em;
+    background: var(--spruce); color: var(--spruce-fill);
+    border: 0; border-radius: 2px; padding: 9px 14px; cursor: pointer;
+  }
+  button:focus-visible { outline: 2px solid var(--spruce); outline-offset: 3px; }
+</style>
+
+<main class="stage">
+  <canvas id="stage" role="img" aria-label="Low poly otter drinking coffee and using Wi-Fi on a bench in a Swedish station waiting room. The loop repeats every 10 seconds."></canvas>
+</main>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const LOOP = 10;            // seconds per loop
+const TAU = Math.PI * 2;
+
+const canvas = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe6ece9);
+
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+
+scene.add(new THREE.HemisphereLight(0xfbfdfc, 0x8a9490, 1.5));
+const sun = new THREE.DirectionalLight(0xfff0dc, 1.6);
+sun.position.set(-4, 9, 7);
+scene.add(sun);
+
+// Palette: Fieldnote accents plus subject colours
+const C = {
+  fur: 0x8a5f3b, furDark: 0x5c3d25, belly: 0xe7d3a8, ink: 0x1b2422,
+  concrete: 0xcfc9bd, gravel: 0x6e6a62, rail: 0x4b4f52,
+  falu: 0x8e3f31, roof: 0x3e4a47, canopy: 0x5b6a66, bench: 0xa0744a,
+  spruce: 0x23605f, ochre: 0xc08a1e, lichen: 0xa9b795, paper: 0xf3f4f1,
+  pot: 0x8c5a3c, coffee: 0x4a2f1d, laptop: 0xb8c0bc
+};
+
+const matCache = new Map();
+function mat(color) {
+  if (!matCache.has(color)) {
+    matCache.set(color, new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.92 }));
+  }
+  return matCache.get(color);
+}
+
+function add(geo, color, { p = [0, 0, 0], s = [1, 1, 1], r = [0, 0, 0], parent = scene } = {}) {
+  const m = new THREE.Mesh(geo, mat(color));
+  m.position.set(...p);
+  m.scale.set(...s);
+  m.rotation.set(...r);
+  parent.add(m);
+  return m;
+}
+const ico = (r, d = 1) => new THREE.IcosahedronGeometry(r, d);
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const cyl = (rt, rb, h, seg = 6) => new THREE.CylinderGeometry(rt, rb, h, seg);
+
+// ---------- Station environment ----------
+add(box(40, 0.4, 6), C.concrete, { p: [0, -0.2, 0] });            // platform
+add(box(40, 0.03, 0.25), C.ochre, { p: [0, 0.015, -2.85] });      // yellow edge
+add(box(40, 1.2, 8), C.gravel, { p: [0, -1.0, -7] });             // track bed
+add(box(40, 0.06, 0.08), C.rail, { p: [0, -0.36, -6.2] });        // rails
+add(box(40, 0.06, 0.08), C.rail, { p: [0, -0.36, -7.8] });
+
+// Station building backdrop
+add(box(40, 7, 0.5), C.falu, { p: [0, 3.5, -12] });
+add(box(40.6, 0.3, 1), C.roof, { p: [0, 7.15, -12] });
+for (const x of [-12, -8, -4, 4, 8, 12]) {
+  add(box(1.4, 1.8, 0.05), C.paper, { p: [x, 3.2, -11.7] });
+}
+
+// Sign (VÄNTSAL) drawn to a canvas texture
+function signTexture(text) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#23605F';
+  g.fillRect(0, 0, 512, 128);
+  g.fillStyle = '#F3F4F1';
+  g.font = '600 64px "IBM Plex Sans", Arial, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(text, 256, 68);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+const sign = new THREE.Mesh(
+  new THREE.PlaneGeometry(3.6, 0.9),
+  new THREE.MeshBasicMaterial({ map: signTexture('VÄNTSAL') })
+);
+sign.position.set(-6, 3.3, -11.7);
+scene.add(sign);
+
+// Clock: one full hand turn per loop
+const clock = new THREE.Group();
+clock.position.set(6, 4.8, -11.6);
+scene.add(clock);
+add(cyl(0.7, 0.7, 0.06, 20), C.paper, { r: [Math.PI / 2, 0, 0], parent: clock });
+add(box(0.06, 0.55, 0.04), C.ink, { p: [0, 0.2, 0.05], parent: clock });
+
+// Canopy and posts
+for (const x of [-14, -9, 9, 14]) add(box(0.3, 4.6, 0.3), C.roof, { p: [x, 2.3, -3.5] });
+add(box(40, 0.2, 6), C.canopy, { p: [0, 4.6, -0.5] });
+
+// Bench
+add(box(2.6, 0.12, 0.7), C.bench, { p: [0, 0.6, 0.5] });
+add(box(2.6, 0.7, 0.1), C.bench, { p: [0, 1.0, -0.55] });
+for (const x of [-1.1, 1.1]) for (const z of [0.2, 0.8]) {
+  add(box(0.1, 0.6, 0.1), C.roof, { p: [x, 0.3, z] });
+}
+
+// Plant
+add(cyl(0.22, 0.18, 0.5, 8), C.pot, { p: [2.2, 0.25, 0.4] });
+add(ico(0.35, 0), C.lichen, { p: [2.2, 0.85, 0.4] });
+add(ico(0.25, 0), C.lichen, { p: [2.05, 0.7, 0.5] });
+
+// Soft floor shadow under the bench
+const shadow = new THREE.Mesh(
+  new THREE.CircleGeometry(1, 16),
+  new THREE.MeshBasicMaterial({ color: 0x8f8a80, transparent: true, opacity: 0.35, depthWrite: false })
+);
+shadow.rotation.x = -Math.PI / 2;
+shadow.position.set(0, 0.005, 0.3);
+shadow.scale.set(1.9, 1.1, 1);
+scene.add(shadow);
+
+// Train passing behind the platform
+const train = new THREE.Group();
+train.position.set(-20, -0.3, -6.8);
+scene.add(train);
+const windowMat = new THREE.MeshBasicMaterial({ color: C.paper });
+add(box(14, 2.2, 2.2), C.spruce, { p: [0, 1.1, 0], parent: train });
+add(box(14.02, 0.2, 2.22), C.ochre, { p: [0, 0.7, 0], parent: train });
+add(box(14, 0.2, 2.3), C.roof, { p: [0, 2.3, 0], parent: train });
+for (let i = 0; i < 8; i++) {
+  const w = new THREE.Mesh(box(1.2, 0.8, 0.05), windowMat);
+  w.position.set(-6 + i * 1.7, 1.5, 1.12);
+  train.add(w);
+}
+
+// ---------- Otter ----------
+const otter = new THREE.Group();
+otter.position.set(0, 0.66, 0.1);
+scene.add(otter);
+
+const body = add(ico(0.55, 1), C.fur, { p: [0, 0.55, 0], s: [0.85, 0.95, 0.78], parent: otter });
+add(ico(0.42, 1), C.fur, { p: [0, 1.25, 0.05], parent: otter });                    // head
+add(ico(0.22, 1), C.belly, { p: [0, 1.16, 0.36], s: [1.1, 0.75, 1.1], parent: otter }); // muzzle
+add(ico(0.07, 0), C.ink, { p: [0, 1.2, 0.6], parent: otter });                       // nose
+add(cyl(0.1, 0.1, 0.12, 5), C.furDark, { p: [-0.3, 1.6, -0.02], parent: otter });   // ears
+add(cyl(0.1, 0.1, 0.12, 5), C.furDark, { p: [0.3, 1.6, -0.02], parent: otter });
+add(ico(0.22, 1), C.belly, { p: [0, 0.5, 0.22], s: [0.7, 0.85, 0.45], parent: otter }); // chest
+add(ico(0.22, 1), C.furDark, { p: [-0.32, 0.18, 0.35], s: [1, 0.7, 1.6], parent: otter }); // thighs
+add(ico(0.22, 1), C.furDark, { p: [0.32, 0.18, 0.35], s: [1, 0.7, 1.6], parent: otter });
+add(ico(0.12, 1), C.furDark, { p: [-0.32, 0.06, 0.62], s: [1, 0.5, 1.2], parent: otter }); // feet
+add(ico(0.12, 1), C.furDark, { p: [0.32, 0.06, 0.62], s: [1, 0.5, 1.2], parent: otter });
+
+const eyes = [-0.17, 0.17].map(x => add(ico(0.06, 0), C.ink, { p: [x, 1.36, 0.33], parent: otter }));
+
+// Tail pivots at the rear of the body
+const tail = new THREE.Group();
+tail.position.set(0, 0.3, -0.45);
+otter.add(tail);
+add(ico(0.2, 1), C.fur, { p: [0, 0, -0.4], s: [0.6, 0.6, 1.7], parent: tail });
+
+// Laptop on the lap (lid faces the camera, Fieldnote spruce)
+add(box(0.9, 0.05, 0.6), C.laptop, { p: [0, 0.42, 0.62], parent: otter });
+add(box(0.9, 0.6, 0.04), C.spruce, { p: [0, 0.74, 0.34], r: [-0.22, 0, 0], parent: otter });
+
+// Wi-Fi: three arcs pulsing outward from one dot
+const wifi = new THREE.Group();
+wifi.position.set(0.75, 1.45, 0.2);
+otter.add(wifi);
+const arcMats = [];
+[0.22, 0.4, 0.58].forEach(R => {
+  const m = new THREE.MeshBasicMaterial({ color: C.spruce, transparent: true, opacity: 1 });
+  arcMats.push(m);
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(R, 0.035, 6, 24, 1.2), m);
+  arc.rotation.z = Math.PI / 2 - 0.6; // centre the arc upward
+  wifi.add(arc);
+});
+add(ico(0.06, 0), C.spruce, { parent: wifi });
+
+// Coffee cup, held by the left paw
+const cupG = new THREE.Group();
+otter.add(cupG);
+add(cyl(0.11, 0.09, 0.2, 8), C.paper, { parent: cupG });
+add(cyl(0.112, 0.092, 0.05, 8), C.spruce, { p: [0, -0.02, 0], parent: cupG });
+add(cyl(0.105, 0.105, 0.02, 8), C.coffee, { p: [0, 0.1, 0], parent: cupG });
+
+const pawL = add(ico(0.1, 0), C.fur, { parent: otter });
+const pawR = add(ico(0.1, 0), C.fur, { parent: otter });
+const armL = add(cyl(0.09, 0.08, 1, 6), C.fur, { parent: otter });
+const armR = add(cyl(0.09, 0.08, 1, 6), C.fur, { parent: otter });
+
+// Steam from the cup
+const STEAM_N = 8;
+const steam = [];
+for (let i = 0; i < STEAM_N; i++) {
+  const m = new THREE.MeshBasicMaterial({ color: C.paper, transparent: true, opacity: 0, depthWrite: false });
+  const s = new THREE.Mesh(ico(0.05, 0), m);
+  otter.add(s);
+  steam.push(s);
+}
+
+// ---------- Animation (everything periodic in one phase t in [0,1)) ----------
+const SHOULDER_L = new THREE.Vector3(-0.45, 0.95, 0.2);
+const SHOULDER_R = new THREE.Vector3(0.45, 0.95, 0.2);
+const CUP_REST = new THREE.Vector3(-0.55, 0.46, 0.5);
+const CUP_DRINK = new THREE.Vector3(-0.2, 1.22, 0.62);
+const KEY_R = new THREE.Vector3(0.2, 0.47, 0.62);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+const dir = new THREE.Vector3();
+
+function placeLimb(m, a, b) {
+  dir.subVectors(b, a);
+  const len = dir.length();
+  m.position.copy(a).addScaledVector(dir, 0.5);
+  m.quaternion.setFromUnitVectors(Y_AXIS, dir.normalize());
+  m.scale.set(1, len, 1);
+}
+
+const cupPos = new THREE.Vector3();
+const pawLPos = new THREE.Vector3();
+const pawRPos = new THREE.Vector3();
+
+function update(t) {
+  const ph = TAU * t;
+
+  // Drink cycle: 0 at rest, 1 at the mouth, back to 0 (periodic)
+  const lift = (1 - Math.cos(ph)) / 2;
+  const ease = lift * lift * (3 - 2 * lift);
+  cupPos.lerpVectors(CUP_REST, CUP_DRINK, ease);
+  cupG.position.copy(cupPos);
+  cupG.rotation.x = -0.7 * ease;
+
+  pawLPos.copy(cupPos).add(new THREE.Vector3(0, -0.04, 0.03));
+  pawL.position.copy(pawLPos);
+  placeLimb(armL, SHOULDER_L, pawLPos);
+
+  // Right paw taps the keyboard four times per loop
+  pawRPos.copy(KEY_R);
+  pawRPos.y += 0.03 * Math.max(0, Math.sin(ph * 4));
+  pawR.position.copy(pawRPos);
+  placeLimb(armR, SHOULDER_R, pawRPos);
+
+  // Body breathing, head nods toward the cup, tail sways
+  body.scale.y = 0.95 + 0.02 * Math.sin(ph * 2);
+  otter.children[1].rotation.x = -0.18 * ease; // head
+  tail.rotation.y = 0.35 * Math.sin(ph * 2);
+
+  // Blink three times per loop
+  const blink = Math.pow((1 + Math.cos(ph * 3)) / 2, 40);
+  eyes.forEach(e => { e.scale.y = 1 - 0.9 * blink; });
+
+  // Wi-Fi arcs pulse outward
+  arcMats.forEach((m, i) => {
+    m.opacity = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(ph - i * TAU / 3));
+  });
+
+  // Steam rises from the cup, two puffs per loop
+  steam.forEach((s, i) => {
+    const p = (t * 2 + i / STEAM_N) % 1;
+    s.position.set(
+      cupPos.x + Math.sin(TAU * p + i) * 0.06 * p,
+      cupPos.y + 0.14 + p * 0.9,
+      cupPos.z + 0.02
+    );
+    s.scale.setScalar(0.6 + 0.9 * p);
+    s.material.opacity = Math.sin(Math.PI * p) * 0.55;
+  });
+
+  // Train crosses from off-screen left to off-screen right
+  train.position.x = -20 + 40 * t;
+
+  // Clock hand: one full turn per loop
+  clock.rotation.z = -ph;
+
+  // Gentle camera orbit that returns to its start
+  camera.position.set(0.5 * Math.sin(ph), 2.3 + 0.1 * Math.sin(ph * 2), 10.5);
+  camera.lookAt(0, 1.4, 0);
+}
+
+// ---------- Loop control, resize, pause ----------
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = camera.aspect < 1 ? 46 : 32;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+let t = 0;
+let playing = true;
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  if (playing) t = (t + dt / LOOP) % 1;
+  update(t);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+update(0);
+requestAnimationFrame(frame);
+</script>

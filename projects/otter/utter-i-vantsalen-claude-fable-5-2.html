@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Utter i väntsalen</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1d2a33; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Grundinställningar ----------
+  var T = 10;                       // loopens längd i sekunder
+  var TAU = Math.PI * 2;
+  var freeze = new URLSearchParams(location.search).get('p'); // ?p=0.5 fryser loopen (felsökning)
+
+  var renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xbdd5e8);
+  var camera = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
+
+  // ---------- Hjälpfunktioner ----------
+  function mat(color, extra) {
+    var o = { color: color, flatShading: true, roughness: 0.9, metalness: 0 };
+    if (extra) for (var k in extra) o[k] = extra[k];
+    return new THREE.MeshStandardMaterial(o);
+  }
+  function add(geo, material, parent, x, y, z) {
+    var m = new THREE.Mesh(geo, material);
+    m.position.set(x || 0, y || 0, z || 0);
+    parent.add(m);
+    return m;
+  }
+  function group(parent, x, y, z) {
+    var g = new THREE.Group();
+    g.position.set(x || 0, y || 0, z || 0);
+    parent.add(g);
+    return g;
+  }
+  function rnd(i) { var x = Math.sin(i * 127.1 + 3.3) * 43758.5453; return x - Math.floor(x); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function sm(a, b, x) { var t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  function canvasTex(w, h, draw) {
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    var t = new THREE.CanvasTexture(c);
+    t.encoding = THREE.sRGBEncoding;
+    t.anisotropy = 4;
+    return t;
+  }
+  function shadows(obj) {
+    obj.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  }
+
+  // ---------- Ljus ----------
+  scene.add(new THREE.HemisphereLight(0xdfeaf5, 0x8a6a48, 0.85));
+  var sun = new THREE.DirectionalLight(0xfff0d8, 0.85);
+  sun.position.set(-5, 12, 9);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -9; sun.shadow.camera.right = 9;
+  sun.shadow.camera.top = 9; sun.shadow.camera.bottom = -9;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 40;
+  sun.shadow.bias = -0.0006;
+  scene.add(sun);
+  var rim = new THREE.DirectionalLight(0xbfd9ff, 0.45);
+  rim.position.set(3, 6, -10);
+  scene.add(rim);
+
+  // ---------- Stationshallen ----------
+  var floorTex = canvasTex(256, 256, function (g, w) {
+    var n = 4, s = w / n;
+    for (var i = 0; i < n; i++) for (var j = 0; j < n; j++) {
+      g.fillStyle = (i + j) % 2 ? '#e9dcc3' : '#b79f82';
+      g.fillRect(i * s, j * s, s, s);
+    }
+  });
+  floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+  floorTex.repeat.set(8, 3.33);
+  floorTex.magFilter = THREE.NearestFilter;
+  var floor = add(new THREE.PlaneGeometry(48, 20), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.8 }), scene, 0, 0, 4);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+
+  var ochre = mat(0xe0b04f);
+  var wallShape = new THREE.Shape();
+  wallShape.moveTo(-24, 0); wallShape.lineTo(24, 0); wallShape.lineTo(24, 14); wallShape.lineTo(-24, 14); wallShape.lineTo(-24, 0);
+  var windowXs = [-16, -8, 0, 8, 16];
+  windowXs.forEach(function (cx) {
+    var h = new THREE.Path();
+    h.moveTo(cx - 2.2, 2.4); h.lineTo(cx + 2.2, 2.4); h.lineTo(cx + 2.2, 7);
+    h.absarc(cx, 7, 2.2, 0, Math.PI, false);
+    h.lineTo(cx - 2.2, 2.4);
+    wallShape.holes.push(h);
+  });
+  var wall = add(new THREE.ExtrudeGeometry(wallShape, { depth: 0.6, bevelEnabled: false, curveSegments: 5 }), ochre, scene, 0, 0, -5.6);
+  wall.receiveShadow = true;
+  add(new THREE.BoxGeometry(48, 2.2, 0.2), mat(0x50624a), scene, 0, 1.1, -4.92);     // bröstpanel
+  add(new THREE.BoxGeometry(48, 0.18, 0.3), mat(0x3d4b39), scene, 0, 2.25, -4.9);
+  add(new THREE.BoxGeometry(0.6, 14, 20), ochre, scene, -24, 7, 4);
+  add(new THREE.BoxGeometry(0.6, 14, 20), ochre, scene, 24, 7, 4);
+  var frameMat = mat(0x3b3229);
+  windowXs.forEach(function (cx) {                                                    // spröjs
+    add(new THREE.BoxGeometry(0.12, 6.8, 0.12), frameMat, scene, cx, 5.8, -5.3);
+    add(new THREE.BoxGeometry(4.4, 0.12, 0.12), frameMat, scene, cx, 7, -5.3);
+    add(new THREE.BoxGeometry(4.4, 0.12, 0.12), frameMat, scene, cx, 4.7, -5.3);
+  });
+
+  // Skylt: Wi-Fi
+  var wifiSignTex = canvasTex(256, 160, function (g, w, h) {
+    g.fillStyle = '#1f5fa8'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#fff'; g.lineWidth = 9; g.lineCap = 'round';
+    [18, 34, 50].forEach(function (r) { g.beginPath(); g.arc(62, 100, r, -Math.PI * 0.75, -Math.PI * 0.25); g.stroke(); });
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(62, 100, 7, 0, TAU); g.fill();
+    g.font = 'bold 44px "Segoe UI", Arial, sans-serif'; g.fillText('Wi-Fi', 120, 78);
+    g.font = '24px "Segoe UI", Arial, sans-serif'; g.fillText('Gratis', 122, 114);
+  });
+  add(new THREE.PlaneGeometry(1.9, 1.2), new THREE.MeshBasicMaterial({ map: wifiSignTex }), scene, -4, 4.3, -4.97);
+
+  // Avgångstavla
+  var boardTex = canvasTex(512, 256, function (g, w, h) {
+    g.fillStyle = '#10151a'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#ffd24a'; g.font = 'bold 30px "Segoe UI", Arial, sans-serif';
+    g.fillText('Avgående tåg', 20, 42);
+    g.fillText('Spår', 430, 42);
+    g.fillStyle = '#39424a'; g.fillRect(20, 54, w - 40, 2);
+    var rows = [['14:12', 'Göteborg C', '3'], ['14:20', 'Malmö C', '5'], ['14:31', 'Uppsala C', '1'], ['14:45', 'Kiruna', '7']];
+    g.font = '28px "Segoe UI", Arial, sans-serif';
+    rows.forEach(function (r, i) {
+      var y = 96 + i * 44;
+      g.fillStyle = '#ffffff'; g.fillText(r[0], 20, y);
+      g.fillStyle = '#ffd24a'; g.fillText(r[1], 120, y);
+      g.fillStyle = '#ffffff'; g.fillText(r[2], 450, y);
+    });
+  });
+  var board = group(scene, 3.7, 5.15, -3.4);
+  add(new THREE.BoxGeometry(4.3, 2.2, 0.25), mat(0x23282d), board);
+  add(new THREE.PlaneGeometry(4.1, 2.0), new THREE.MeshBasicMaterial({ map: boardTex }), board, 0, 0, 0.13);
+  add(new THREE.BoxGeometry(0.08, 6, 0.08), mat(0x23282d), board, -1.6, 4.1, 0);
+  add(new THREE.BoxGeometry(0.08, 6, 0.08), mat(0x23282d), board, 1.6, 4.1, 0);
+
+  // Stationsklocka
+  var clockTex = canvasTex(256, 256, function (g, w) {
+    var c = w / 2;
+    g.fillStyle = '#fbfaf5'; g.beginPath(); g.arc(c, c, c, 0, TAU); g.fill();
+    g.strokeStyle = '#111'; g.lineCap = 'butt';
+    for (var i = 0; i < 60; i++) {
+      var a = i / 60 * TAU, big = i % 5 === 0;
+      g.lineWidth = big ? 9 : 3;
+      g.beginPath();
+      g.moveTo(c + Math.cos(a) * c * (big ? 0.7 : 0.84), c + Math.sin(a) * c * (big ? 0.7 : 0.84));
+      g.lineTo(c + Math.cos(a) * c * 0.93, c + Math.sin(a) * c * 0.93);
+      g.stroke();
+    }
+  });
+  var clock = group(scene, -5.6, 5.2, -3);
+  var clockBody = add(new THREE.CylinderGeometry(1, 1, 0.34, 14), mat(0x23282d), clock);
+  clockBody.rotation.x = Math.PI / 2;
+  add(new THREE.CircleGeometry(0.88, 28), new THREE.MeshBasicMaterial({ map: clockTex }), clock, 0, 0, 0.18);
+  add(new THREE.BoxGeometry(0.1, 6, 0.1), mat(0x23282d), clock, 0, 4, 0);
+  function hand(w, len, color, z) {
+    var g = group(clock, 0, 0, z);
+    add(new THREE.BoxGeometry(w, len, 0.02), new THREE.MeshBasicMaterial({ color: color }), g, 0, len / 2 - 0.1, 0);
+    return g;
+  }
+  var hourHand = hand(0.08, 0.55, 0x111111, 0.2);
+  var minuteHand = hand(0.055, 0.8, 0x111111, 0.22);
+  var secondHand = hand(0.025, 0.85, 0xd0312d, 0.24);
+  hourHand.rotation.z = -(2.1 / 12) * TAU;
+  minuteHand.rotation.z = -(6 / 60) * TAU;
+
+  // ---------- Utanför: vinter, granar, tåg, snö ----------
+  add(new THREE.PlaneGeometry(160, 60), new THREE.MeshBasicMaterial({ color: 0xbdd5e8 }), scene, 0, 20, -44);
+  add(new THREE.BoxGeometry(160, 0.6, 42), mat(0xf2f6fa), scene, 0, 0, -27);
+  add(new THREE.BoxGeometry(160, 0.5, 2.6), mat(0x8d9299), scene, 0, 0.5, -7.2);       // perrong
+  var pine = mat(0x2f5d47), snowMat = mat(0xffffff);
+  for (var i = 0; i < 20; i++) {
+    var px = -40 + i * 4.2 + rnd(i) * 2, pz = -17 - (i % 3) * 3 - rnd(i + 50) * 2, ph = 4.5 + rnd(i + 9) * 3;
+    add(new THREE.ConeGeometry(1.7, ph, 6), pine, scene, px, 0.3 + ph / 2, pz);
+    add(new THREE.ConeGeometry(0.75, ph * 0.3, 6), snowMat, scene, px, 0.3 + ph * 0.86, pz);
+  }
+
+  var train = group(scene, -70, 0, -10.4);
+  var bodyMat = mat(0x2f4a5c), roofMat = mat(0xc9d0d6), stripeMat = mat(0xeef0f2);
+  var glowMat = new THREE.MeshBasicMaterial({ color: 0xffe3a3 });
+  for (var c = 0; c < 3; c++) {
+    var car = group(train, (c - 1) * 13.6, 0, 0);
+    add(new THREE.BoxGeometry(13, 3.3, 2.6), bodyMat, car, 0, 2.65, 0);
+    add(new THREE.BoxGeometry(12.6, 0.3, 2.2), roofMat, car, 0, 4.45, 0);
+    add(new THREE.BoxGeometry(13.02, 0.3, 2.62), stripeMat, car, 0, 2.2, 0);
+    for (var wI = 0; wI < 8; wI++) add(new THREE.BoxGeometry(1.1, 0.9, 0.06), glowMat, car, -5.25 + wI * 1.5, 3.3, 1.31);
+    add(new THREE.BoxGeometry(12, 0.7, 2.2), mat(0x1c2126), car, 0, 0.75, 0);
+  }
+
+  var SNOW = 420, snowBase = [], snowPos = new Float32Array(SNOW * 3);
+  for (var s0 = 0; s0 < SNOW; s0++) {
+    snowBase.push({ x: -22 + rnd(s0) * 44, y: rnd(s0 + 1000) * 14, z: -6.2 - rnd(s0 + 2000) * 9, ph: rnd(s0 + 3000), k: 1 + Math.floor(rnd(s0 + 4000) * 2) });
+  }
+  var snowGeo = new THREE.BufferGeometry();
+  snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+  scene.add(new THREE.Points(snowGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.16, sizeAttenuation: true })));
+
+  // ---------- Bänk ----------
+  var wood = mat(0xb07a45), iron = mat(0x2b2f33);
+  var bench = group(scene, 0, 0, 0);
+  add(new THREE.BoxGeometry(5.2, 0.14, 1.5), wood, bench, 0, 0.93, 0.15);
+  [1.45, 1.85, 2.25].forEach(function (y) { add(new THREE.BoxGeometry(5.2, 0.28, 0.1), wood, bench, 0, y, -0.66); });
+  [-2.3, 0, 2.3].forEach(function (x) {
+    add(new THREE.BoxGeometry(0.12, 0.86, 1.4), iron, bench, x, 0.43, 0.15);
+    add(new THREE.BoxGeometry(0.12, 1.6, 0.12), iron, bench, x, 1.7, -0.74);
+  });
+  [-2.6, 2.6].forEach(function (x) { add(new THREE.BoxGeometry(0.14, 0.1, 1.3), iron, bench, x, 1.45, 0.1); add(new THREE.BoxGeometry(0.12, 0.5, 0.12), iron, bench, x, 1.2, 0.65); });
+  shadows(bench);
+
+  // Kanelbulle på fat
+  var fika = group(scene, 1.75, 1.0, 0.25);
+  add(new THREE.CylinderGeometry(0.42, 0.32, 0.05, 10), mat(0xf7f4ee), fika, 0, 0.025, 0);
+  var bun = add(new THREE.SphereGeometry(0.26, 7, 5), mat(0xb5762f), fika, 0, 0.17, 0);
+  bun.scale.y = 0.6;
+  add(new THREE.TorusGeometry(0.13, 0.035, 4, 8), mat(0x8a521d), fika, 0, 0.3, 0).rotation.x = Math.PI / 2;
+  for (var b = 0; b < 7; b++) {
+    var ba = b / 7 * TAU;
+    add(new THREE.BoxGeometry(0.035, 0.035, 0.035), snowMat, fika, Math.cos(ba) * 0.1, 0.33, Math.sin(ba) * 0.1);
+  }
+  shadows(fika);
+
+  // Resväska
+  var bag = group(scene, -3.7, 0, 1.0);
+  add(new THREE.BoxGeometry(1.1, 1.5, 0.55), mat(0xf2c230), bag, 0, 0.9, 0);
+  add(new THREE.BoxGeometry(1.12, 0.08, 0.57), mat(0xc99a12), bag, 0, 0.9, 0);
+  add(new THREE.BoxGeometry(0.06, 0.7, 0.06), iron, bag, -0.3, 2.0, -0.15);
+  add(new THREE.BoxGeometry(0.06, 0.7, 0.06), iron, bag, 0.3, 2.0, -0.15);
+  add(new THREE.BoxGeometry(0.7, 0.08, 0.08), iron, bag, 0, 2.35, -0.15);
+  add(new THREE.CylinderGeometry(0.09, 0.09, 0.1, 6), iron, bag, -0.4, 0.09, 0).rotation.z = Math.PI / 2;
+  add(new THREE.CylinderGeometry(0.09, 0.09, 0.1, 6), iron, bag, 0.4, 0.09, 0).rotation.z = Math.PI / 2;
+  bag.rotation.y = 0.25;
+  shadows(bag);
+
+  // ---------- Uttern ----------
+  var fur = mat(0x7a5236), furDark = mat(0x5e3d27), cream = mat(0xe2c6a4), black = mat(0x1a1513, { roughness: 0.4 });
+  var otter = group(scene, 0, 1.0, 0);
+
+  var torso = add(new THREE.SphereGeometry(1, 8, 6), fur, otter, 0, 0.95, 0);
+  torso.scale.set(0.62, 0.95, 0.55);
+  var belly = add(new THREE.SphereGeometry(1, 7, 5), cream, otter, 0, 0.92, 0.3);
+  belly.scale.set(0.44, 0.72, 0.3);
+
+  // ben och fötter
+  [-0.3, 0.3].forEach(function (x) {
+    var leg = add(new THREE.CylinderGeometry(0.17, 0.15, 0.75, 6), fur, otter, x, 0.19, 0.55);
+    leg.rotation.x = Math.PI / 2;
+    var foot = add(new THREE.SphereGeometry(1, 6, 4), furDark, otter, x, 0.14, 1.0);
+    foot.scale.set(0.2, 0.12, 0.26);
+    foot.rotation.x = 0.5;
+  });
+
+  // svans
+  var tail = group(otter, -0.35, 0.2, -0.15);
+  var tailMesh = add(new THREE.CylinderGeometry(0.06, 0.27, 1.8, 6), fur, tail, -0.9, 0, 0);
+  tailMesh.rotation.z = Math.PI / 2;
+
+  // halsduk
+  var scarf = add(new THREE.TorusGeometry(0.4, 0.13, 5, 9), mat(0x2a6fb0), otter, 0, 1.63, 0.02);
+  scarf.rotation.x = Math.PI / 2;
+  var scarfEnd = add(new THREE.BoxGeometry(0.2, 0.5, 0.07), mat(0xf2c230), otter, -0.22, 1.36, 0.47);
+  scarfEnd.rotation.set(-0.15, 0, 0.12);
+
+  // huvud
+  var head = group(otter, 0, 2.02, 0.08);
+  var skull = add(new THREE.SphereGeometry(0.5, 8, 6), fur, head);
+  skull.scale.set(1, 0.86, 0.95);
+  var muzzle = add(new THREE.SphereGeometry(0.28, 7, 5), cream, head, 0, -0.1, 0.36);
+  muzzle.scale.set(1.2, 0.78, 0.9);
+  var nose = add(new THREE.SphereGeometry(0.09, 5, 4), black, head, 0, -0.03, 0.61);
+  nose.scale.set(1.3, 0.8, 0.8);
+  var eyes = [-0.21, 0.21].map(function (x) { return add(new THREE.SphereGeometry(0.06, 6, 5), black, head, x, 0.1, 0.41); });
+  [-0.43, 0.43].forEach(function (x) { add(new THREE.SphereGeometry(0.1, 5, 4), furDark, head, x, 0.24, -0.05); });
+  var whiskerMat = mat(0xfff6e6);
+  [-1, 1].forEach(function (sd) {
+    [-0.05, 0.05].forEach(function (dy, n) {
+      var w = add(new THREE.BoxGeometry(0.34, 0.012, 0.012), whiskerMat, head, sd * 0.42, -0.12 + dy, 0.42);
+      w.rotation.set(0, sd * -0.5, sd * (n ? 0.18 : -0.12));
+    });
+  });
+
+  // armar: yaw -> axel -> armbåge -> tass
+  function makeArm(side) {
+    var yaw = group(otter, side * 0.58, 1.45, 0.1);
+    var shoulder = group(yaw);
+    add(new THREE.CylinderGeometry(0.14, 0.12, 0.55, 6), fur, shoulder, 0, -0.275, 0);
+    var elbow = group(shoulder, 0, -0.55, 0);
+    add(new THREE.CylinderGeometry(0.12, 0.1, 0.5, 6), fur, elbow, 0, -0.25, 0);
+    add(new THREE.SphereGeometry(0.125, 6, 5), furDark, elbow, 0, -0.52, 0);
+    return { yaw: yaw, shoulder: shoulder, elbow: elbow };
+  }
+  var cupArm = makeArm(1), typeArm = makeArm(-1);
+
+  // kaffemugg (pappmugg med hylsa och lock) + ånga
+  var cup = group(cupArm.elbow, 0, -0.55, 0);
+  cup.rotation.x = 1.5;
+  add(new THREE.CylinderGeometry(0.15, 0.1, 0.34, 8), mat(0xfaf7f0), cup, 0, 0.22, 0);
+  add(new THREE.CylinderGeometry(0.142, 0.118, 0.15, 8), mat(0xa8773f), cup, 0, 0.2, 0);
+  add(new THREE.CylinderGeometry(0.16, 0.16, 0.04, 8), mat(0x2b2f33), cup, 0, 0.4, 0);
+  var steamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false });
+  var steam = [];
+  for (var st = 0; st < 5; st++) steam.push(add(new THREE.IcosahedronGeometry(1, 0), steamMat, cup, 0, 0.5, 0));
+
+  // bärbar dator i knät
+  var laptop = group(otter, 0, 0.4, 0.78);
+  var alu = mat(0xc9ced3, { roughness: 0.5, metalness: 0.3 });
+  add(new THREE.BoxGeometry(0.95, 0.05, 0.62), alu, laptop);
+  add(new THREE.BoxGeometry(0.8, 0.01, 0.36), mat(0x3b4046), laptop, 0, 0.03, -0.06);
+  var lid = group(laptop, 0, 0.03, 0.31);
+  lid.rotation.x = 0.3;
+  add(new THREE.BoxGeometry(0.95, 0.62, 0.035), alu, lid, 0, 0.31, 0);
+  var screenMat = new THREE.MeshBasicMaterial({ color: 0xcfeaff });
+  add(new THREE.PlaneGeometry(0.86, 0.53), screenMat, lid, 0, 0.31, -0.02).rotation.y = Math.PI;
+  add(new THREE.CircleGeometry(0.08, 6), new THREE.MeshBasicMaterial({ color: 0xf2c230 }), lid, 0, 0.31, 0.019);
+  var screenLight = new THREE.PointLight(0x9fd0ff, 0.6, 3.5);
+  screenLight.position.set(0, 0.95, 0.75);
+  otter.add(screenLight);
+  shadows(otter);
+  steam.forEach(function (m) { m.castShadow = false; m.receiveShadow = false; });
+
+  // wifi-symbol ovanför datorn (vänd mot kameran)
+  var wifi = group(scene, -1.25, 2.95, 0.9); wifi.scale.setScalar(1.35);
+  var wifiArcs = [0.2, 0.36, 0.52].map(function (r) {
+    var m = add(new THREE.TorusGeometry(r, 0.04, 4, 10, Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x1668d8, transparent: true, depthWrite: false }), wifi);
+    m.rotation.z = Math.PI / 4;
+    return m;
+  });
+  add(new THREE.SphereGeometry(0.07, 6, 5), new THREE.MeshBasicMaterial({ color: 0x1668d8 }), wifi);
+
+  // ---------- Animation (allt är periodiskt i p ∈ [0,1) → sömlös loop) ----------
+  function resize() {
+    var w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function frame(now) {
+    var p = freeze !== null ? parseFloat(freeze) || 0 : ((now / 1000) % T) / T;
+    var sip = sm(0.30, 0.42, p) * (1 - sm(0.58, 0.70, p));
+
+    // kamera
+    var a = 0.45 + 0.27 * Math.sin(TAU * p);
+    var r = 9.8 * Math.max(1, 1.25 / camera.aspect);
+    camera.position.set(Math.sin(a) * r, 4.3 + 0.35 * Math.sin(TAU * p + 1), Math.cos(a) * r);
+    camera.lookAt(0, 2.75, 0);
+
+    // kaffearm
+    cupArm.yaw.rotation.y = lerp(-0.1, -0.75, sip);
+    cupArm.shoulder.rotation.x = lerp(-0.4, -1.3, sip);
+    cupArm.elbow.rotation.x = lerp(-1.1, -1.3, sip) + 0.02 * Math.sin(TAU * 3 * p);
+
+    // skrivarm
+    typeArm.yaw.rotation.y = 0.45 + 0.1 * Math.sin(TAU * 3 * p);
+    typeArm.shoulder.rotation.x = -0.25;
+    typeArm.elbow.rotation.x = -0.72 + 0.09 * Math.sin(TAU * 20 * p);
+
+    // huvud, ögon, kropp, svans
+    head.rotation.x = lerp(0.2, -0.2, sip) + 0.02 * Math.sin(TAU * 2 * p);
+    head.rotation.y = 0.3 * sip + 0.06 * Math.sin(TAU * 2 * p);
+    var blink = (p % 0.5) > 0.47 ? 0.12 : 1;
+    var eyeS = Math.min(blink, 1 - 0.88 * sip);
+    eyes[0].scale.y = eyes[1].scale.y = eyeS;
+    torso.scale.z = 0.55 * (1 + 0.03 * Math.sin(TAU * 3 * p));
+    belly.scale.z = 0.3 * (1 + 0.05 * Math.sin(TAU * 3 * p));
+    tail.rotation.y = 0.14 * Math.sin(TAU * 2 * p);
+    tail.rotation.z = 0.04 * Math.sin(TAU * 4 * p);
+
+    // ånga
+    for (var i = 0; i < steam.length; i++) {
+      var q = (p * 3 + i / steam.length) % 1;
+      var sc = Math.sin(Math.PI * q) * 0.075 * (1 - sip);
+      steam[i].position.set(Math.sin(q * 6 + i * 2) * 0.07, 0.48 + q * 0.7, Math.cos(q * 5 + i) * 0.05);
+      steam[i].scale.setScalar(Math.max(sc, 0.0001));
+    }
+
+    // wifi
+    wifi.quaternion.copy(camera.quaternion);
+    for (var k = 0; k < 3; k++) {
+      wifiArcs[k].material.opacity = 0.25 + 0.75 * Math.max(0, Math.sin(TAU * (4 * p - k * 0.17)));
+    }
+    screenLight.intensity = 0.55 + 0.12 * Math.sin(TAU * 5 * p);
+
+    // klocka: sekundvisaren går ett varv per loop
+    secondHand.rotation.z = -TAU * p;
+
+    // tåg: passerar bakom fönstren, står dolt bakom väggen vid loopskarven
+    train.position.x = -72 + 144 * Math.min(1, Math.max(0, (p - 0.08) / 0.8));
+
+    // snö
+    for (var n = 0; n < SNOW; n++) {
+      var sb = snowBase[n];
+      var y = (sb.y - p * 14 * sb.k) % 14; if (y < 0) y += 14;
+      snowPos[n * 3] = sb.x + 0.4 * Math.sin(TAU * (p + sb.ph));
+      snowPos[n * 3 + 1] = y + 0.3;
+      snowPos[n * 3 + 2] = sb.z;
+    }
+    snowGeo.attributes.position.needsUpdate = true;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

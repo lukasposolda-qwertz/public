@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Four Claude models, one otter</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<style>
+/* Fieldnote tokens */
+:root {
+  --paper: #F3F4F1; --paper-raised: #FFFFFF; --ink: #1B2422; --ink-muted: #56625F;
+  --spruce: #23605F; --on-spruce: #FFFFFF; --lichen: #A9B795; --ochre: #C08A1E;
+  --fog: #D6DAD5; --contour: #9DB5B1; --focus: var(--spruce);
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+  --radius-1: 2px; --radius-full: 999px;
+  --measure: 66ch; --content-max: 1560px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #13201F; --paper-raised: #1A2928; --ink: #E4EAE7; --ink-muted: #A3B0AC;
+    --spruce: #6FB3AF; --on-spruce: #13201F; --fog: #2C3B39; --contour: #2F4F4C; --ochre: #D9A53A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #13201F; --paper-raised: #1A2928; --ink: #E4EAE7; --ink-muted: #A3B0AC;
+  --spruce: #6FB3AF; --on-spruce: #13201F; --fog: #2C3B39; --contour: #2F4F4C; --ochre: #D9A53A;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/26px var(--font-sans)}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0;max-width:var(--measure)}
+a{color:var(--spruce);text-underline-offset:4px;text-decoration-thickness:1px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+em.key{font-style:normal;color:var(--spruce)}
+.display-xl{font:300 52px/56px var(--font-sans);letter-spacing:-.03em}
+.display-l{font:300 40px/46px var(--font-sans);letter-spacing:-.025em}
+.heading{font:600 22px/30px var(--font-sans);letter-spacing:-.01em}
+.body-l{font:400 18px/30px var(--font-sans)}
+.small{font:400 14px/22px var(--font-sans);color:var(--ink-muted)}
+.label{font:500 12px/16px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--spruce)}
+.figure{font:400 15px/22px var(--font-mono);font-variant-numeric:tabular-nums}
+@media (max-width:640px){.display-xl{font-size:38px;line-height:42px}.display-l{font-size:30px;line-height:36px}}
+.wordmark{display:inline-flex;align-items:center;gap:.6em;font:600 13px/1 var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);text-decoration:none}
+.wordmark::before{content:"";width:.9em;height:.9em;border-radius:var(--radius-full);background:var(--lichen);flex:none}
+.rule{border:0;border-top:2px solid var(--ink);margin:0}
+.hair{border:0;border-top:1px solid var(--fog);margin:0}
+.btn{font:600 15px/1 var(--font-sans);padding:var(--space-3) var(--space-6);border-radius:var(--radius-1);cursor:pointer;text-decoration:none;display:inline-block}
+.btn-primary{background:var(--spruce);color:var(--on-spruce);border:1px solid var(--spruce)}
+.btn-secondary{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.btn-secondary:hover{background:var(--fog)}
+.btn-sm{padding:var(--space-2) var(--space-4);font-size:14px}
+.tag{display:inline-block;font:500 12px/1 var(--font-mono);letter-spacing:.04em;padding:5px 8px;border-radius:var(--radius-1);border:1px solid var(--fog);color:var(--ink-muted)}
+table.data{border-collapse:collapse;width:100%;font-size:15px;min-width:640px}
+table.data th{font:500 12px/16px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);text-align:left;padding:8px 12px;border-bottom:2px solid var(--ink)}
+table.data td{padding:10px 12px;border-bottom:1px solid var(--fog);vertical-align:top}
+table.data td.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+table.data th.num{text-align:right}
+
+/* Layout */
+.wrap{max-width:var(--content-max);margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+.hero{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-8);align-items:center;padding-block:var(--space-12) var(--space-8)}
+.hero .copy{display:grid;gap:var(--space-6);justify-items:start}
+
+section{padding-block:var(--space-12) var(--space-16)}
+section.results{padding-block:0 var(--space-12)}
+.sec-head{display:grid;gap:var(--space-3);margin-bottom:var(--space-8)}
+.sec-head .rule{margin-bottom:var(--space-3)}
+
+/* Prompt */
+.prompt{font:400 20px/32px var(--font-mono);background:var(--paper-raised);border:1px solid var(--fog);padding:var(--space-6);max-width:none}
+.prompt b{font-weight:500;color:var(--spruce)}
+.attrib{margin-top:var(--space-4);max-width:var(--measure)}
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:0;margin-top:var(--space-8);border-top:1px solid var(--fog)}
+.term{padding:var(--space-6) var(--space-6) var(--space-6) 0;border-bottom:1px solid var(--fog);display:grid;gap:var(--space-2);align-content:start}
+.term p{font-size:15px;line-height:24px}
+
+/* Gallery */
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--space-8) var(--space-6)}
+.card{grid-column:span 3;display:grid;gap:var(--space-3);align-content:start;min-width:0}
+@media (max-width:1100px){.card{grid-column:span 6}}
+@media (max-width:640px){.card{grid-column:span 12}}
+.stage{position:relative;aspect-ratio:4/5;background:#16202e;border-top:2px solid var(--ink);overflow:hidden}
+.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#16202e}
+@media (max-width:1100px){.stage{aspect-ratio:16/10}}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-3);flex-wrap:wrap}
+.card-head .figure{color:var(--ink-muted);font-size:13px}
+.card-actions{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center}
+.card-tags{display:flex;gap:var(--space-2);flex-wrap:wrap}
+
+/* Prose columns */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:var(--space-12) var(--space-8)}
+.two .col{display:grid;gap:var(--space-4);align-content:start}
+.list{margin:0;padding:0;list-style:none;display:grid;gap:0;border-top:1px solid var(--fog)}
+.list li{padding:var(--space-4) 0;border-bottom:1px solid var(--fog);max-width:var(--measure);display:grid;gap:2px}
+.list li strong{font-weight:600}
+.scroll{overflow-x:auto}
+.note{background:var(--paper-raised);border:1px solid var(--fog);padding:var(--space-6);display:grid;gap:var(--space-3);max-width:none}
+footer{padding-block:var(--space-8) var(--space-12);display:grid;gap:var(--space-4)}
+footer .row{display:flex;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="copy">
+      <h1 class="display-xl">Four Claude models, one <em class="key">otter</em></h1>
+    </div>
+  </header>
+
+  <section id="results" class="results">
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- THE PROMPT -->
+  <section id="prompt">
+    <div class="sec-head">
+      <hr class="rule">
+      <span class="label">The prompt</span>
+      <h2 class="display-l">One sentence, eight requirements</h2>
+      <p class="body-l">Each model got exactly this text. It reads like a joke, but every phrase adds a constraint the model has to satisfy at the same time.</p>
+    </div>
+    <p class="prompt">create a <b>low poly</b> <b>3D</b> <b>otter</b> <b>drinking coffee</b> and <b>using wifi</b> in a <b>swedish train station</b> in a <b>seamless loop</b> using <b>Three.js</b></p>
+
+    <p class="small attrib">This prompt and the idea of the test are inspired by Ethan Mollick's otter test. He repeats the same otter request with every new AI model to show how fast their abilities develop. See <a href="https://www.oneusefulthing.org/p/the-recent-history-of-ai-in-32-otters" target="_blank" rel="noopener">The recent history of AI in 32 otters →</a></p>
+
+    <div class="terms">
+      <div class="term"><span class="label">Low poly</span><p>A style where everything is built from a small number of flat-coloured triangles, like folded paper or early 3D games. There are no smooth curves and no photo textures, so the otter has to be recognisable from a handful of simple shapes.</p></div>
+      <div class="term"><span class="label">3D</span><p>The scene has real depth. A virtual camera looks at it, lights cast shadows, and the viewpoint can move without the picture falling apart. This is different from a flat drawing or a video.</p></div>
+      <div class="term"><span class="label">Three.js</span><p>A free JavaScript library that draws 3D graphics inside a web page. There is no 3D editor and no ready-made model. The model must write code that places every shape, colour and light by number, and the result runs in any browser.</p></div>
+      <div class="term"><span class="label">Drinking coffee</span><p>An action, not a pose. We should see a cup, steam and a paw that lifts the cup to the mouth and puts it down again.</p></div>
+      <div class="term"><span class="label">Using wifi</span><p>Wifi is invisible, so the model has to decide how to show it. Typical answers are a phone in a paw, pulsing signal arcs and the familiar wifi sign on a wall.</p></div>
+      <div class="term"><span class="label">Swedish train station</span><p>This asks for local detail: platform, tracks, a train, snow, station signs and departure boards with Swedish words. A generic grey platform does not count.</p></div>
+      <div class="term"><span class="label">Seamless loop</span><p>The animation has to end exactly where it begins, so it can play forever with no jump, like a GIF that never stutters. Every moving thing must come back to its starting position at the same moment.</p></div>
+      <div class="term"><span class="label">Otter</span><p>Not a bear, not a cat. An otter has a long body, a thick tail, small round ears and whiskers. A model that has never seen the result has to get this across in blocks and triangles.</p></div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section id="why">
+    <div class="sec-head">
+      <hr class="rule">
+      <span class="label">Why this test</span>
+      <h2 class="display-l">Silly on the surface, demanding underneath</h2>
+    </div>
+    <div class="two">
+      <div class="col">
+        <h3 class="heading">Why it is interesting</h3>
+        <ul class="list">
+          <li><strong>You can see the result.</strong><span class="small" style="color:inherit">Most model comparisons are tables of scores. Here anyone can press play and judge in ten seconds whether it works.</span></li>
+          <li><strong>It tests many skills at once.</strong><span class="small" style="color:inherit">Spatial reasoning, programming, art direction, animation timing and general knowledge about otters and Sweden all have to line up in one file.</span></li>
+          <li><strong>There is no single right answer.</strong><span class="small" style="color:inherit">Four models make four different otters, stations and camera angles. The differences show taste and priorities, not only correctness.</span></li>
+          <li><strong>It is hard to memorise.</strong><span class="small" style="color:inherit">Nobody has a stored answer for this exact combination, so the model must build it from scratch.</span></li>
+          <li><strong>Failures are easy to spot.</strong><span class="small" style="color:inherit">A floating paw, a jump at the loop point or an otter that looks like a potato is obvious to a non-expert.</span></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 class="heading">Why it is challenging</h3>
+        <ul class="list">
+          <li><strong>The model works blind.</strong><span class="small" style="color:inherit">It writes numbers for positions, angles and colours and cannot look at the picture while writing. A paw that is 0.2 units off ends up inside the head.</span></li>
+          <li><strong>Everything is built from code.</strong><span class="small" style="color:inherit">An otter body, a train and a departure board all come from geometry and canvas drawing written by hand in one file.</span></li>
+          <li><strong>The loop is maths.</strong><span class="small" style="color:inherit">Each motion needs a whole number of cycles per loop. One careless speed value and the animation visibly jumps when it restarts.</span></li>
+          <li><strong>Low poly leaves nowhere to hide.</strong><span class="small" style="color:inherit">With only a few shapes, each choice of proportion decides whether it reads as an otter or as a brown blob.</span></li>
+          <li><strong>The requirements compete.</strong><span class="small" style="color:inherit">More detail costs performance and code length. More motion makes the loop harder to close.</span></li>
+          <li><strong>Library details matter.</strong><span class="small" style="color:inherit">Three.js changes between versions. Using the wrong function name or colour setting can break the page or wash out the colours.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <hr class="hair">
+    <div class="row">
+      <span class="small">© 2026 Lukas Posolda</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+const MODELS = [
+  {id:'haiku', name:'Claude Haiku 5.5', maker:'Anthropic', file:'otter-claude-haiku-5-5-clean.html', three:'0.169', loop:10, kb:14.2, how:'Single HTML file', tags:['Smallest','Three.js 0.169']},
+  {id:'sonnet', name:'Claude Sonnet 5.5', maker:'Anthropic', file:'otter-sonnet-5-5.html', three:'r128', loop:12, kb:20.5, how:'Single HTML file', tags:['Mid-size','Three.js r128']},
+  {id:'opus', name:'Claude Opus 5.5', maker:'Anthropic', file:'otter-station-claude-opus-5-5-fixed.html', three:'r128', loop:12, kb:33.5, how:'Single HTML file', tags:['Large','Three.js r128']},
+  {id:'fable', name:'Claude Fable 5.2', maker:'Anthropic', file:'utter-i-vantsalen-claude-fable-5-2.html', three:'r128', loop:10, kb:19.8, how:'Single HTML file', tags:['Largest','Three.js r128']}
+];
+const grid = document.getElementById('grid');
+const state = {};
+
+MODELS.forEach(m=>{
+  const c = document.createElement('article'); c.className='card'; c.id='card-'+m.id;
+  c.innerHTML =
+   '<div class="stage" data-stage></div>'+
+   '<div class="card-head"><h3 class="heading">'+m.name+'</h3>'+
+   '<a class="small" href="'+m.file+'" target="_blank" rel="noopener">Full page →</a></div>';
+  grid.appendChild(c);
+});
+
+function frame(m){const f=document.createElement('iframe');f.src=m.file;f.title=m.name+' animation';f.allow='fullscreen';f.setAttribute('sandbox','allow-scripts allow-same-origin');return f;}
+function start(m){
+  if(state[m.id])return;
+  const st=document.querySelector('#card-'+m.id+' [data-stage]');
+  const f=frame(m); st.appendChild(f); state[m.id]=f;
+}
+MODELS.forEach((m,i)=>setTimeout(()=>start(m),i*300));
+</script>
+</body>
+</html>

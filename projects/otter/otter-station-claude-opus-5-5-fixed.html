@@ -1,0 +1,601 @@
+<title>Otter on Platform 3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: one full-bleed WebGL stage, a station-sign plate top-left, a slim transport bar bottom. Single dusk look by choice. */
+:root {
+  --night: #141c2b;
+  --ink: #eef1f6;
+  --muted: #a3afc4;
+  --signal: #f2c14e;
+  --sign-blue: #1f4e8c;
+  --panel: rgba(16, 23, 37, 0.74);
+  --font-sign: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-ui: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--night); color: var(--ink); font-family: var(--font-ui); overflow: hidden; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+
+.plate {
+  position: fixed; top: 0; left: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+}
+.sign {
+  display: inline-block; align-self: flex-start;
+  background: var(--sign-blue); color: #fff;
+  font-family: var(--font-sign); font-weight: 600; font-size: 1.5rem; letter-spacing: 0.02em;
+  padding: 2px 14px 3px; border: 2px solid rgba(255,255,255,0.85); border-radius: 3px;
+}
+.sub { font-family: var(--font-sign); font-weight: 500; font-size: 0.95rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+.hud {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; align-items: center; gap: 12px; pointer-events: none;
+}
+.hud > * { pointer-events: auto; }
+#toggle {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.22);
+  background: var(--panel); color: var(--ink); display: grid; place-items: center; cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+#toggle:hover { border-color: var(--signal); }
+#toggle:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+.track { flex: 0 1 160px; min-width: 60px; height: 3px; background: rgba(255,255,255,0.18); border-radius: 2px; overflow: hidden; }
+#prog { height: 100%; width: 100%; background: var(--signal); transform-origin: left center; transform: scaleX(0); }
+.loop { font-family: var(--font-sign); font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
+#err[hidden] { display: none; }
+#err { position: fixed; inset: 0; display: grid; place-items: center; padding-inline: max(16px, env(safe-area-inset-left, 0px)); color: var(--muted); text-align: center; }
+</style>
+
+<div id="stage" role="img" aria-label="Low-poly 3D animation: an otter on a bench at a snowy Swedish train station sips coffee and types on a laptop over wifi while a train passes behind it."></div>
+
+<header class="plate">
+  <span class="sign">Uttersjö</span>
+  <span class="sub">Spår 3 · 07:39</span>
+</header>
+
+<div class="hud">
+  <button id="toggle" type="button" aria-label="Pause animation">
+    <svg id="icoPause" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/></svg>
+    <svg id="icoPlay" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" hidden><path d="M4 2.5v11a.8.8 0 0 0 1.2.7l9-5.5a.8.8 0 0 0 0-1.4l-9-5.5A.8.8 0 0 0 4 2.5z" fill="currentColor"/></svg>
+  </button>
+  <div class="track" aria-hidden="true"><div id="prog"></div></div>
+  <span class="loop">12 s loop</span>
+</div>
+
+<div id="err" hidden>The 3D scene could not start. WebGL may be turned off in this browser.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  if (!window.THREE) { document.getElementById('err').hidden = false; return; }
+
+  // ---------- timing helpers (everything is a pure function of loop phase p in [0,1)) ----------
+  const T = 12, TAU = Math.PI * 2;
+  const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
+  const ss = x => { x = clamp01(x); return x * x * (3 - 2 * x); };
+  const win = (p, a, b, r) => Math.min(ss((p - a) / r), 1 - ss((p - b + r) / r));
+  const bump = (p, c, w) => { let d = Math.abs(p - c); d = Math.min(d, 1 - d); return d < w ? 0.5 + 0.5 * Math.cos(Math.PI * d / w) : 0; };
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const fract = x => ((x % 1) + 1) % 1;
+  function rng(seed) { return () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const rand = rng(11);
+
+  // ---------- renderer ----------
+  const stage = document.getElementById('stage');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: true }); }
+  catch (e) { document.getElementById('err').hidden = false; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x2a3350, 20, 62);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 300);
+
+  const M = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, flatShading: true, roughness: 0.85, metalness: 0 }, o || {}));
+  const B = (color, o) => new THREE.MeshBasicMaterial(Object.assign({ color }, o || {}));
+  function add(geo, mat, parent, pos, rot, scl, shadow) {
+    const m = new THREE.Mesh(geo, mat);
+    if (pos) m.position.set(pos[0], pos[1], pos[2]);
+    if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
+    if (scl) m.scale.set(scl[0], scl[1], scl[2]);
+    m.castShadow = shadow !== false; m.receiveShadow = true;
+    (parent || scene).add(m); return m;
+  }
+  const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+  const ico = (r, d) => new THREE.IcosahedronGeometry(r, d || 0);
+  const cyl = (a, b, h, s) => new THREE.CylinderGeometry(a, b, h, s || 6);
+
+  // ---------- sky ----------
+  {
+    const g = new THREE.SphereGeometry(140, 24, 16);
+    const top = new THREE.Color(0x0c1222), mid = new THREE.Color(0x26355a), hor = new THREE.Color(0x8c6a7c);
+    const pa = g.attributes.position, cols = [];
+    for (let i = 0; i < pa.count; i++) {
+      const y = pa.getY(i) / 140;
+      const c = y > 0.12 ? mid.clone().lerp(top, clamp01((y - 0.12) / 0.6)) : hor.clone().lerp(mid, clamp01((y + 0.02) / 0.14));
+      cols.push(c.r, c.g, c.b);
+    }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    scene.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false })));
+    add(ico(3.2, 1), B(0xf3ead2, { fog: false }), scene, [-38, 34, -110], null, null, false);
+  }
+
+  // ---------- lights ----------
+  scene.add(new THREE.HemisphereLight(0x8a9cc4, 0x2a2232, 0.6));
+  const key = new THREE.DirectionalLight(0xffdcae, 0.75);
+  key.position.set(4, 12, 8); key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  Object.assign(key.shadow.camera, { left: -7, right: 7, top: 7, bottom: -7, near: 1, far: 32 });
+  key.shadow.bias = -0.0008;
+  scene.add(key);
+  const moon = new THREE.DirectionalLight(0x9fb2ff, 0.3); moon.position.set(-10, 14, -12); scene.add(moon);
+  for (const x of [-2.8, 2.8]) { const l = new THREE.PointLight(0xffd59a, 0.7, 9, 2); l.position.set(x, 3.8, 1.2); scene.add(l); }
+
+  // ---------- platforms & track ----------
+  const concrete = M(0x878b94), snowM = M(0xe4eaf3), gravel = M(0x4a4549), steel = M(0xa3a9b2, { metalness: 0.5, roughness: 0.45 });
+  add(box(100, 1.2, 10.6), concrete, scene, [0, -0.6, 2.7], null, null, false);
+  add(box(100, 0.02, 0.5), M(0xb8bbc1), scene, [0, 0.01, -1.95], null, null, false);
+  add(box(100, 0.02, 0.08), M(0xf4f3ee), scene, [0, 0.015, -1.55], null, null, false);
+  add(box(100, 0.06, 0.3), M(0xd4cdbd), scene, [0, 0.03, -2.45], null, null, false);
+  add(box(100, 0.3, 4), gravel, scene, [0, -1.35, -4.6], null, null, false);
+  for (const z of [-3.88, -5.32]) add(box(100, 0.12, 0.08), steel, scene, [0, -1.08, z], null, null, false);
+  {
+    const n = 154, im = new THREE.InstancedMesh(box(0.22, 0.08, 2.3), M(0x5b5450), n), d = new THREE.Object3D();
+    for (let i = 0; i < n; i++) { d.position.set(-50 + i * 0.65, -1.18, -4.6); d.updateMatrix(); im.setMatrixAt(i, d.matrix); }
+    im.receiveShadow = true; scene.add(im);
+  }
+  add(box(100, 1.2, 5), snowM, scene, [0, -0.6, -9.1], null, null, false);
+  add(new THREE.PlaneGeometry(220, 80), snowM, scene, [0, -0.02, -50], [-Math.PI / 2, 0, 0], null, false);
+
+  // canopy
+  const canopyM = M(0x39404d), trimM = M(0x2c323d);
+  add(box(16, 0.18, 5.4), canopyM, scene, [0, 4.3, 1.0], null, null, false);
+  add(box(16, 0.42, 0.12), trimM, scene, [0, 4.12, 3.68], null, null, false);
+  add(box(16, 0.42, 0.12), trimM, scene, [0, 4.12, -1.68], null, null, false);
+  for (const x of [-4.6, 4.6]) add(cyl(0.12, 0.12, 4.3, 8), trimM, scene, [x, 2.15, 1.0]);
+  const glowStrip = M(0xfff1d0, { emissive: 0xffdca0, emissiveIntensity: 1 });
+  for (const z of [0.1, 2.0]) add(box(14, 0.05, 0.16), glowStrip, scene, [0, 4.19, z], null, null, false);
+
+  // wifi access point on canopy underside
+  const apPos = new THREE.Vector3(1.7, 4.1, 0.9);
+  add(cyl(0.2, 0.2, 0.07, 10), M(0xf2f3f5), scene, [apPos.x, 4.17, apPos.z], null, null, false);
+  const apLed = add(ico(0.03, 0), B(0x7fe0c4), scene, [apPos.x + 0.12, 4.13, apPos.z + 0.08], null, null, false);
+
+  // ---------- bench ----------
+  {
+    const bench = new THREE.Group(); bench.position.set(-0.1, 0, 0.55); scene.add(bench);
+    const slat = M(0x9a6a3f), iron = M(0x22252b);
+    for (let i = 0; i < 4; i++) add(box(2.4, 0.05, 0.13), slat, bench, [0, 0.48, -0.22 + i * 0.165]);
+    for (let i = 0; i < 2; i++) add(box(2.4, 0.13, 0.04), slat, bench, [0, 0.74 + i * 0.21, -0.32 - i * 0.03], [-0.15, 0, 0]);
+    for (const x of [-1, 1]) {
+      add(box(0.06, 0.48, 0.06), iron, bench, [x, 0.24, 0.2]);
+      add(box(0.06, 0.48, 0.06), iron, bench, [x, 0.24, -0.24]);
+      add(box(0.06, 0.05, 0.55), iron, bench, [x, 0.44, -0.02]);
+      add(box(0.05, 0.62, 0.05), iron, bench, [x, 0.78, -0.33], [-0.15, 0, 0]);
+    }
+  }
+
+  // ---------- otter ----------
+  const fur = M(0x6c482c), furLight = M(0xcaa27a), noseM = M(0x1c1411, { roughness: 0.4 }), eyeM = M(0x0c0a09, { roughness: 0.2 });
+  const otter = new THREE.Group(); otter.position.set(-0.15, 0.5, 0.68); scene.add(otter);
+  const torso = new THREE.Group(); otter.add(torso);
+  add(ico(0.5, 1), fur, torso, [0, 0.5, 0], null, [0.78, 1.0, 0.7]);
+  add(ico(0.42, 1), furLight, torso, [0, 0.52, 0.12], null, [0.68, 0.86, 0.6]);
+  for (const s of [-1, 1]) {
+    add(ico(0.2, 0), fur, otter, [s * 0.18, 0.14, 0.32], null, [0.8, 0.6, 1.3]);
+    add(ico(0.1, 0), fur, otter, [s * 0.2, -0.1, 0.62], null, [1, 0.6, 1.4]);
+  }
+  const tailSegs = [];
+  for (let i = 0; i < 5; i++) tailSegs.push(add(ico(0.14 - i * 0.02, 0), fur, otter, [0, 0, 0], null, [1, 0.7, 1.3]));
+
+  const neck = new THREE.Group(); neck.position.set(0, 0.98, 0.05); neck.rotation.order = 'YXZ'; torso.add(neck);
+  const head = new THREE.Group(); head.position.set(0, 0.2, 0.04); head.rotation.order = 'YXZ'; neck.add(head);
+  add(ico(0.32, 1), fur, head, [0, 0, 0], null, [1, 0.88, 0.95]);
+  add(ico(0.19, 1), furLight, head, [0, -0.08, 0.24], null, [1.25, 0.8, 0.85]);
+  add(ico(0.055, 0), noseM, head, [0, -0.02, 0.4], null, [1.3, 0.8, 1]);
+  const eyes = [], ears = [];
+  const hiM = B(0xffffff);
+  for (const s of [-1, 1]) {
+    const e = add(ico(0.045, 1), eyeM, head, [s * 0.13, 0.06, 0.272]);
+    add(ico(0.013, 0), hiM, e, [0.014, 0.018, 0.034], null, null, false);
+    eyes.push(e);
+    const ear = add(ico(0.075, 0), fur, head, [s * 0.22, 0.19, -0.05], null, [1, 0.8, 0.6]);
+    ear.userData.s = s; ears.push(ear);
+    for (let k = 0; k < 3; k++) add(box(0.2, 0.006, 0.006), M(0xece4d4), head, [s * 0.2, -0.1 + (k - 1) * 0.025, 0.31], [0, -s * 0.3, s * (k - 1) * 0.18], null, false);
+  }
+
+  // arms (stretched between shoulder and paw each frame)
+  const armGeo = cyl(0.075, 0.062, 1, 6);
+  const armL = add(armGeo, fur, otter), armR = add(armGeo, fur, otter);
+  const pawL = add(ico(0.08, 0), fur, otter), pawR = add(ico(0.08, 0), fur, otter);
+  const shL = new THREE.Vector3(-0.29, 0.84, 0.17), shR = new THREE.Vector3(0.29, 0.84, 0.17);
+  const UP = new THREE.Vector3(0, 1, 0), tmpV = new THREE.Vector3();
+  function limb(mesh, a, b) {
+    tmpV.copy(b).sub(a); const len = tmpV.length();
+    mesh.position.copy(a).addScaledVector(tmpV, 0.5);
+    mesh.quaternion.setFromUnitVectors(UP, tmpV.normalize());
+    mesh.scale.set(1, len, 1);
+  }
+
+  // coffee cup
+  const cup = new THREE.Group(); otter.add(cup);
+  add(cyl(0.1, 0.075, 0.24, 10), M(0xf4f0e9), cup);
+  add(cyl(0.104, 0.092, 0.09, 10), M(0x9a6941), cup);
+  add(cyl(0.108, 0.105, 0.03, 10), M(0x2a2a2e), cup, [0, 0.13, 0]);
+  add(cyl(0.05, 0.07, 0.03, 10), M(0x2a2a2e), cup, [0, 0.155, 0]);
+  const restCup = new THREE.Vector3(-0.38, 0.64, 0.56), sipCup = new THREE.Vector3(-0.05, 1.03, 0.62);
+
+  // laptop on lap
+  const laptop = new THREE.Group(); laptop.position.set(0.02, 0.33, 0.58); otter.add(laptop);
+  const alu = M(0xb9bfc9, { metalness: 0.3, roughness: 0.5 });
+  add(box(0.6, 0.03, 0.4), alu, laptop);
+  add(box(0.52, 0.006, 0.2), M(0x30343b), laptop, [0, 0.017, 0.03], null, null, false);
+  const lid = new THREE.Group(); lid.position.set(0, 0.015, -0.2); lid.rotation.x = 0.26; laptop.add(lid);
+  add(box(0.6, 0.4, 0.02), alu, lid, [0, 0.2, 0]);
+  add(cyl(0.05, 0.05, 0.004, 10), M(0xf2c14e), lid, [0, 0.22, 0.012], [Math.PI / 2, 0, 0], null, false);
+  {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 160;
+    const g = c.getContext('2d');
+    g.fillStyle = '#0f1a2e'; g.fillRect(0, 0, 256, 160);
+    g.fillStyle = '#1f4e8c'; g.fillRect(0, 0, 256, 22);
+    g.fillStyle = '#7fe0c4'; g.fillRect(12, 40, 120, 10);
+    g.fillStyle = '#c9d3e6'; for (let i = 0; i < 6; i++) g.fillRect(12, 62 + i * 14, 80 + ((i * 53) % 140), 6);
+    const tex = new THREE.CanvasTexture(c);
+    add(box(0.54, 0.34, 0.003), new THREE.MeshBasicMaterial({ map: tex }), lid, [0, 0.2, -0.012], null, null, false);
+  }
+  const screenLight = new THREE.PointLight(0xa8ccff, 0.9, 1.6, 2); screenLight.position.set(0, 0.22, -0.18); lid.add(screenLight);
+
+  // ---------- steam ----------
+  const steamM = [], steam = [];
+  for (let i = 0; i < 10; i++) {
+    const m = B(0xffffff, { transparent: true, opacity: 0, depthWrite: false });
+    steamM.push(m); steam.push(add(ico(0.03, 0), m, scene, [0, 0, 0], null, null, false));
+  }
+
+  // ---------- wifi symbol + packets ----------
+  const wifi = new THREE.Group(); scene.add(wifi);
+  const wifiMats = [];
+  {
+    const dotM = B(0x7fe0c4, { transparent: true }); wifiMats.push(dotM);
+    add(ico(0.03, 1), dotM, wifi, [0, 0, 0], null, null, false);
+    [0.08, 0.15, 0.22].forEach(r => {
+      const m = B(0x7fe0c4, { transparent: true, side: THREE.DoubleSide }); wifiMats.push(m);
+      add(new THREE.TorusGeometry(r, 0.018, 4, 10, Math.PI / 2), m, wifi, [0, 0, 0], [0, 0, Math.PI / 4], null, false);
+    });
+  }
+  const packets = [];
+  for (let i = 0; i < 6; i++) packets.push(add(new THREE.OctahedronGeometry(0.04), B(0xaef2de), scene, [0, 0, 0], null, null, false));
+  const laptopWorld = new THREE.Vector3(), wifiAnchor = new THREE.Vector3();
+  let packetCurve = null;
+
+  // ---------- train ----------
+  const train = new THREE.Group(); train.position.set(-60, 0, -4.6); scene.add(train);
+  const trainBody = M(0xe8ebee, { roughness: 0.55 }), stripeM = M(0xb3342b), winM = M(0x1d2230, { emissive: 0xffd28a, emissiveIntensity: 0.32, roughness: 0.3 }), underM = M(0x1f2125), doorM = M(0xcdd2d8);
+  function carriage(x0, len) {
+    const g = new THREE.Group(); g.position.x = x0; train.add(g);
+    add(box(len, 2.7, 2.9), trainBody, g, [0, 0.65, 0]);
+    add(box(len + 0.02, 0.75, 2.92), winM, g, [0, 1.15, 0], null, null, false);
+    add(box(len + 0.02, 0.18, 2.92), stripeM, g, [0, 0.33, 0], null, null, false);
+    add(box(len - 0.6, 0.4, 2.4), underM, g, [0, -0.88, 0], null, null, false);
+    for (let x = -len / 2 + 1; x < len / 2 - 0.5; x += 1.4) add(box(0.12, 0.77, 2.94), trainBody, g, [x, 1.15, 0], null, null, false);
+    for (const dx of [-len / 2 + 1.8, len / 2 - 1.8]) {
+      add(box(1.1, 2.2, 2.94), doorM, g, [dx, 0.45, 0], null, null, false);
+      add(box(0.55, 0.65, 2.96), winM, g, [dx, 1.05, 0], null, null, false);
+    }
+    for (const dx of [-len / 2 + 2.2, len / 2 - 2.2]) add(box(2.2, 0.32, 2.2), underM, g, [dx, -0.94, 0], null, null, false);
+    return g;
+  }
+  carriage(7.2, 13); carriage(-7.2, 13);
+  add(box(1.2, 2.3, 2.4), underM, train, [0, 0.55, 0], null, null, false);
+  {
+    const sh = new THREE.Shape();
+    sh.moveTo(0, -0.7); sh.lineTo(1.4, -0.7); sh.lineTo(1.9, -0.2); sh.lineTo(1.55, 0.5); sh.lineTo(0, 2.0); sh.lineTo(0, -0.7);
+    const ng = new THREE.ExtrudeGeometry(sh, { depth: 2.9, bevelEnabled: false }); ng.translate(0, 0, -1.45);
+    add(ng, trainBody, train, [13.7, 0, 0], null, null, false);
+    const ws = add(box(0.05, 1.2, 2.5), M(0x161a24, { roughness: 0.2, metalness: 0.4 }), train, [13.7 + 0.8 + 0.03, 1.27, 0], [0, 0, 0.757], null, false);
+    ws.position.x += 0.0;
+    add(box(1.9, 0.18, 2.92), stripeM, train, [13.7 + 0.8, 0.33, 0], null, null, false);
+    for (const z of [-0.9, 0.9]) add(box(0.08, 0.14, 0.32), B(0xfff6dc), train, [13.7 + 1.88, -0.25, z], null, null, false);
+    for (const z of [-1.0, 1.0]) add(box(0.06, 0.12, 0.2), B(0xff4030), train, [-13.72, -0.2, z], null, null, false);
+    const hl = new THREE.PointLight(0xfff0d0, 2.2, 12, 2); hl.position.set(16.5, 0.2, 1.5); train.add(hl);
+  }
+
+  // ---------- departure board ----------
+  const boardFont = '"Barlow Condensed", "Arial Narrow", Arial, sans-serif';
+  const boardCanvas = document.createElement('canvas'); boardCanvas.width = 1024; boardCanvas.height = 368;
+  const boardTex = new THREE.CanvasTexture(boardCanvas);
+  const rows = [
+    ['07:42', 'Gävle C', '2', ''],
+    ['07:51', 'Göteborg C', '5', 'Ny tid 07:58'],
+    ['08:04', 'Uppsala C', '3', ''],
+    ['08:10', 'Östersund C', '1', 'Inställt'],
+  ];
+  function drawBoard() {
+    const g = boardCanvas.getContext('2d');
+    g.fillStyle = '#0a1430'; g.fillRect(0, 0, 1024, 368);
+    g.fillStyle = '#f5f2e6'; g.font = '600 58px ' + boardFont; g.textBaseline = 'alphabetic';
+    g.fillText('Avgångar', 30, 66);
+    g.fillStyle = '#8fa0c4'; g.font = '500 34px ' + boardFont; g.textAlign = 'right'; g.fillText('Departures', 994, 64); g.textAlign = 'left';
+    g.fillStyle = '#2a3a66'; g.fillRect(30, 84, 964, 3);
+    g.fillStyle = '#8fa0c4'; g.font = '500 28px ' + boardFont;
+    g.fillText('Tid', 30, 122); g.fillText('Till', 170, 122); g.fillText('Spår', 560, 122); g.fillText('Anmärkning', 680, 122);
+    rows.forEach((r, i) => {
+      const y = 176 + i * 56;
+      g.font = '600 44px ' + boardFont;
+      g.fillStyle = '#f5f2e6'; g.fillText(r[0], 30, y); g.fillText(r[1], 170, y);
+      g.fillStyle = '#f2c14e'; g.fillText(r[2], 580, y);
+      g.font = '500 38px ' + boardFont;
+      g.fillStyle = r[3] === 'Inställt' ? '#ff8a73' : '#f2c14e'; g.fillText(r[3], 680, y);
+    });
+    boardTex.needsUpdate = true;
+  }
+  const tickCanvas = document.createElement('canvas'); tickCanvas.width = 1024; tickCanvas.height = 72;
+  const tickTex = new THREE.CanvasTexture(tickCanvas);
+  const tickText = 'Spår 3: Tåget passerar utan uppehåll. Håll avstånd från plattformskanten.     ·     Fritt wifi i hela stationen: Uttersjö Gäst     ·     ';
+  let tickW = 2000;
+  function drawTicker(p) {
+    const g = tickCanvas.getContext('2d');
+    g.fillStyle = '#060c1d'; g.fillRect(0, 0, 1024, 72);
+    g.font = '500 40px ' + boardFont; g.fillStyle = '#ffb547'; g.textBaseline = 'middle';
+    tickW = g.measureText(tickText).width;
+    const off = -p * tickW;
+    g.fillText(tickText, off, 38); g.fillText(tickText, off + tickW, 38);
+    tickTex.needsUpdate = true;
+  }
+  {
+    const board = new THREE.Group(); board.position.set(-3.4, 3.2, 1.5); board.rotation.y = 0.22; scene.add(board);
+    add(box(2.72, 1.28, 0.14), M(0x1a1e26), board, [0, 0, 0], null, null, false);
+    add(new THREE.PlaneGeometry(2.56, 0.92), new THREE.MeshBasicMaterial({ map: boardTex }), board, [0, 0.12, 0.075], null, null, false);
+    add(new THREE.PlaneGeometry(2.56, 0.18), new THREE.MeshBasicMaterial({ map: tickTex }), board, [0, -0.46, 0.075], null, null, false);
+    for (const x of [-1.1, 1.1]) add(cyl(0.02, 0.02, 0.4, 5), trimM, board, [x, 0.84, 0], null, null, false);
+  }
+  drawBoard(); drawTicker(0);
+  if (document.fonts && document.fonts.load) {
+    Promise.all([document.fonts.load('600 44px "Barlow Condensed"'), document.fonts.load('500 40px "Barlow Condensed"')]).then(drawBoard).catch(() => {});
+  }
+
+  // ---------- station clock (07:39) ----------
+  {
+    const clock = new THREE.Group(); clock.position.set(3.5, 3.4, 1.5); clock.rotation.y = -0.3; scene.add(clock);
+    add(cyl(0.02, 0.02, 0.6, 5), trimM, clock, [0, 0.65, 0], null, null, false);
+    add(cyl(0.4, 0.4, 0.1, 20), M(0xf6f5f0, { emissive: 0x8a8578, emissiveIntensity: 0.35 }), clock, [0, 0, 0], [Math.PI / 2, 0, 0], null, false);
+    add(new THREE.TorusGeometry(0.4, 0.045, 6, 20), M(0x1b1d22), clock, [0, 0, 0], null, null, false);
+    const ink = M(0x111216);
+    for (let i = 0; i < 12; i++) {
+      const a = i / 12 * TAU, r = 0.31;
+      add(box(i % 3 ? 0.025 : 0.04, 0.09, 0.01), ink, clock, [Math.sin(a) * r, Math.cos(a) * r, 0.055], [0, 0, -a], null, false);
+    }
+    const hg = box(0.04, 0.2, 0.012); hg.translate(0, 0.08, 0);
+    const mg = box(0.03, 0.3, 0.012); mg.translate(0, 0.12, 0);
+    add(hg, ink, clock, [0, 0, 0.065], [0, 0, -((7 + 39 / 60) / 12) * TAU], null, false);
+    add(mg, ink, clock, [0, 0, 0.075], [0, 0, -(39 / 60) * TAU], null, false);
+  }
+
+  // ---------- far platform: station name sign, lamps ----------
+  {
+    const c = document.createElement('canvas'); c.width = 640; c.height = 128;
+    const tex = new THREE.CanvasTexture(c);
+    const draw = () => {
+      const g = c.getContext('2d');
+      g.fillStyle = '#1f4e8c'; g.fillRect(0, 0, 640, 128);
+      g.strokeStyle = '#ffffff'; g.lineWidth = 6; g.strokeRect(10, 10, 620, 108);
+      g.fillStyle = '#ffffff'; g.font = '600 78px ' + boardFont; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('Uttersjö', 320, 68); tex.needsUpdate = true;
+    };
+    draw(); if (document.fonts && document.fonts.load) document.fonts.load('600 78px "Barlow Condensed"').then(draw).catch(() => {});
+    const sign = new THREE.Group(); sign.position.set(-2.2, 0, -7.6); scene.add(sign);
+    for (const x of [-1.5, 1.5]) add(cyl(0.05, 0.05, 2.6, 6), trimM, sign, [x, 1.3, 0]);
+    add(box(3.3, 0.7, 0.08), M(0x1f4e8c), sign, [0, 2.3, 0]);
+    add(new THREE.PlaneGeometry(3.2, 0.64), new THREE.MeshBasicMaterial({ map: tex }), sign, [0, 2.3, 0.045], null, null, false);
+    const lampHead = M(0xfff0c8, { emissive: 0xffd590, emissiveIntensity: 1 });
+    for (const x of [-9, 3.5, 12]) {
+      add(cyl(0.06, 0.08, 3.4, 6), trimM, scene, [x, 1.7, -8.2], null, null, false);
+      add(box(0.5, 0.12, 0.25), lampHead, scene, [x + 0.2, 3.4, -8.2], null, null, false);
+    }
+  }
+
+  // ---------- falu-red station building ----------
+  {
+    const red = M(0x8e2a1f), white = M(0xf1efe8), warm = M(0x3a2a1a, { emissive: 0xffc070, emissiveIntensity: 0.85 });
+    const bld = new THREE.Group(); bld.position.set(6, 0, -13.2); scene.add(bld);
+    add(box(11, 3.6, 4.5), red, bld, [0, 1.8, 0], null, null, false);
+    for (const x of [-5.5, 5.5]) for (const z of [-2.25, 2.25]) add(box(0.22, 3.6, 0.22), white, bld, [x, 1.8, z], null, null, false);
+    for (let i = 0; i < 5; i++) {
+      const x = -4 + i * 2;
+      if (i === 2) { add(box(1.2, 2.3, 0.06), white, bld, [x, 1.15, 2.27], null, null, false); add(box(1.0, 2.15, 0.07), M(0x5a2a1c), bld, [x, 1.1, 2.28], null, null, false); continue; }
+      add(box(1.05, 1.45, 0.06), white, bld, [x, 1.9, 2.27], null, null, false);
+      add(box(0.85, 1.25, 0.07), warm, bld, [x, 1.9, 2.28], null, null, false);
+      add(box(0.06, 1.25, 0.08), white, bld, [x, 1.9, 2.29], null, null, false);
+    }
+    const sh = new THREE.Shape(); sh.moveTo(-2.65, 0); sh.lineTo(2.65, 0); sh.lineTo(0, 1.9); sh.lineTo(-2.65, 0);
+    const rg = new THREE.ExtrudeGeometry(sh, { depth: 11.6, bevelEnabled: false });
+    rg.rotateY(Math.PI / 2); rg.translate(-5.8, 3.6, 0);
+    add(rg, M(0xdfe6ef), bld, [0, 0, 0], null, null, false);
+    add(box(11.7, 0.12, 0.12), white, bld, [0, 3.6, 2.6], null, null, false);
+    add(box(0.5, 1.2, 0.5), M(0x6b2a20), bld, [2.5, 4.9, -0.5], null, null, false);
+  }
+
+  // ---------- pine forest ----------
+  {
+    const green = M(0x1d382d), green2 = M(0x24443a), trunkM = M(0x3a2a22), snowCap = M(0xe9eef5);
+    const coneGeo = new THREE.ConeGeometry(1, 1, 7), trunkGeo = cyl(0.12, 0.16, 1, 5);
+    for (let i = 0; i < 70; i++) {
+      const x = -45 + rand() * 90, z = -16 - rand() * 22;
+      if (x > -0.5 && x < 12.5 && z > -17.5) continue;
+      const h = 4 + rand() * 5, s = 0.8 + rand() * 0.5;
+      const t = new THREE.Group(); t.position.set(x, 0, z); scene.add(t);
+      const tm = new THREE.Mesh(trunkGeo, trunkM); tm.scale.set(1, h * 0.25, 1); tm.position.y = h * 0.12; t.add(tm);
+      for (let k = 0; k < 3; k++) {
+        const r = (1.5 - k * 0.42) * s, hh = h * 0.42, y = h * 0.2 + k * h * 0.24 + hh / 2;
+        const c = new THREE.Mesh(coneGeo, k % 2 ? green2 : green); c.scale.set(r, hh, r); c.position.y = y; c.rotation.y = rand() * 3; t.add(c);
+        const cap = new THREE.Mesh(coneGeo, snowCap); cap.scale.set(r * 0.45, hh * 0.38, r * 0.45); cap.position.y = y + hh * 0.33; cap.rotation.y = c.rotation.y; t.add(cap);
+      }
+    }
+  }
+
+  // ---------- falling snow ----------
+  const SN = 1400, H = 14;
+  const snowBase = new Float32Array(SN * 4), snowPos = new Float32Array(SN * 3);
+  for (let i = 0; i < SN; i++) {
+    const zFront = rand() < 0.25;
+    snowBase[i * 4] = -24 + rand() * 48;
+    snowBase[i * 4 + 1] = rand() * H;
+    snowBase[i * 4 + 2] = zFront ? 3.9 + rand() * 4 : -24 + rand() * 21.8;
+    snowBase[i * 4 + 3] = rand() * TAU;
+  }
+  const snowGeo = new THREE.BufferGeometry(); snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+  const dot = (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'); const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return new THREE.CanvasTexture(c); })();
+  scene.add(new THREE.Points(snowGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.09, map: dot, transparent: true, depthWrite: false })));
+
+  // ---------- camera framing ----------
+  const camBase = new THREE.Vector3(3.7, 2.35, 7.2), camTarget = new THREE.Vector3(-0.1, 1.35, -1.2);
+  function resize() {
+    const w = stage.clientWidth || window.innerWidth, h = stage.clientHeight || window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    const hfov = 54 * Math.PI / 180;
+    camera.fov = Math.min(80, Math.max(40, 2 * Math.atan(Math.tan(hfov / 2) / camera.aspect) * 180 / Math.PI));
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize); resize();
+
+  // ---------- per-frame pose ----------
+  const v1 = new THREE.Vector3(), cupTop = new THREE.Vector3(), pawPos = new THREE.Vector3(), keyPos = new THREE.Vector3();
+  function update(p) {
+    const sip = Math.max(win(p, 0.10, 0.30, 0.06), win(p, 0.70, 0.88, 0.06));
+    const watch = win(p, 0.33, 0.66, 0.05);
+    const tp = clamp01((p - 0.34) / 0.28);
+    const pass = win(p, 0.45, 0.57, 0.03);
+    const typing = (1 - sip) * (1 - watch);
+
+    // train
+    train.position.x = lerp(-60, 60, tp);
+    train.visible = tp > 0 && tp < 1;
+
+    // breathing + tail
+    torso.scale.y = 1 + 0.015 * Math.sin(TAU * p * 3);
+    const sway = 0.12 * Math.sin(TAU * p * 2);
+    tailSegs.forEach((m, i) => { const t = i / 4; m.position.set(sway * t * t * 2, 0.1 - 0.55 * t * t, -0.28 - 0.32 * t); });
+
+    // cup + left arm
+    cup.position.lerpVectors(restCup, sipCup, sip);
+    cup.rotation.set(-0.85 * ss((sip - 0.4) / 0.6), 0, 0.12 * sip);
+    cup.updateMatrix();
+    pawPos.set(-0.11, -0.02, 0.02).applyMatrix4(cup.matrix);
+    pawL.position.copy(pawPos); limb(armL, shL, pawPos);
+
+    // right arm types
+    const tap = Math.abs(Math.sin(TAU * p * 18)) * typing;
+    keyPos.set(0.12 + 0.05 * Math.sin(TAU * p * 3), 0.42 + 0.05 * tap, 0.6);
+    pawR.position.copy(keyPos); limb(armR, shR, keyPos);
+
+    // head: screen -> sip -> watch the train go by
+    let yaw = 0.05, pitch = 0.55;
+    yaw = lerp(yaw, 0, sip); pitch = lerp(pitch, -0.18, sip);
+    const follow = -1.2 + 2.4 * ss((tp - 0.22) / 0.6);
+    yaw = lerp(yaw, follow, watch); pitch = lerp(pitch, -0.05, watch);
+    const roll = 0.07 * Math.sin(TAU * p * 2) * typing;
+    neck.rotation.set(pitch * 0.4, yaw * 0.4, 0);
+    head.rotation.set(pitch * 0.6, yaw * 0.6, roll);
+
+    // eyes: blinks, content squint while sipping, wide while the train passes
+    const blink = Math.max(bump(p, 0.05, 0.012), bump(p, 0.32, 0.012), bump(p, 0.94, 0.012));
+    const content = win(p, 0.18, 0.27, 0.02) + win(p, 0.77, 0.85, 0.02);
+    const sy = Math.max(0.1, 1 - 0.92 * Math.max(blink, content)) * (1 + 0.25 * pass);
+    eyes.forEach(e => e.scale.set(1 + 0.15 * pass, sy, 1));
+    ears.forEach(e => { e.rotation.z = e.userData.s * (0.35 * Math.sin(TAU * p * 40) * pass); });
+
+    // steam (world space, rising from the lid)
+    cupTop.set(0, 0.18, 0).applyMatrix4(cup.matrix); otter.localToWorld(cupTop);
+    steam.forEach((m, i) => {
+      const f = fract(p * 3 + i / 10);
+      m.position.set(cupTop.x + 0.05 * Math.sin(TAU * (f * 1.5) + i * 2.3), cupTop.y + f * 0.5, cupTop.z + 0.03 * Math.cos(TAU * f + i));
+      const s = 0.6 + 1.6 * f; m.scale.set(s, s, s);
+      steamM[i].opacity = 0.55 * Math.sin(Math.PI * f) * (1 - 0.8 * sip);
+    });
+
+    // wifi symbol billboard above the laptop; drops to one bar while the train blocks the signal
+    wifiAnchor.set(0.55, 1.5, 0.6); otter.localToWorld(wifiAnchor);
+    wifi.position.copy(wifiAnchor); wifi.position.y += 0.04 * Math.sin(TAU * p * 2);
+    wifi.quaternion.copy(camera.quaternion);
+    wifiMats.forEach((m, i) => {
+      const f = fract(p * 4 - i * 0.15);
+      let a = 0.3 + 0.7 * Math.pow(0.5 + 0.5 * Math.cos(TAU * f), 3);
+      if (i > 1) a *= 1 - 0.85 * pass;
+      m.opacity = a;
+    });
+    apLed.material.color.setHex(pass > 0.5 ? 0xffb547 : 0x7fe0c4);
+
+    // data packets from the access point to the laptop
+    if (!packetCurve) {
+      laptopWorld.set(0, 0.3, -0.05); lid.localToWorld(laptopWorld);
+      const mid = apPos.clone().lerp(laptopWorld, 0.5); mid.y += 0.4; mid.z += 0.8;
+      packetCurve = new THREE.QuadraticBezierCurve3(apPos.clone(), mid, laptopWorld.clone());
+    }
+    packets.forEach((m, i) => {
+      const f = fract(p * 3 + i / 6);
+      packetCurve.getPoint(f, m.position);
+      const s = Math.sin(Math.PI * f) * (1 - pass); m.scale.set(s, s, s);
+      m.rotation.set(f * TAU, f * TAU * 2, 0);
+    });
+
+    // snow
+    for (let i = 0; i < SN; i++) {
+      const b = i * 4;
+      snowPos[i * 3] = snowBase[b] + 0.3 * Math.sin(TAU * p * 2 + snowBase[b + 3]);
+      snowPos[i * 3 + 1] = fract((snowBase[b + 1] - p * H * 2) / H) * H - 0.2;
+      snowPos[i * 3 + 2] = snowBase[b + 2];
+    }
+    snowGeo.attributes.position.needsUpdate = true;
+
+    // ticker
+    drawTicker(p);
+
+    // camera drift (+ a little rumble as the train passes)
+    const rumble = 0.018 * pass;
+    camera.position.set(
+      camBase.x + 0.35 * Math.sin(TAU * p) + rumble * Math.sin(TAU * p * 70),
+      camBase.y + 0.08 * Math.sin(TAU * p * 2) + rumble * Math.sin(TAU * p * 90),
+      camBase.z + 0.15 * Math.cos(TAU * p));
+    camera.lookAt(camTarget);
+  }
+
+  // ---------- loop + controls ----------
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let playing = !reduce, elapsed = reduce ? 0.2 * T : 0, last = performance.now();
+  const btn = document.getElementById('toggle'), prog = document.getElementById('prog');
+  const icoPause = document.getElementById('icoPause'), icoPlay = document.getElementById('icoPlay');
+  function syncBtn() {
+    icoPause.hidden = !playing; icoPlay.hidden = playing;
+    btn.setAttribute('aria-label', playing ? 'Pause animation' : 'Play animation');
+  }
+  btn.addEventListener('click', () => { playing = !playing; last = performance.now(); syncBtn(); });
+  syncBtn();
+
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (playing) elapsed += dt;
+    const p = (elapsed % T) / T;
+    update(p);
+    renderer.render(scene, camera);
+    prog.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>

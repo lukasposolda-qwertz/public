@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Clash Grounds 2.0</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Segoe UI',Tahoma,sans-serif;color:#ddd}
+body{display:flex;flex-direction:column}
+canvas{flex:1;display:block;cursor:crosshair}
+#ui{display:flex;align-items:center;gap:6px;padding:6px 12px;background:linear-gradient(#16213e,#0f3460);border-top:2px solid #e94560;flex-wrap:wrap;min-height:62px}
+.sec{display:flex;align-items:center;gap:5px;padding:3px 8px;border-right:1px solid #444}
+.sec:last-child{border-right:none}
+.coins{font-size:18px;font-weight:700;color:#ffd700}
+.b{padding:5px 10px;font-size:12px;border:1px solid #555;border-radius:4px;cursor:pointer;background:#1a1a3e;color:#ddd;transition:.12s;white-space:nowrap}
+.b:hover{background:#e94560;color:#fff}
+.b:disabled{opacity:.3;cursor:not-allowed;background:#1a1a3e;color:#888}
+.b.on{background:#e94560;color:#fff;border-color:#e94560}
+.b.buy{border-color:#ffd700;color:#ffd700}
+.b.buy:hover{background:#ffd700;color:#000}
+.lb{font-size:12px;color:#999}
+.ct{font-size:13px;font-weight:700;color:#53d769}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;justify-content:center;align-items:center;flex-direction:column;z-index:99}
+#ov h1{font-size:44px;margin-bottom:8px}
+#ov .ov-sub{font-size:16px;color:#aaa;margin-bottom:20px}
+#ov button{padding:10px 28px;font-size:18px;cursor:pointer;border-radius:8px;border:2px solid #e94560;background:#e94560;color:#fff;margin-top:8px;transition:.15s}
+#ov button:hover{opacity:.85}
+#ov .ov-btn2{background:transparent;border-color:#ffd700;color:#ffd700}
+.w{color:#53d769}.l{color:#e94560}
+#lvl-ov{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;justify-content:center;align-items:center;flex-direction:column;z-index:98}
+#lvl-ov h1{font-size:48px;color:#ffd700;margin-bottom:12px}
+#lvl-ov .desc{font-size:18px;color:#aaa;margin-bottom:24px;text-align:center;max-width:500px}
+#lvl-ov button{padding:12px 32px;font-size:20px;cursor:pointer;border-radius:10px;border:2px solid #ffd700;background:linear-gradient(135deg,#ffd700,#e6a800);color:#000;font-weight:700}
+#lvl-ov button:hover{transform:scale(1.05)}
+#start{position:fixed;inset:0;background:radial-gradient(ellipse at center,#1a2a4a 0%,#0a0f1e 70%,#000 100%);display:flex;justify-content:center;align-items:center;flex-direction:column;z-index:200}
+#start h1{font-size:58px;font-weight:900;letter-spacing:4px;text-transform:uppercase;background:linear-gradient(135deg,#ff6b6b,#e94560,#ffd700,#53d769,#5bc0de);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+#start .sub{font-size:16px;color:#999;margin-bottom:6px;letter-spacing:1px}
+#start .lvlname{font-size:20px;color:#ffd700;margin-bottom:20px;font-weight:700}
+#start .legend{display:flex;gap:16px;margin-bottom:30px;flex-wrap:wrap;justify-content:center}
+#start .legend .item{display:flex;align-items:center;gap:5px;font-size:12px;color:#bbb}
+#start .legend .icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px}
+#start .stats{font-size:12px;color:#666;margin-top:18px}
+#startBtn{padding:16px 50px;font-size:22px;font-weight:700;cursor:pointer;border-radius:12px;border:2px solid #e94560;background:linear-gradient(135deg,#e94560,#c0392b);color:#fff;letter-spacing:2px;text-transform:uppercase;transition:0.3s;box-shadow:0 0 30px rgba(233,69,96,0.4)}
+#startBtn:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(233,69,96,0.7)}
+#lvlind{position:fixed;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.65);color:#ffd700;font-size:14px;font-weight:700;padding:4px 16px;border-radius:12px;z-index:50;pointer-events:none;letter-spacing:2px;display:none}
+
+#shop{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;justify-content:center;align-items:center;flex-direction:column;z-index:195;gap:10px}
+#shop h1{font-size:36px;color:#ffd700;margin-bottom:4px}
+#shop .shop-chest{font-size:48px;color:#ffd700;font-weight:900;margin-bottom:4px}
+#shop .shop-sub{font-size:14px;color:#aaa;margin-bottom:16px}
+#shop .shop-items{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+#shop .sitem{padding:16px 18px;background:#1a2a4a;border:2px solid #555;border-radius:10px;cursor:pointer;text-align:center;width:180px;transition:0.2s;position:relative}
+#shop .sitem:hover{border-color:#ffd700;background:#223355}
+#shop .sitem.bought{border-color:#53d769;background:#1a3a2a;cursor:pointer}
+#shop .sitem.cant{opacity:0.35;cursor:not-allowed}
+#shop .sitem h3{font-size:14px;color:#5bc0de;margin-bottom:5px}
+#shop .sitem .price{font-size:16px;color:#ffd700;font-weight:700;margin-bottom:4px}
+#shop .sitem p{font-size:11px;color:#bbb}
+#shop .sitem .tag{position:absolute;top:-8px;right:-8px;background:#53d769;color:#000;font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;display:none}
+#shop .sitem.bought .tag{display:block}
+#shop .shop-remain{font-size:15px;color:#aaa;margin-bottom:10px}
+#shop button{padding:14px 40px;font-size:18px;font-weight:700;cursor:pointer;border-radius:10px;border:2px solid #ffd700;background:linear-gradient(135deg,#ffd700,#e6a800);color:#000;letter-spacing:1px;text-transform:uppercase;transition:0.3s}
+#shop button:hover{transform:scale(1.04)}
+</style>
+</head>
+<body>
+<div id="start">
+  <h1>CLASH GROUNDS</h1>
+  <div class="sub" id="sDesc">Destroy the enemy base to claim victory</div>
+  <div class="lvlname" id="sLvl">LEVEL 1</div>
+  <div class="legend">
+    <div class="item"><div class="icon" style="color:#5bc0de">&#9650;</div>Warrior 50c</div>
+    <div class="item"><div class="icon" style="color:#9b59b6">&#11042;</div>Berserker 350c</div>
+    <div class="item"><div class="icon" style="color:#ffd700">&#9679;</div>Miner 50c</div>
+    <div class="item"><div class="icon" style="color:#2ecc71">A</div>Archer 50c</div>
+    <div class="item"><div class="icon" style="color:#eee">&#9670;</div>Spy 30c</div>
+    <div class="item"><div class="icon" style="color:#888">D</div>Dummy 50c</div>
+    <div class="item"><div class="icon" style="color:#4a90d9">T</div>Tower 150c</div>
+    <div class="item"><div class="icon" style="color:#ffa500">M</div>Mine</div>
+  </div>
+  <button id="startBtn" onclick="G.start()">START BATTLE</button>
+  <div class="stats">Base HP: 1000 &bull; Starting coins: 80 &bull; Spies flicker visible &mdash; towers always detect them!</div>
+</div>
+<div id="shop"><h1>WAR CHEST</h1><div class="shop-chest" id="shopChest">0</div><div class="shop-sub">Choose upgrades for the next battle (click to buy, click again to refund)</div><div class="shop-items" id="shopItems"></div><div class="shop-remain">Remaining: <span id="shopRemain">0</span></div><button onclick="G.shopDone()">PROCEED TO BATTLE</button></div>
+<div id="lvlind">LEVEL 1</div>
+<canvas id="c"></canvas>
+<div id="ui">
+ <div class="sec"><span style="font-size:18px;color:#ffd700">$$</span><span class="coins" id="dC">80</span></div>
+ <div class="sec">
+  <span class="lb">BUY</span>
+  <button class="b buy" id="bW" onclick="G.buy('warrior')">W50</button>
+  <button class="b buy" id="bMn" onclick="G.buy('miner')">M50</button>
+  <button class="b buy" id="bBe" onclick="G.buy('berserker')">B350</button>
+  <button class="b buy" id="bAr" onclick="G.buy('archer')">A50</button>
+  <button class="b buy" id="bSp" onclick="G.buy('spy')">S30</button>
+  <button class="b buy" id="bDu" onclick="G.buyDummy()">D50</button>
+  <button class="b buy" id="bMi" onclick="G.buyMine()">Mine</button>
+  <button class="b buy" id="bTw" onclick="G.buyTower()">T150</button>
+  <button class="b buy" id="bHe" onclick="G.buyHeal()">Heal250</button>
+ </div>
+ <div class="sec"><span class="lb">War(<span class="ct" id="nW">0</span>)</span><button class="b" id="wA" onclick="G.cmd('warrior','attack')">Atk</button><button class="b" id="wD" onclick="G.cmd('warrior','defend')">Def</button><button class="b on" id="wR" onclick="G.cmd('warrior','retreat')">Ret</button></div>
+ <div class="sec"><span class="lb">Ber(<span class="ct" id="nK">0</span>)</span><button class="b" id="kA" onclick="G.cmd('berserker','attack')">Atk</button><button class="b" id="kD" onclick="G.cmd('berserker','defend')">Def</button><button class="b on" id="kR" onclick="G.cmd('berserker','retreat')">Ret</button></div>
+ <div class="sec"><span class="lb">Arc(<span class="ct" id="nAr">0</span>)</span><button class="b" id="aA" onclick="G.cmd('archer','attack')">Atk</button><button class="b" id="aD" onclick="G.cmd('archer','defend')">Def</button><button class="b on" id="aR" onclick="G.cmd('archer','retreat')">Ret</button></div>
+ <div class="sec"><span class="lb">Spy(<span class="ct" id="nS">0</span>)</span><button class="b on" id="sS" onclick="G.cmd('spy','scout')">Sct</button><button class="b" id="sR" onclick="G.cmd('spy','retreat')">Ret</button></div>
+ <div class="sec"><span class="lb">Min(<span class="ct" id="nMn">0</span>)</span><button class="b on" id="mM" onclick="G.cmd('miner','mine')">Mine</button><button class="b" id="mR" onclick="G.cmd('miner','retreat')">Ret</button></div>
+ <div class="sec"><span class="lb">Dum(<span class="ct" id="nDu">0</span>)</span></div>
+ <div class="sec" id="hpSec"><span class="lb" style="color:#53d769">&hearts;</span><span class="ct" id="hp0">1000</span><span class="lb" id="hpSep" style="color:#e94560">&nbsp;|&nbsp;</span><span class="ct" id="hp1" style="color:#e94560">1000</span></div>
+</div>
+<div id="ov"><h1 id="eMsg"></h1><div class="ov-sub" id="eSubMsg"></div><button id="eBtnRestart">Start from Beginning</button><button class="ov-btn2" id="eBtnResume" style="display:none">Continue from Level <span id="eResumeLvl"></span></button></div>
+<div id="lvl-ov"><h1 id="lvlMsg">LEVEL COMPLETE!</h1><div class="desc" id="lvlDesc"></div><button id="lvlBtn">Next Level &rarr;</button></div>
+<script>
+window.G=(function(){
+"use strict";
+var cv=document.getElementById('c'),cx=cv.getContext('2d');
+var W=0,H=0,started=false;
+var P=0,HEAL_CD=30000,PI=Math.PI,TAU=PI*2;
+
+/* ===== LEVEL CONFIG ===== */
+var currentLevel=1;
+var LEVEL_CONFIGS=[
+  {n:1,name:"Level 1 â Clash Grounds",desc:"Destroy the enemy base to claim victory",numAI:1,cornerMode:false,factions:false,aiMult:1.0,aiStartGold:80,aiTickBase:0.8,aiCapMult:1.0,aiWaveDiv:1.0},
+  {n:2,name:"Level 2 â Storm Rising",desc:"The enemy has reinforced. You must be stronger!",numAI:1,cornerMode:false,factions:false,aiMult:2.0,aiStartGold:250,aiTickBase:0.35,aiCapMult:1.7,aiWaveDiv:1.4},
+  {n:3,name:"Level 3 â Three Kingdoms",desc:"Three warlords fight for dominance â watch them tear each other apart!",numAI:3,cornerMode:true,factions:true,aiMult:1.2,aiStartGold:120,aiTickBase:0.7,aiCapMult:1.2,aiWaveDiv:1.0},
+  {n:4,name:"Level 4 â Four Kingdoms",desc:"Four rival warlords â alliances shift, betrayals are certain. Survive and conquer!",numAI:4,cornerMode:true,factions:true,aiMult:1.1,aiStartGold:100,aiTickBase:0.75,aiCapMult:1.1,aiWaveDiv:1.0}
+];
+function getLvlCfg(){return LEVEL_CONFIGS[Math.min(currentLevel,3)-1]}
+
+/* ===== SPRITES ===== */
+var imgs={};
+var SPRITE_NAMES=['warrior','berserker','archer','spy','miner','dummy','tower_ruin','tower_built','mine_locked','mine_active','base','backdrop'];
+(function loadSprites(){
+  SPRITE_NAMES.forEach(function(name){
+    var img=new Image();
+    img.onload=function(){imgs[name]=img};
+    img.onerror=function(){imgs[name]=null};
+    img.src='assets/'+name+'.png';
+  });
+})();
+
+function drawSprite(name,x,y,size){
+  var img=imgs[name];
+  if(!img||!img.complete||img.naturalWidth===0)return;
+  cx.drawImage(img,x-size/2,y-size/2,size,size);
+}
+// Draw a soft colored glow disc under a unit (team indicator)
+function drawGlow(x,y,r,color,alpha){
+  cx.save();cx.globalAlpha=alpha||0.55;
+  cx.beginPath();cx.arc(x,y,r,0,TAU);
+  cx.fillStyle=color;cx.fill();
+  cx.globalAlpha=1;cx.restore();
+}
+function drawRing(x,y,r,color,lw){
+  cx.save();cx.beginPath();cx.arc(x,y,r,0,TAU);
+  cx.strokeStyle=color;cx.lineWidth=lw||2.5;cx.stroke();cx.restore();
+}
+
+/* ===== UNIT DEFS ===== */
+var DEFS={
+  warrior:{cost:50,ai:1000,dmg:10,hp:50,spd:80,max:20,sr:120,r:9},
+  miner:{cost:50,ai:2000,dmg:5,hp:30,spd:50,max:15,sr:90,r:8},
+  berserker:{cost:350,ai:2000,dmg:25,hp:200,spd:55,max:5,sr:130,r:13},
+  spy:{cost:30,ai:0,dmg:0,hp:15,spd:120,max:3,sr:250,r:7},
+  archer:{cost:50,ai:700,dmg:7,hp:30,spd:65,max:15,sr:180,r:8}
+};
+var DUM_COST=50,DUM_HP=150,DUM_R=14,DUM_MAX=5,DUM_SR=50;
+var MINE_D_BASE=[{prod:5,cost:0},{prod:12,cost:200},{prod:25,cost:400}];
+var TWR_HP=150,TWR_COST=150,TWR_RANGE=180,TWR_AI=1500,TWR_DMG=15;
+var ARCH_RANGE=130;
+var AI_STRATS=['rusher','economist','turtle','balanced','spymaster'];
+var SHOP_DATA=[
+  [{id:'extra_miner',name:'Extra Miner',desc:'Start with 2 miners',cost:80},{id:'head_start',name:'Head Start',desc:'+50 starting coins',cost:100},{id:'fort_base',name:'Fortified Base',desc:'Base starts at 1200 HP',cost:150},{id:'free_tower',name:'Free Tower',desc:'1 tower pre-activated',cost:200},{id:'mine_boost',name:'Mine Boost',desc:'Mine 1 produces 8c/s',cost:120}],
+  [{id:'two_miners',name:'Two Extra Miners',desc:'Start with 3 miners',cost:120},{id:'war_funds',name:'War Funds',desc:'+100 starting coins',cost:150},{id:'steel_walls',name:'Steel Walls',desc:'Base starts at 1300 HP',cost:200},{id:'vet_blades',name:'Veteran Blades',desc:'Warriors deal 12 dmg',cost:180},{id:'tower_archer',name:'Tower + Archer',desc:'Free tower + 1 archer',cost:250}],
+  [{id:'three_miners',name:'Three Miners',desc:'Start with 4 miners',cost:150},{id:'war_chest2',name:'War Chest',desc:'+150 starting coins',cost:200},{id:'fortress',name:'Fortress',desc:'Base starts at 1500 HP',cost:280},{id:'tower_pair',name:'Tower Pair',desc:'2 towers pre-activated',cost:300},{id:'elite_army',name:'Elite Army',desc:'+1 warrior, archer, berserker',cost:350}]
+];
+
+
+/* ===== MUTABLE STATE (reset each level) ===== */
+var over=false,gold=[],healT=[];
+var gameStartTime=0,totalSpent=0,totalKills=0,earnedChest=0;
+var boughtUpgrades=[];
+var CHEST_KEY="cg_chest",UPGRADES_KEY="cg_upgrades";
+var cmds=[];
+var base=[];
+var mines=[],twrs=[];
+var units=[],arrows=[],floats=[];
+var lt=0,now=0;
+// accumulation for mine income
+var ca=[];
+// per-AI state arrays indexed by team 1..3
+var aiState=[];
+
+function makeAiState(cfg){
+  return {
+    cd:0,
+    waveCD:18,
+    strat:AI_STRATS[Math.floor(Math.random()*AI_STRATS.length)],
+    mult:cfg.aiMult,
+    tickBase:cfg.aiTickBase,
+    capMult:cfg.aiCapMult,
+    waveMult:cfg.aiWaveDiv,
+    targetBase:null,   // chosen enemy base to march toward (faction mode)
+    targetCD:0         // seconds until target is re-evaluated
+  };
+}
+
+// Pick a strategic target base for an AI team (faction mode).
+// Weights: player base gets +0.35 bonus; weaker bases are more attractive.
+// Re-evaluated every 25-45s, ensuring factions genuinely fight each other.
+function pickFactionTarget(tm){
+  var cfg=getLvlCfg();
+  var numT=1+cfg.numAI;
+  var best=null,bestW=-1;
+  for(var t=0;t<numT;t++){
+    if(t===tm)continue;
+    var b=base[t];if(!b||b.hp<=0)continue;
+    var hpRatio=b.hp/b.mhp;
+    // lower HP = juicier target; player gets a flat attraction bonus
+    var w=(1-hpRatio)*0.6 + (t===P?0.35:0.05) + Math.random()*0.2;
+    if(w>bestW){bestW=w;best=b;}
+  }
+  return best||base[P];
+}
+
+/* ===== LAYOUT ===== */
+var mAng=[-0.25,-0.85,-0.55],mDst=[240,350,450];
+var tAng=[-1.15,-0.45,0.05],tDst=[270,380,480];
+
+function layout(){
+  W=cv.width=cv.clientWidth;H=cv.height=cv.clientHeight;
+  var cfg=getLvlCfg();
+  if(!cfg.cornerMode){
+    // 2-team layout
+    base[P].x=90;base[P].y=H-90;
+    base[1].x=W-90;base[1].y=90;
+    // player mines/towers
+    for(var j=0;j<3;j++){
+      var a=-PI/4+mAng[j];
+      var pm=playerMine(j);if(pm){pm.x=base[P].x+Math.cos(a)*mDst[j];pm.y=base[P].y+Math.sin(a)*mDst[j]}
+      var cm=teamMine(1,j);if(cm){cm.x=base[1].x-Math.cos(a)*mDst[j];cm.y=base[1].y-Math.sin(a)*mDst[j]}
+      var pt=playerTwr(j);if(pt){pt.x=base[P].x+Math.cos(-PI/4+tAng[j])*tDst[j];pt.y=base[P].y+Math.sin(-PI/4+tAng[j])*tDst[j]}
+      var ct=teamTwr(1,j);if(ct){ct.x=base[1].x-Math.cos(-PI/4+tAng[j])*tDst[j];ct.y=base[1].y-Math.sin(-PI/4+tAng[j])*tDst[j]}
+    }
+  } else {
+    // Multi-corner layout (level 3 = 4 teams, level 4 = 5 teams)
+    var cfg2=getLvlCfg();
+    var corners4=[
+      {x:90,     y:H-90},  // team 0 player â bottom-left
+      {x:W-90,   y:90},    // team 1 â top-right
+      {x:90,     y:90},    // team 2 â top-left
+      {x:W-90,   y:H-90}   // team 3 â bottom-right
+    ];
+    // 5th team (level 4): top-center
+    var corners5=corners4.concat([{x:Math.round(W/2), y:75}]);
+    var corners=cfg2.numAI>=4?corners5:corners4;
+    var numT=1+cfg2.numAI;
+    for(var t=0;t<numT;t++){
+      if(!base[t])continue;
+      base[t].x=corners[t].x;base[t].y=corners[t].y;
+      var cA=Math.atan2(H/2-corners[t].y,W/2-corners[t].x);
+      var m0=teamMine(t,0);if(m0){m0.x=corners[t].x+Math.cos(cA-0.25)*155;m0.y=corners[t].y+Math.sin(cA-0.25)*155}
+      var m1=teamMine(t,1);if(m1){m1.x=corners[t].x+Math.cos(cA+0.25)*250;m1.y=corners[t].y+Math.sin(cA+0.25)*250}
+      var tw0=teamTwr(t,0);if(tw0){tw0.x=corners[t].x+Math.cos(cA+0.15)*205;tw0.y=corners[t].y+Math.sin(cA+0.15)*205}
+      var tw1=teamTwr(t,1);if(tw1){tw1.x=corners[t].x+Math.cos(cA-0.15)*310;tw1.y=corners[t].y+Math.sin(cA-0.15)*310}
+    }
+  }
+}
+
+function playerMine(idx){for(var j=0;j<mines.length;j++)if(mines[j].team===P&&mines[j].idx===idx)return mines[j];return null}
+function teamMine(tm,idx){for(var j=0;j<mines.length;j++)if(mines[j].team===tm&&mines[j].idx===idx)return mines[j];return null}
+function playerTwr(idx){for(var j=0;j<twrs.length;j++)if(twrs[j].team===P&&twrs[j].idx===idx)return twrs[j];return null}
+function teamTwr(tm,idx){for(var j=0;j<twrs.length;j++)if(twrs[j].team===tm&&twrs[j].idx===idx)return twrs[j];return null}
+
+/* ===== FOG OF WAR ===== */
+var fogExp,fogExpCx,fogCur,fogCurCx;
+function initFog(){
+  fogExp=document.createElement('canvas');fogExp.width=W;fogExp.height=H;
+  fogExpCx=fogExp.getContext('2d');fogExpCx.fillStyle='#000';fogExpCx.fillRect(0,0,W,H);
+  fogCur=document.createElement('canvas');fogCur.width=W;fogCur.height=H;
+  fogCurCx=fogCur.getContext('2d');
+}
+function carve(c2,x,y,r){
+  c2.globalCompositeOperation='destination-out';
+  var g=c2.createRadialGradient(x,y,r*0.15,x,y,r);
+  g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(0.75,'rgba(0,0,0,0.6)');g.addColorStop(1,'rgba(0,0,0,0)');
+  c2.fillStyle=g;c2.beginPath();c2.arc(x,y,r,0,TAU);c2.fill();
+  c2.globalCompositeOperation='source-over';
+}
+function updateFog(){
+  fogCurCx.fillStyle='#000';fogCurCx.fillRect(0,0,W,H);
+  function see(x,y,r){carve(fogCurCx,x,y,r);carve(fogExpCx,x,y,r)}
+  see(base[P].x,base[P].y,base[P].sr);
+  for(var j=0;j<units.length;j++)if(units[j].tm===P)see(units[j].x,units[j].y,units[j].sr);
+  for(var j2=0;j2<twrs.length;j2++)if(twrs[j2].team===P&&twrs[j2].on&&!twrs[j2].destroyed)see(twrs[j2].x,twrs[j2].y,twrs[j2].range);
+  for(var j3=0;j3<mines.length;j3++)if(mines[j3].team===P&&mines[j3].unlocked)see(mines[j3].x,mines[j3].y,100);
+}
+function vis(x,y){
+  if(hy(x-base[P].x,y-base[P].y)<base[P].sr)return true;
+  for(var j=0;j<units.length;j++)if(units[j].tm===P&&hy(x-units[j].x,y-units[j].y)<units[j].sr)return true;
+  for(var j2=0;j2<twrs.length;j2++)if(twrs[j2].team===P&&twrs[j2].on&&!twrs[j2].destroyed&&hy(x-twrs[j2].x,y-twrs[j2].y)<twrs[j2].range)return true;
+  return false;
+}
+
+/* ===== HELPERS ===== */
+function hy(a,b){return Math.sqrt(a*a+b*b)}
+function ds(a,b){return hy(a.x-b.x,a.y-b.y)}
+function cnt(tm,tp){var n=0;for(var j=0;j<units.length;j++)if(units[j].tm===tm&&units[j].tp===tp)n++;return n}
+
+// Enemy base for a given team
+function eb(tm){
+  var cfg=getLvlCfg();
+  if(!cfg.cornerMode){return base[1-tm]}
+  if(tm===P){
+    // player targets nearest alive enemy base by distance
+    var best=null,bd=1e9;
+    for(var t=1;t<=cfg.numAI;t++){
+      if(base[t]&&base[t].hp>0){var d=ds(base[P],base[t]);if(d<bd){bd=d;best=base[t]}}
+    }
+    return best||base[1];
+  }
+  // faction mode: use per-AI chosen target (refreshed in aiTick)
+  if(cfg.factions&&aiState[tm]&&aiState[tm].targetBase&&aiState[tm].targetBase.hp>0){
+    return aiState[tm].targetBase;
+  }
+  return base[P]; // fallback: target player
+}
+
+function fwdAngle(tm){var b=base[tm],e=eb(tm);if(!e)return 0;return Math.atan2(e.y-b.y,e.x-b.x)}
+function nextMineFor(tm){for(var j=0;j<mines.length;j++){if(mines[j].team===tm&&!mines[j].unlocked)return mines[j]}return null}
+function nextTwrFor(tm){for(var j=0;j<twrs.length;j++){if(twrs[j].team===tm&&(twrs[j].destroyed||!twrs[j].on))return twrs[j]}return null}
+function activeTwrN(tm){var n=0;for(var j=0;j<twrs.length;j++)if(twrs[j].team===tm&&twrs[j].on&&!twrs[j].destroyed)n++;return n}
+function addFloat(x,y,v,c){floats.push({x:x,y:y,v:Math.round(v),c:c,t:0.9})}
+function assignMine(u){
+  var tm=[];for(var j=0;j<mines.length;j++){if(mines[j].team===u.tm&&mines[j].unlocked)tm.push(mines[j])}
+  tm.sort(function(a,b){return a.idx-b.idx});
+  for(var k=0;k<tm.length;k++){if(tm[k].list.length<tm[k].cap){tm[k].list.push(u);u.mine=tm[k];return}}
+  if(tm.length)u.mine=tm[tm.length-1];
+}
+function unmine(u){if(u.mine){var j=u.mine.list.indexOf(u);if(j>=0)u.mine.list.splice(j,1);u.mine=null}}
+function teamColor(tm){
+  if(tm===0)return'#5bc0de';
+  if(tm===1)return'#e94560';
+  if(tm===2)return'#ff9f00';
+  if(tm===3)return'#c050ff';
+  return'#3ddc84'; // team 4 â green
+}
+function isEnemy(tmA,tmB){return tmA!==tmB}
+
+/* ===== SPAWN ===== */
+function spawn(tm,tp){
+  var d=DEFS[tp],b=base[tm],a=Math.random()*TAU;
+  var u={x:b.x+Math.cos(a)*24,y:b.y+Math.sin(a)*24,tp:tp,tm:tm,hp:d.hp,mhp:d.hp,spd:d.spd,r:d.r,dmg:d.dmg,ai:d.ai,sr:d.sr,last:0,wa:Math.random()*TAU,wt:0,mine:null,ma:Math.random()*TAU,px:0,py:0,fl:0,hi:0,scoutPhase:Math.random()*TAU,patDir:1,flickVis:false,flickTimer:2+Math.random()*3,orbAng:Math.random()*TAU,orbRad:100+Math.random()*150,orbSpd:0.3+Math.random()*0.4};
+  units.push(u);return u;
+}
+function placeDummy(tm){
+  var b=base[tm],e=eb(tm);if(!e)e={x:W/2,y:H/2};
+  var dx=e.x-b.x,dy=e.y-b.y,dd=hy(dx,dy)||1;
+  var ax=dx/dd,ay=dy/dd,px=-ay,py=ax;
+  var dist=350+Math.random()*200,perp=(Math.random()-0.5)*300;
+  var u={x:b.x+ax*dist+px*perp,y:b.y+ay*dist+py*perp,tp:'dummy',tm:tm,hp:DUM_HP,mhp:DUM_HP,spd:0,r:DUM_R,dmg:0,ai:0,sr:DUM_SR,last:0,wa:0,wt:0,mine:null,ma:0,px:0,py:0,fl:0,hi:0,scoutPhase:0,patDir:0,flickVis:true,flickTimer:0,orbAng:0,orbRad:0,orbSpd:0};
+  units.push(u);return u;
+}
+
+/* ===== MOVEMENT / COMBAT ===== */
+function moveTo(u,tx,ty,dt){
+  var dx=tx-u.x,dy=ty-u.y,d=hy(dx,dy);if(d<4)return true;
+  u.wt-=dt;if(u.wt<=0){u.wa+=(Math.random()-0.5)*1.1;u.wt=0.25+Math.random()*0.5}
+  var ba=Math.atan2(dy,dx),ang=ba+Math.sin(u.wa)*0.3;u.ma=ang;
+  var s=Math.min(u.spd*dt,d);u.x+=Math.cos(ang)*s;u.y+=Math.sin(ang)*s;
+  u.x=Math.max(u.r,Math.min(W-u.r,u.x));u.y=Math.max(u.r,Math.min(H-u.r,u.y));
+  return false;
+}
+function nearby(u,range){
+  var o=[];
+  for(var j=0;j<units.length;j++){
+    var e=units[j];
+    if(!isEnemy(e.tm,u.tm))continue;
+    if(e.tp==='spy'&&!e.flickVis)continue;
+    if(e.tp==='dummy')continue;
+    if(hy(e.x-u.x,e.y-u.y)<range)o.push(e);
+  }
+  return o;
+}
+function findDummy(u,range){
+  var best=null,bd=1e9;
+  for(var j=0;j<units.length;j++){var e=units[j];if(!isEnemy(e.tm,u.tm)||e.tp!=='dummy')continue;var d=ds(e,u);if(d<range&&d<bd){bd=d;best=e}}
+  return best;
+}
+function closest(list,u){var b=null,bd=1e9;for(var j=0;j<list.length;j++){var d=ds(list[j],u);if(d<bd){bd=d;b=list[j]}}return b}
+function findEnemyTwr(u,range){
+  var best=null,bd=1e9;
+  for(var j=0;j<twrs.length;j++){var t=twrs[j];if(!isEnemy(t.team,u.tm)||!t.on||t.destroyed)continue;var d=ds(u,t);if(d<range&&d<bd){bd=d;best=t}}
+  return best;
+}
+function spyInDanger(u){
+  for(var j=0;j<twrs.length;j++){var t=twrs[j];if(!isEnemy(t.team,u.tm)||!t.on||t.destroyed)continue;if(ds(u,t)<t.range)return true}
+  return false;
+}
+function closestEnemy(u){
+  var best=null,bd=1e9;
+  for(var j=0;j<units.length;j++){var e=units[j];if(!isEnemy(e.tm,u.tm)||e.tp==='dummy')continue;if(e.tp==='spy'&&!e.flickVis)continue;var d=ds(e,u);if(d<bd){bd=d;best=e}}
+  return{unit:best,dist:bd};
+}
+
+function doAttack(u,nowT){
+  if(u.tp==='spy'||nowT-u.last<u.ai)return false;
+  var reach=20+u.r*2;
+  var dum=findDummy(u,reach);if(dum){dum.hp-=u.dmg;u.last=nowT;u.fl=nowT;dum.hi=nowT;addFloat(dum.x,dum.y-dum.r-6,u.dmg,teamColor(u.tm));return true}
+  var en=nearby(u,reach);if(en.length){var t=closest(en,u);t.hp-=u.dmg;u.last=nowT;u.fl=nowT;t.hi=nowT;addFloat(t.x,t.y-t.r-6,u.dmg,teamColor(u.tm));return true}
+  var et=findEnemyTwr(u,reach+12);if(et){et.hp-=u.dmg;u.last=nowT;u.fl=nowT;et.hi=nowT;addFloat(et.x,et.y-et.r-6,u.dmg,teamColor(u.tm));if(et.hp<=0){et.on=false;et.destroyed=true;et.hp=0}return true}
+  if(u.tp==='miner')return false;
+  var e=eb(u.tm);if(e&&ds(u,e)<52+u.r){e.hp-=u.dmg;u.last=nowT;u.fl=nowT;addFloat(e.x,e.y-e.r-8,u.dmg,teamColor(u.tm));return true}
+  return false;
+}
+function archerShoot(u,nowT){
+  if(nowT-u.last<u.ai)return false;
+  var dum=findDummy(u,ARCH_RANGE);if(dum){arrows.push({x:u.x,y:u.y,tgt:dum,spd:350,dmg:u.dmg,tm:u.tm,life:2,tr:[{x:u.x,y:u.y}]});u.last=nowT;u.fl=nowT;return true}
+  var best=null,bd=1e9;
+  for(var j=0;j<units.length;j++){var e=units[j];if(!isEnemy(e.tm,u.tm))continue;if(e.tp==='spy'&&!e.flickVis)continue;if(e.tp==='dummy')continue;var d=ds(e,u);if(d<ARCH_RANGE&&d<bd){bd=d;best=e}}
+  if(best){arrows.push({x:u.x,y:u.y,tgt:best,spd:350,dmg:u.dmg,tm:u.tm,life:2,tr:[{x:u.x,y:u.y}]});u.last=nowT;u.fl=nowT;return true}
+  var et=findEnemyTwr(u,ARCH_RANGE);if(et){arrows.push({x:u.x,y:u.y,tgt:et,spd:350,dmg:u.dmg,tm:u.tm,life:2,tr:[{x:u.x,y:u.y}]});u.last=nowT;u.fl=nowT;return true}
+  return false;
+}
+function retreatTo(u,b,dt){var d=ds(u,b);if(d>30){moveTo(u,b.x,b.y,dt)}else{u.x+=(Math.random()-0.5)*0.4;u.y+=(Math.random()-0.5)*0.4}}
+function defendPatrol(u,b,dt,nowT){
+  var en=nearby(u,150);if(en.length){var cl=closest(en,u);moveTo(u,cl.x,cl.y,dt);doAttack(u,nowT);return}
+  var fa=fwdAngle(u.tm);u.orbAng+=u.orbSpd*dt;var sweep=Math.sin(u.orbAng)*1.4;
+  var tA=fa+sweep,tx=b.x+Math.cos(tA)*u.orbRad,ty=b.y+Math.sin(tA)*u.orbRad;
+  moveTo(u,tx,ty,dt);doAttack(u,nowT);
+}
+
+/* ===== MAIN TICK ===== */
+function tick(n){
+  if(over||!started)return;now=n;
+  var dt=Math.min((now-lt)/1000,0.1);lt=now;
+  var cfg=getLvlCfg();
+  var numTeams=1+cfg.numAI;
+
+  // Mine income for all teams
+  for(var t=0;t<numTeams;t++){
+    for(var mi=0;mi<mines.length;mi++){
+      var m=mines[mi];if(m.team!==t||!m.unlocked)continue;
+      var nn=0;for(var k=0;k<m.list.length;k++)if(ds(m.list[k],m)<35)nn++;
+      ca[t]+=m.prod*nn*dt;
+    }
+    if(ca[t]>=1){var add=Math.floor(ca[t]);gold[t]+=add;ca[t]-=add}
+  }
+
+  // Spy flicker
+  for(var si=0;si<units.length;si++){
+    var su=units[si];if(su.tp!=='spy')continue;
+    su.flickTimer-=dt;if(su.flickTimer<=0){su.flickVis=!su.flickVis;su.flickTimer=su.flickVis?0.8:(5+Math.random()*2)}
+  }
+
+  // Unit AI
+  for(var ui2=0;ui2<units.length;ui2++){
+    var u=units[ui2];if(u.tp==='dummy')continue;
+    var c=cmds[u.tm][u.tp],b=base[u.tm],e=eb(u.tm);
+    if(!e)e={x:W/2,y:H/2};
+    if(u.tp==='spy'){
+      if(c==='scout'){
+        u.scoutPhase+=dt*0.9;var dx=e.x-b.x,dy=e.y-b.y,dd=hy(dx,dy)||1;
+        var axX=dx/dd,axY=dy/dd,ppX=-axY,ppY=axX;
+        var ux=u.x-b.x,uy=u.y-b.y,prog=(ux*axX+uy*axY)/dd;
+        if(prog>0.9)u.patDir=-1;if(prog<0.2)u.patDir=1;
+        var tP=Math.max(0.1,Math.min(0.95,prog+u.patDir*0.15));
+        var wave=Math.sin(u.scoutPhase*2.0)*130;
+        moveTo(u,b.x+axX*tP*dd+ppX*wave,b.y+axY*tP*dd+ppY*wave,dt);
+      }else retreatTo(u,b,dt);
+    }
+    else if(u.tp==='miner'){
+      if(c==='mine'){if(!u.mine)assignMine(u);if(u.mine){var ox=Math.sin(now*0.0008+u.x*0.05)*14;moveTo(u,u.mine.x+ox,u.mine.y+Math.cos(now*0.0008+u.y*0.05)*14,dt)}}
+      else{unmine(u);retreatTo(u,b,dt)}
+      doAttack(u,now);
+    }
+    else if(u.tp==='archer'){
+      if(c==='attack'){
+        var ce=closestEnemy(u);
+        if(ce.unit&&ce.dist<45){var kA=Math.atan2(u.y-ce.unit.y,u.x-ce.unit.x);moveTo(u,u.x+Math.cos(kA)*80,u.y+Math.sin(kA)*80,dt);archerShoot(u,now)}
+        else{var shot=archerShoot(u,now);if(!shot){var dumA=findDummy(u,ARCH_RANGE);if(dumA){moveTo(u,dumA.x,dumA.y,dt)}else if(ce.unit&&ce.dist<180){if(ce.dist>120){var advA=Math.atan2(ce.unit.y-u.y,ce.unit.x-u.x);moveTo(u,u.x+Math.cos(advA)*20,u.y+Math.sin(advA)*20,dt)}}else{moveTo(u,e.x+Math.sin(u.wa)*35,e.y+Math.cos(u.wa)*35,dt)}}}
+        doAttack(u,now);
+      }else if(c==='defend'){
+        var ceD=closestEnemy(u);
+        if(ceD.unit&&ceD.dist<45){var kAD=Math.atan2(u.y-ceD.unit.y,u.x-ceD.unit.x);moveTo(u,u.x+Math.cos(kAD)*60,u.y+Math.sin(kAD)*60,dt);archerShoot(u,now)}
+        else{var shotD=archerShoot(u,now);if(!shotD){var fa2=fwdAngle(u.tm);u.orbAng+=u.orbSpd*dt;var sw2=Math.sin(u.orbAng)*1.4;moveTo(u,b.x+Math.cos(fa2+sw2)*Math.max(u.orbRad,150),b.y+Math.sin(fa2+sw2)*Math.max(u.orbRad,150),dt)}}
+        doAttack(u,now);
+      }else retreatTo(u,b,dt);
+    }
+    else{
+      if(c==='attack'){
+        var tCh=u.tp==='berserker'?0.6:0.4;var dum2=findDummy(u,120);
+        if(dum2){moveTo(u,dum2.x,dum2.y,dt)}
+        else{var et2=findEnemyTwr(u,55);if(et2&&Math.random()<tCh){moveTo(u,et2.x,et2.y,dt)}
+        else{var en3=nearby(u,70);if(en3.length&&Math.random()>0.25){moveTo(u,closest(en3,u).x,closest(en3,u).y,dt)}else{moveTo(u,e.x+Math.sin(u.wa)*35,e.y+Math.cos(u.wa)*35,dt)}}}
+        doAttack(u,now);
+      }else if(c==='defend'){defendPatrol(u,b,dt,now)}
+      else retreatTo(u,b,dt);
+    }
+  }
+
+  // Tower shooting
+  for(var ti=0;ti<twrs.length;ti++){
+    var tw=twrs[ti];if(!tw.on||tw.destroyed||now-tw.last<tw.ai)continue;
+    var best=null,bd=1e9;
+    for(var j=0;j<units.length;j++){
+      if(!isEnemy(units[j].tm,tw.team)||units[j].tp==='dummy')continue;
+      var d2=ds(units[j],tw);if(d2<tw.range&&d2<bd){bd=d2;best=units[j]}
+    }
+    if(best){arrows.push({x:tw.x,y:tw.y,tgt:best,spd:320,dmg:tw.dmg,tm:tw.team,life:2.5,tr:[{x:tw.x,y:tw.y}]});tw.last=now}
+  }
+
+  // Arrow movement
+  for(var ai2=arrows.length-1;ai2>=0;ai2--){
+    var ar=arrows[ai2],atx=ar.tgt.x,aty=ar.tgt.y;
+    var adx=atx-ar.x,ady=aty-ar.y,ad=hy(adx,ady),as2=ar.spd*dt;
+    ar.tr.push({x:ar.x,y:ar.y});if(ar.tr.length>6)ar.tr.shift();
+    if(ad<as2+8){
+      if(ar.tgt&&ar.tgt.hp!==undefined&&ar.tgt.hp>0){ar.tgt.hp-=ar.dmg;ar.tgt.hi=now;addFloat(ar.tgt.x,ar.tgt.y-10,ar.dmg,teamColor(ar.tm))}
+      arrows.splice(ai2,1);
+    }else{ar.x+=(adx/ad)*as2;ar.y+=(ady/ad)*as2;ar.life-=dt;if(ar.life<=0)arrows.splice(ai2,1)}
+  }
+
+  // Floats
+  for(var fi=floats.length-1;fi>=0;fi--){floats[fi].y-=35*dt;floats[fi].t-=dt;if(floats[fi].t<=0)floats.splice(fi,1)}
+
+  // Remove dead units
+  for(var ri=units.length-1;ri>=0;ri--){if(units[ri].hp<=0){if(units[ri].tm!==P)totalKills++;unmine(units[ri]);units.splice(ri,1)}}
+  for(var tci=0;tci<twrs.length;tci++){var tc=twrs[tci];if(tc.on&&!tc.destroyed&&tc.hp<=0){tc.on=false;tc.destroyed=true;tc.hp=0}}
+
+  // Check end conditions
+  if(base[P].hp<=0){endGame(false);return}
+  var cfg2=getLvlCfg();
+  if(!cfg2.cornerMode){
+    if(base[1].hp<=0){endGame(true);return}
+  }else{
+    var allDead=true;
+    for(var tt=1;tt<=cfg2.numAI;tt++){if(base[tt]&&base[tt].hp>0){allDead=false}else if(base[tt]&&base[tt].hp<0)base[tt].hp=0;}
+    if(allDead){endGame(true);return}
+  }
+
+  // Run AI for each AI team
+  for(var ait=1;ait<=cfg2.numAI;ait++){if(base[ait]&&base[ait].hp>0)aiTick(ait,now,dt)}
+  uiUpdate();
+}
+
+/* ===== AI ===== */
+function aiBuyUnit(tm,tp,cfg){
+  var capM=aiState[tm].capMult;
+  if(tp==='dummy'){if(gold[tm]>=DUM_COST&&cnt(tm,'dummy')<Math.floor(DUM_MAX*capM)){gold[tm]-=DUM_COST;placeDummy(tm);return true}}
+  else{var d=DEFS[tp];var cap=Math.floor(d.max*capM);if(gold[tm]>=d.cost&&cnt(tm,tp)<cap){gold[tm]-=d.cost;var u=spawn(tm,tp);if(tp==='miner'){cmds[tm].miner='mine';assignMine(u)}if(tp==='spy')cmds[tm].spy='scout';return true}}
+  return false;
+}
+function aiRebuildTwr(tm){
+  for(var j=0;j<twrs.length;j++){if(twrs[j].team===tm&&twrs[j].destroyed&&gold[tm]>=TWR_COST){gold[tm]-=TWR_COST;twrs[j].on=true;twrs[j].destroyed=false;twrs[j].hp=twrs[j].mhp;twrs[j].last=0;return true}}
+  return false;
+}
+function aiBuyTowerFor(tm){
+  for(var k=0;k<twrs.length;k++){if(twrs[k].team===tm&&!twrs[k].on&&!twrs[k].destroyed&&gold[tm]>=TWR_COST){gold[tm]-=TWR_COST;twrs[k].on=true;twrs[k].hp=twrs[k].mhp;twrs[k].destroyed=false;return true}}
+  return false;
+}
+function aiBuyMineFor(tm){
+  var nm=nextMineFor(tm);if(nm&&gold[tm]>=nm.cost){gold[tm]-=nm.cost;nm.unlocked=true;for(var k=0;k<units.length;k++)if(units[k].tm===tm&&units[k].tp==='miner')unmine(units[k]);cmds[tm].miner='mine';return true}
+  return false;
+}
+function aiHealFor(tm){
+  if(base[tm].hp<base[tm].mhp&&gold[tm]>=250&&now-healT[tm]>HEAL_CD){gold[tm]-=250;base[tm].hp=Math.min(base[tm].mhp,base[tm].hp+50);healT[tm]=now;return true}
+  return false;
+}
+function aiWaveFor(tm){cmds[tm].warrior='attack';cmds[tm].archer='attack';cmds[tm].berserker='attack'}
+function aiDefendFor(tm){cmds[tm].warrior='defend';cmds[tm].berserker='defend';cmds[tm].archer='defend'}
+
+function aiTick(tm,nowT,dt){
+  var st=aiState[tm];st.cd-=dt;if(st.cd>0)return;
+  st.cd=st.tickBase+Math.random()*0.4;
+
+  // --- Faction target refresh ---
+  var cfg3=getLvlCfg();
+  if(cfg3.factions){
+    st.targetCD-=st.cd+st.tickBase;
+    // Re-pick target if: no target, target dead, or timer expired (every 25-45s)
+    if(!st.targetBase||st.targetBase.hp<=0||st.targetCD<=0){
+      st.targetBase=pickFactionTarget(tm);
+      st.targetCD=25+Math.random()*20;
+    }
+  }
+
+  var c=gold[tm],nMi=cnt(tm,'miner'),nW=cnt(tm,'warrior'),nB=cnt(tm,'berserker'),nSp=cnt(tm,'spy'),nAr=cnt(tm,'archer'),nDu=cnt(tm,'dummy');
+  var nT=activeTwrN(tm);
+  var nPw=cnt(P,'warrior')+cnt(P,'archer')+cnt(P,'berserker');
+  var wDiv=st.waveMult;
+  aiRebuildTwr(tm);
+  var strat=st.strat;
+  if(strat==='rusher'){
+    if(nMi<3&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nW<20&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(nMi<4&&c>=50&&nW>=4){aiBuyUnit(tm,'miner');return}
+    if(nAr<3&&c>=50&&nW>=8){aiBuyUnit(tm,'archer');return}
+    if(nT<1&&c>=TWR_COST){aiBuyTowerFor(tm);return}
+    var nm=nextMineFor(tm);if(nm&&nm.idx<1&&c>=nm.cost){aiBuyMineFor(tm);return}
+    if(nB<2&&c>=350&&nW>=10){aiBuyUnit(tm,'berserker');return}
+    if(base[tm].hp<500)aiHealFor(tm);
+    st.waveCD-=st.cd+st.tickBase;if(nW>=5||st.waveCD<=0){aiWaveFor(tm);st.waveCD=(8+Math.random()*7)/wDiv}
+    if(nW<3&&cmds[tm].warrior==='attack')aiDefendFor(tm);
+  }else if(strat==='economist'){
+    if(nMi<5&&c>=50){aiBuyUnit(tm,'miner');return}
+    var nm2=nextMineFor(tm);if(nm2&&c>=nm2.cost){aiBuyMineFor(tm);return}
+    if(nMi<10&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nT<3&&c>=TWR_COST){aiBuyTowerFor(tm);return}
+    if(nMi<15&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nW<20&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(nAr<10&&c>=50){aiBuyUnit(tm,'archer');return}
+    if(nB<5&&c>=350){aiBuyUnit(tm,'berserker');return}
+    if(nDu<3&&c>=DUM_COST){aiBuyUnit(tm,'dummy');return}
+    if(base[tm].hp<700)aiHealFor(tm);
+    st.waveCD-=st.cd+st.tickBase;if((nW+nAr>=15&&nW+nAr+nB>=18)||st.waveCD<=0){aiWaveFor(tm);st.waveCD=(25+Math.random()*10)/wDiv}
+    if(nW+nAr<5&&cmds[tm].warrior==='attack')aiDefendFor(tm);
+  }else if(strat==='turtle'){
+    if(nMi<3&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nT<3&&c>=TWR_COST){aiBuyTowerFor(tm);return}
+    var nm3=nextMineFor(tm);if(nm3&&c>=nm3.cost&&nMi>=3){aiBuyMineFor(tm);return}
+    if(nMi<8&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nDu<5&&c>=DUM_COST){aiBuyUnit(tm,'dummy');return}
+    if(nAr<12&&c>=50){aiBuyUnit(tm,'archer');return}
+    if(nW<10&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(nB<3&&c>=350){aiBuyUnit(tm,'berserker');return}
+    if(nMi<15&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nW<20&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(base[tm].hp<800)aiHealFor(tm);
+    st.waveCD-=st.cd+st.tickBase;if((nW+nAr+nB>=20)||st.waveCD<=0){aiWaveFor(tm);st.waveCD=(30+Math.random()*15)/wDiv}
+    if(nW+nAr<8&&cmds[tm].warrior==='attack')aiDefendFor(tm);
+  }else if(strat==='spymaster'){
+    if(nMi<3&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nSp<3&&c>=30){aiBuyUnit(tm,'spy');return}
+    var nm4=nextMineFor(tm);if(nm4&&c>=nm4.cost&&nMi>=2){aiBuyMineFor(tm);return}
+    if(nAr<6&&c>=50){aiBuyUnit(tm,'archer');return}
+    if(nW<8&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(nT<2&&c>=TWR_COST){aiBuyTowerFor(tm);return}
+    if(nMi<8&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nDu<3&&c>=DUM_COST&&Math.random()<0.4){aiBuyUnit(tm,'dummy');return}
+    if(nAr<12&&c>=50){aiBuyUnit(tm,'archer');return}
+    if(nB<3&&c>=350){aiBuyUnit(tm,'berserker');return}
+    if(nW<15&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(base[tm].hp<600)aiHealFor(tm);
+    st.waveCD-=st.cd+st.tickBase;var armyAdv=(nW+nAr+nB*3)>(nPw*1.2);
+    if(armyAdv||st.waveCD<=0){aiWaveFor(tm);st.waveCD=(15+Math.random()*10)/wDiv}
+    if(nW+nAr<4&&cmds[tm].warrior==='attack')aiDefendFor(tm);
+  }else{
+    // balanced
+    if(nMi<3&&c>=50){aiBuyUnit(tm,'miner');return}
+    var nm5=nextMineFor(tm);if(nm5&&c>=nm5.cost&&nMi>=2){aiBuyMineFor(tm);return}
+    if(nW<6&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(nSp<2&&c>=30&&nW>=4&&Math.random()<0.3){aiBuyUnit(tm,'spy');return}
+    if(nT<3&&c>=TWR_COST&&nW>=3){aiBuyTowerFor(tm);return}
+    if(nAr<5&&c>=50&&nW>=6){aiBuyUnit(tm,'archer');return}
+    if(nDu<3&&c>=DUM_COST&&nW>=6&&Math.random()<0.4){aiBuyUnit(tm,'dummy');return}
+    if(nMi<7&&c>=50&&nW>=4){aiBuyUnit(tm,'miner');return}
+    if(nW<14&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(nAr<8&&c>=50&&nW>=8){aiBuyUnit(tm,'archer');return}
+    if(nB<3&&c>=350&&nW>=8){aiBuyUnit(tm,'berserker');return}
+    if(nMi<15&&c>=50){aiBuyUnit(tm,'miner');return}
+    if(nW<20&&c>=50){aiBuyUnit(tm,'warrior');return}
+    if(nB<5&&c>=350){aiBuyUnit(tm,'berserker');return}
+    if(nAr<15&&c>=50){aiBuyUnit(tm,'archer');return}
+    if(base[tm].hp<650)aiHealFor(tm);
+    st.waveCD-=st.cd+st.tickBase;if((nW+nAr>=6&&nW+nAr+nB>=8)||st.waveCD<=0){aiWaveFor(tm);st.waveCD=(13+Math.random()*8)/wDiv}
+    if(nW+nAr<3&&cmds[tm].warrior==='attack')aiDefendFor(tm);
+  }
+}
+
+/* ===== PLAYER ACTIONS ===== */
+function buyUnit(tp){var d=DEFS[tp];if(gold[P]<d.cost||cnt(P,tp)>=d.max)return;gold[P]-=d.cost;totalSpent+=d.cost;var u=spawn(P,tp);if(tp==='miner'&&cmds[P].miner==='mine')assignMine(u)}
+function buyDummyP(){if(gold[P]<DUM_COST||cnt(P,'dummy')>=DUM_MAX)return;gold[P]-=DUM_COST;totalSpent+=DUM_COST;placeDummy(P)}
+function buyMineP(){var m=nextMineFor(P);if(!m||gold[P]<m.cost)return;gold[P]-=m.cost;totalSpent+=m.cost;m.unlocked=true;for(var j=0;j<units.length;j++)if(units[j].tm===P&&units[j].tp==='miner')unmine(units[j]);if(cmds[P].miner==='mine')for(var k=0;k<units.length;k++)if(units[k].tm===P&&units[k].tp==='miner')assignMine(units[k])}
+function buyTowerP(){var t=nextTwrFor(P);if(!t||gold[P]<TWR_COST)return;gold[P]-=TWR_COST;totalSpent+=TWR_COST;t.on=true;t.destroyed=false;t.hp=t.mhp;t.last=0}
+function buyHealP(){if(gold[P]<250)return;var n=performance.now();if(n-healT[P]<HEAL_CD||base[P].hp>=base[P].mhp)return;gold[P]-=250;base[P].hp=Math.min(base[P].mhp,base[P].hp+50);healT[P]=n}
+function setCmd(tp,c){cmds[P][tp]=c;if(tp==='miner'){for(var j=0;j<units.length;j++){var u=units[j];if(u.tm===P&&u.tp==='miner'){unmine(u);if(c==='mine')assignMine(u)}}}updBtn()}
+function updBtn(){
+  var w=cmds[P].warrior;document.getElementById('wA').className='b'+(w==='attack'?' on':'');document.getElementById('wD').className='b'+(w==='defend'?' on':'');document.getElementById('wR').className='b'+(w==='retreat'?' on':'');
+  var k=cmds[P].berserker;document.getElementById('kA').className='b'+(k==='attack'?' on':'');document.getElementById('kD').className='b'+(k==='defend'?' on':'');document.getElementById('kR').className='b'+(k==='retreat'?' on':'');
+  var a=cmds[P].archer;document.getElementById('aA').className='b'+(a==='attack'?' on':'');document.getElementById('aD').className='b'+(a==='defend'?' on':'');document.getElementById('aR').className='b'+(a==='retreat'?' on':'');
+  var s=cmds[P].spy;document.getElementById('sS').className='b'+(s==='scout'?' on':'');document.getElementById('sR').className='b'+(s==='retreat'?' on':'');
+  var m=cmds[P].miner;document.getElementById('mM').className='b'+(m==='mine'?' on':'');document.getElementById('mR').className='b'+(m==='retreat'?' on':'');
+}
+function uiUpdate(){
+  document.getElementById('dC').textContent=Math.floor(gold[P]);
+  document.getElementById('nW').textContent=cnt(P,'warrior');document.getElementById('nK').textContent=cnt(P,'berserker');
+  document.getElementById('nAr').textContent=cnt(P,'archer');document.getElementById('nS').textContent=cnt(P,'spy');
+  document.getElementById('nMn').textContent=cnt(P,'miner');document.getElementById('nDu').textContent=cnt(P,'dummy');
+  var cfg=getLvlCfg();
+  if(!cfg.cornerMode){
+    document.getElementById('hp0').textContent=Math.max(0,Math.ceil(base[P].hp));
+    document.getElementById('hp1').textContent=Math.max(0,Math.ceil(base[1].hp));
+    document.getElementById('hpSep').style.display='';
+    document.getElementById('hp1').style.display='';
+  }else{
+    document.getElementById('hp0').textContent=Math.max(0,Math.ceil(base[P].hp));
+    var alive=0,cfg4=getLvlCfg();for(var t=1;t<=cfg4.numAI;t++)if(base[t]&&base[t].hp>0)alive++;
+    document.getElementById('hpSep').textContent=' | Enemies left: '+alive;
+    document.getElementById('hp1').style.display='none';
+  }
+  var nm=nextMineFor(P),mb=document.getElementById('bMi');
+  if(nm){mb.textContent='Mine'+nm.cost;mb.disabled=gold[P]<nm.cost}else{mb.textContent='Mines!';mb.disabled=true}
+  var tw=nextTwrFor(P),tBtn=document.getElementById('bTw');
+  if(tw){tBtn.textContent=tw.destroyed?'RbT150':'T150';tBtn.disabled=gold[P]<TWR_COST}else{tBtn.textContent='Twrs!';tBtn.disabled=true}
+  var hr=now-healT[P]>=HEAL_CD,hb=document.getElementById('bHe');
+  hb.disabled=gold[P]<250||!hr||base[P].hp>=base[P].mhp;
+  hb.textContent=hr?'Heal250':'Heal('+Math.ceil((HEAL_CD-(now-healT[P]))/1000)+'s)';
+  document.getElementById('bW').disabled=gold[P]<50||cnt(P,'warrior')>=20;
+  document.getElementById('bMn').disabled=gold[P]<50||cnt(P,'miner')>=15;
+  document.getElementById('bBe').disabled=gold[P]<350||cnt(P,'berserker')>=5;
+  document.getElementById('bAr').disabled=gold[P]<50||cnt(P,'archer')>=15;
+  document.getElementById('bSp').disabled=gold[P]<30||cnt(P,'spy')>=3;
+  document.getElementById('bDu').disabled=gold[P]<DUM_COST||cnt(P,'dummy')>=DUM_MAX;
+}
+
+/* ===== PROGRESS PERSISTENCE ===== */
+var SAVE_KEY='clashGrounds_maxLevel';
+function loadMaxLevel(){return parseInt(localStorage.getItem(SAVE_KEY)||'1',10)||1}
+function saveMaxLevel(lvl){try{localStorage.setItem(SAVE_KEY,String(lvl))}catch(e){}}
+
+/* ===== END GAME ===== */
+
+/* ===== WAR CHEST + SHOP ===== */
+function calcWarChest(){
+  var elapsed=(now-gameStartTime)/1000;var lvl=currentLevel;
+  var baseR=150+lvl*50;var speedB=elapsed<180?200:elapsed<300?120:elapsed<480?50:0;
+  var effic=Math.round(totalSpent*0.15);var killB=totalKills*3;
+  var hpPct=Math.max(0,base[P].hp)/base[P].mhp;var hpB=Math.round(hpPct*100);
+  var unspent=Math.max(0,gold[P]);var hoardPen=Math.round(unspent*0.4);
+  var raw=baseR+speedB+effic+killB+hpB-hoardPen;var rng=0.85+Math.random()*0.3;
+  return Math.max(20,Math.round(raw*rng));
+}
+function loadChest(){try{return parseInt(localStorage.getItem(CHEST_KEY)||'0')}catch(e){return 0}}
+function saveChest(v){try{localStorage.setItem(CHEST_KEY,String(v))}catch(e){}}
+function loadBoughtUpgrades(){try{return JSON.parse(localStorage.getItem(UPGRADES_KEY)||'[]')}catch(e){return[]}}
+function saveBoughtUpgrades(arr){try{localStorage.setItem(UPGRADES_KEY,JSON.stringify(arr))}catch(e){}}
+function showShop(chest,shopIdx){
+  earnedChest=chest;saveChest(chest);boughtUpgrades=[];saveBoughtUpgrades([]);
+  var items=SHOP_DATA[Math.min(shopIdx,SHOP_DATA.length-1)];
+  var el=document.getElementById('shopItems');
+  document.getElementById('shopChest').textContent=chest+' gold';
+  document.getElementById('shopRemain').textContent=chest;el.innerHTML='';
+  for(var i=0;i<items.length;i++){var it=items[i];
+    var div=document.createElement('div');div.className='sitem'+(it.cost>chest?' cant':'');
+    div.setAttribute('data-id',it.id);div.setAttribute('data-cost',String(it.cost));
+    div.innerHTML='<div class="tag">BOUGHT</div><div class="price">'+it.cost+'</div><h3>'+it.name+'</h3><p>'+it.desc+'</p>';
+    div.onclick=(function(item,d){return function(){toggleShopItem(item,d)}})(it,div);el.appendChild(div)}
+  document.getElementById('shop').style.display='flex';
+}
+function toggleShopItem(item,div){
+  var idx=boughtUpgrades.indexOf(item.id);
+  if(idx>=0){boughtUpgrades.splice(idx,1);div.className='sitem';earnedChest+=item.cost}
+  else{if(earnedChest<item.cost)return;boughtUpgrades.push(item.id);div.className='sitem bought';earnedChest-=item.cost}
+  document.getElementById('shopRemain').textContent=earnedChest;saveBoughtUpgrades(boughtUpgrades);
+  var allItems=document.querySelectorAll('#shopItems .sitem');
+  for(var i=0;i<allItems.length;i++){var si=allItems[i];if(!si.classList.contains('bought')){var c=parseInt(si.getAttribute('data-cost'));si.className=c>earnedChest?'sitem cant':'sitem'}}
+}
+function shopDone(){document.getElementById('shop').style.display='none';resetForLevel(currentLevel)}
+function hasShopUpg(id){return boughtUpgrades.indexOf(id)>=0}
+
+function endGame(won){
+  over=true;
+  if(!won){
+    // Save the highest level the player reached (current level counts as achieved)
+    var maxLvl=Math.max(loadMaxLevel(),currentLevel);
+    saveMaxLevel(maxLvl);
+    var ov=document.getElementById('ov');
+    var m=document.getElementById('eMsg');m.textContent='DEFEAT!';m.className='l';
+    document.getElementById('eSubMsg').textContent='You fell on Level '+currentLevel+'.';
+    // Restart from Level 1 (clear everything)
+    document.getElementById('eBtnRestart').onclick=function(){saveChest(0);saveBoughtUpgrades([]);currentLevel=1;resetForLevel(1);ov.style.display='none'};
+    // Retry level — go back to shop to reallocate chest
+    var resumeBtn=document.getElementById('eBtnResume');
+    if(currentLevel>1){
+      document.getElementById('eResumeLvl').textContent=currentLevel;
+      resumeBtn.style.display='';
+      resumeBtn.onclick=function(){
+        ov.style.display='none';
+        var savedChest=loadChest();
+        var shopIdx=currentLevel-2;
+        if(savedChest>0 && shopIdx>=0 && shopIdx<SHOP_DATA.length){
+          showShop(savedChest,shopIdx);
+        }else{
+          saveBoughtUpgrades([]);resetForLevel(currentLevel);
+        }
+      };
+    }else{
+      resumeBtn.style.display='none';
+    }
+    ov.style.display='flex';
+    return;
+  }
+  // Won!
+  if(currentLevel>=4){
+    // All levels beaten
+    document.getElementById('lvlMsg').textContent='CHAMPION!';
+    document.getElementById('lvlDesc').textContent='All warlords defeated! You have conquered the Clash Grounds!';
+    document.getElementById('lvlBtn').textContent='Play Again';
+    document.getElementById('lvlBtn').onclick=function(){currentLevel=1;location.reload()};
+    document.getElementById('lvl-ov').style.display='flex';
+  }else{
+    var chest=calcWarChest();
+    currentLevel++;
+    saveMaxLevel(Math.max(loadMaxLevel(),currentLevel));
+    var shopIdx=currentLevel-2;
+    if(shopIdx>=0 && shopIdx<SHOP_DATA.length){
+      showShop(chest,shopIdx);
+    }else{
+      resetForLevel(currentLevel);
+    }
+  }
+}
+
+/* ===== RESET FOR LEVEL ===== */
+function resetForLevel(lvl){
+  currentLevel=lvl;
+  var cfg=getLvlCfg();
+  document.getElementById('lvl-ov').style.display='none';
+  document.getElementById('ov').style.display='none';
+  over=false;
+  units=[];arrows=[];floats=[];
+  var numTeams=1+cfg.numAI;
+  gold=[];healT=[];cmds=[];ca=[];aiState=[];
+  base=[];mines=[];twrs=[];
+
+  for(var t=0;t<numTeams;t++){
+    gold[t]=(t===P)?80:cfg.aiStartGold;
+    healT[t]=-1e9;
+    ca[t]=0;
+    cmds[t]={warrior:'retreat',berserker:'retreat',miner:'mine',spy:'scout',archer:'retreat'};
+    base[t]={x:0,y:0,hp:1000,mhp:1000,r:42,sr:200};
+    if(t>0){aiState[t]=makeAiState(cfg)}
+  }
+
+  if(!cfg.cornerMode){
+    // 3 mines per team
+    for(var i=0;i<3;i++){
+      mines.push({team:P,idx:i,unlocked:i===0,prod:MINE_D_BASE[i].prod,cost:MINE_D_BASE[i].cost,r:20,cap:5,list:[],x:0,y:0});
+      mines.push({team:1,idx:i,unlocked:i===0,prod:MINE_D_BASE[i].prod,cost:MINE_D_BASE[i].cost,r:20,cap:5,list:[],x:0,y:0});
+    }
+    // 3 towers per team
+    for(var i2=0;i2<3;i2++){
+      twrs.push({team:P,idx:i2,on:false,hp:0,mhp:TWR_HP,r:16,range:TWR_RANGE,ai:TWR_AI,last:0,dmg:TWR_DMG,x:0,y:0,hi:0,destroyed:false});
+      twrs.push({team:1,idx:i2,on:false,hp:0,mhp:TWR_HP,r:16,range:TWR_RANGE,ai:TWR_AI,last:0,dmg:TWR_DMG,x:0,y:0,hi:0,destroyed:false});
+    }
+  }else{
+    // Corner mode: 2 mines + 2 towers per team
+    var numT2=1+cfg.numAI;
+    for(var t3=0;t3<numT2;t3++){
+      for(var i3=0;i3<2;i3++){
+        var mineCost=i3===0?0:200;
+        mines.push({team:t3,idx:i3,unlocked:i3===0,prod:MINE_D_BASE[i3].prod,cost:mineCost,r:20,cap:5,list:[],x:0,y:0});
+        twrs.push({team:t3,idx:i3,on:false,hp:0,mhp:TWR_HP,r:16,range:TWR_RANGE,ai:TWR_AI,last:0,dmg:TWR_DMG,x:0,y:0,hi:0,destroyed:false});
+      }
+    }
+  }
+
+  layout();
+  initFog();
+
+  // Update start screen
+  document.getElementById('sLvl').textContent=cfg.name;
+  document.getElementById('sDesc').textContent=cfg.desc;
+  document.getElementById('lvlind').textContent='LEVEL '+currentLevel;
+
+  // Spawn initial miners
+  var pm=spawn(P,'miner');if(cmds[P].miner==='mine')assignMine(pm);
+
+  /* Apply shop upgrades */
+  boughtUpgrades=loadBoughtUpgrades();
+  if(hasShopUpg('extra_miner')){var em=spawn(P,'miner');if(cmds[P].miner==='mine')assignMine(em)}
+  if(hasShopUpg('two_miners')){for(var xm=0;xm<2;xm++){var em2=spawn(P,'miner');if(cmds[P].miner==='mine')assignMine(em2)}}
+  if(hasShopUpg('three_miners')){for(var xm2=0;xm2<3;xm2++){var em3=spawn(P,'miner');if(cmds[P].miner==='mine')assignMine(em3)}}
+  if(hasShopUpg('head_start'))gold[P]+=50;
+  if(hasShopUpg('war_funds'))gold[P]+=100;
+  if(hasShopUpg('war_chest2'))gold[P]+=150;
+  if(hasShopUpg('fort_base')){base[P].hp=1200;base[P].mhp=1200}
+  if(hasShopUpg('steel_walls')){base[P].hp=1300;base[P].mhp=1300}
+  if(hasShopUpg('fortress')){base[P].hp=1500;base[P].mhp=1500}
+  if(hasShopUpg('mine_boost')){for(var mb=0;mb<mines.length;mb++){if(mines[mb].team===P&&mines[mb].idx===0)mines[mb].prod=8}}
+  if(hasShopUpg('vet_blades')){DEFS.warrior.dmg=12}
+  if(hasShopUpg('free_tower')||hasShopUpg('tower_archer')){for(var ft=0;ft<twrs.length;ft++){if(twrs[ft].team===P&&!twrs[ft].on){twrs[ft].on=true;twrs[ft].hp=twrs[ft].mhp;twrs[ft].destroyed=false;break}}}
+  if(hasShopUpg('tower_archer')){spawn(P,'archer')}
+  if(hasShopUpg('tower_pair')){var tpc=0;for(var fp=0;fp<twrs.length;fp++){if(twrs[fp].team===P&&!twrs[fp].on&&tpc<2){twrs[fp].on=true;twrs[fp].hp=twrs[fp].mhp;twrs[fp].destroyed=false;tpc++}}}
+  if(hasShopUpg('elite_army')){spawn(P,'warrior');spawn(P,'archer');spawn(P,'berserker')}
+
+  for(var ait=1;ait<=cfg.numAI;ait++){var am=spawn(ait,'miner');if(cmds[ait].miner==='mine')assignMine(am)}
+
+  updBtn();
+  lt=performance.now();gameStartTime=lt;totalSpent=0;totalKills=0;
+  if(!started){return}// will be started by startGame
+  requestAnimationFrame(loop);
+}
+
+/* ===== DRAW ===== */
+function draw(nowT){
+  cx.clearRect(0,0,W,H);
+  if(imgs['backdrop']&&imgs['backdrop'].complete&&imgs['backdrop'].naturalWidth>0){
+    cx.drawImage(imgs['backdrop'],0,0,W,H);
+  }else{
+    var bg=cx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#1e2d14');bg.addColorStop(0.5,'#253818');bg.addColorStop(1,'#1e2d14');
+    cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+    cx.strokeStyle='rgba(255,255,255,0.03)';
+    for(var x=0;x<W;x+=50){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke()}
+    for(var y=0;y<H;y+=50){cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke()}
+  }
+
+  // Tower ranges
+  for(var i=0;i<twrs.length;i++){
+    var tw=twrs[i];if(!tw.on||tw.destroyed)continue;
+    cx.save();cx.beginPath();cx.arc(tw.x,tw.y,tw.range,0,TAU);
+    cx.strokeStyle=teamColor(tw.team)+'22';
+    cx.setLineDash([6,6]);cx.lineWidth=1;cx.stroke();cx.restore();
+  }
+
+  // Mines
+  for(var i2=0;i2<mines.length;i2++){
+    var m=mines[i2];
+    if(m.unlocked){drawGlow(m.x,m.y,m.r*1.1,'#ffd700',0.2);drawSprite('mine_active',m.x,m.y,m.r*2.4);}
+    else{drawGlow(m.x,m.y,m.r*1.1,'#555',0.18);drawSprite('mine_locked',m.x,m.y,m.r*2.4);}
+    if(!imgs['mine_active']){cx.fillStyle=m.unlocked?'#ffd700':'#555';cx.font='bold 10px monospace';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('M'+(m.idx+1),m.x,m.y);}
+    cx.fillStyle='rgba(255,255,255,0.85)';cx.font='bold 9px sans-serif';cx.textAlign='center';cx.textBaseline='top';
+    var mc=0;for(var k=0;k<m.list.length;k++)if(ds(m.list[k],m)<35)mc++;
+    cx.fillText(m.prod+'c',m.x,m.y+m.r+2);
+  }
+
+  // Towers
+  for(var i3=0;i3<twrs.length;i3++){
+    var tw2=twrs[i3];var tc=teamColor(tw2.team);
+    var hit2=tw2.hi&&nowT-tw2.hi<120;
+    if(tw2.on&&!tw2.destroyed){
+      drawGlow(tw2.x,tw2.y,tw2.r*1.15,tc,0.35);
+      drawSprite('tower_built',tw2.x,tw2.y,tw2.r*2.8);
+      if(hit2){drawGlow(tw2.x,tw2.y,tw2.r*1.2,'#fff',0.45)}
+      drawRing(tw2.x,tw2.y,tw2.r*1.15,tc,2.5);
+      var hr2=Math.max(0,tw2.hp/tw2.mhp),bw=tw2.r*2.5;
+      cx.fillStyle='rgba(0,0,0,0.6)';cx.fillRect(tw2.x-bw/2,tw2.y-tw2.r-11,bw,5);
+      cx.fillStyle=hr2>0.5?'#53d769':hr2>0.25?'#ffd700':'#e94560';cx.fillRect(tw2.x-bw/2,tw2.y-tw2.r-11,bw*hr2,5);
+    }else if(tw2.destroyed){
+      drawGlow(tw2.x,tw2.y,tw2.r,'#5a2020',0.4);
+      drawSprite('tower_ruin',tw2.x,tw2.y,tw2.r*2.6);
+    }else{
+      drawSprite('tower_ruin',tw2.x,tw2.y,tw2.r*2.6);
+    }
+    if(!imgs['tower_built']&&!imgs['tower_ruin']){cx.fillStyle='#fff';cx.font='bold 12px monospace';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(tw2.destroyed?'X':'T',tw2.x,tw2.y);}
+  }
+
+  // Bases
+  var cfg=getLvlCfg();
+  var numTeams=1+cfg.numAI;
+  for(var bi=0;bi<numTeams;bi++){
+    var b=base[bi];if(!b)continue;
+    var hr3=Math.max(0,b.hp/b.mhp);
+    var bcol=teamColor(bi);
+    drawGlow(b.x,b.y,b.r*1.1,bcol,0.28+(hr3*0.2));
+    drawSprite('base',b.x,b.y,b.r*2.6);
+    drawRing(b.x,b.y,b.r*1.1,bcol,3);
+    // HP bar
+    var bw2=b.r*2;
+    cx.fillStyle='rgba(0,0,0,0.7)';cx.fillRect(b.x-bw2/2,b.y-b.r-14,bw2,7);
+    cx.fillStyle=hr3>0.5?'#53d769':hr3>0.25?'#ffd700':'#e94560';cx.fillRect(b.x-bw2/2,b.y-b.r-14,bw2*hr3,7);
+    cx.strokeStyle='rgba(0,0,0,0.5)';cx.lineWidth=1;cx.strokeRect(b.x-bw2/2,b.y-b.r-14,bw2,7);
+    // Label
+    cx.fillStyle='rgba(0,0,0,0.65)';cx.fillRect(b.x-22,b.y+b.r*0.6-8,44,14);
+    cx.fillStyle='#fff';cx.font='bold 10px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText(bi===P?'BASE':('E'+bi+' '+Math.ceil(Math.max(0,b.hp))),b.x,b.y+b.r*0.6);
+  }
+
+  // Units
+  for(var ui3=0;ui3<units.length;ui3++){
+    var u=units[ui3];
+    if(u.tm!==P){
+      if(u.tp==='spy'&&!u.flickVis)continue;
+      if(!vis(u.x,u.y))continue;
+    }
+    var uCol=teamColor(u.tm);
+    var hit=u.hi&&nowT-u.hi<120;
+    var sprAlpha=1;
+    if(u.tp==='spy'){sprAlpha=0.45+0.3*Math.sin(nowT*0.005+u.scoutPhase)}
+    if(u.tp==='dummy'){
+      // Dummies: grey neutral ring, no team color
+      drawGlow(u.x,u.y,u.r,'#888',0.35);
+      drawRing(u.x,u.y,u.r,'#aaa',2);
+      if(hit)drawGlow(u.x,u.y,u.r,'#fff',0.5);
+      drawSprite('dummy',u.x,u.y,u.r*2.5);
+      if(!imgs['dummy']){cx.fillStyle='#ccc';cx.font='bold 8px monospace';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('D',u.x,u.y)}
+    }else{
+      // All real units: colored glow ring + sprite
+      drawGlow(u.x,u.y,u.r*1.1,uCol,hit?0.75:0.4);
+      drawRing(u.x,u.y,u.r*1.1,hit?'#fff':uCol,hit?2.5:2);
+      cx.save();cx.globalAlpha=sprAlpha;
+      drawSprite(u.tp,u.x,u.y,u.r*2.6);
+      cx.restore();
+      if(!imgs[u.tp]){cx.fillStyle='#fff';cx.font='bold 8px monospace';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(u.tp[0].toUpperCase(),u.x,u.y)}
+    }
+    // HP bar (only when hurt)
+    if(u.hp<u.mhp){var bw2=u.r*2.2,hr4=Math.max(0,u.hp/u.mhp);cx.fillStyle='rgba(0,0,0,0.6)';cx.fillRect(u.x-bw2/2,u.y-u.r-9,bw2,4);cx.fillStyle=hr4>0.5?'#53d769':'#e94560';cx.fillRect(u.x-bw2/2,u.y-u.r-9,bw2*hr4,4)}
+    if(u.tp==='spy'&&u.tm===P&&spyInDanger(u)){cx.save();cx.globalAlpha=Math.sin(nowT*0.01)>0?1:0.3;cx.fillStyle='#ff4444';cx.font='bold 14px sans-serif';cx.textAlign='center';cx.fillText('!',u.x,u.y-u.r-12);cx.restore()}
+  }
+
+  // Arrows
+  for(var ai3=0;ai3<arrows.length;ai3++){
+    var ar=arrows[ai3];if(ar.tm!==P&&!vis(ar.x,ar.y))continue;
+    cx.save();
+    if(ar.tr.length>1){cx.beginPath();cx.moveTo(ar.tr[0].x,ar.tr[0].y);for(var j3=1;j3<ar.tr.length;j3++)cx.lineTo(ar.tr[j3].x,ar.tr[j3].y);cx.lineTo(ar.x,ar.y);cx.strokeStyle=teamColor(ar.tm)+'88';cx.lineWidth=2;cx.stroke()}
+    var aang=Math.atan2(ar.tgt.y-ar.y,ar.tgt.x-ar.x);cx.translate(ar.x,ar.y);cx.rotate(aang);
+    cx.fillStyle=teamColor(ar.tm);cx.beginPath();cx.moveTo(11,0);cx.lineTo(-5,-3.5);cx.lineTo(-3,0);cx.lineTo(-5,3.5);cx.closePath();cx.fill();
+    cx.restore();
+  }
+
+  // Floats
+  for(var fi=0;fi<floats.length;fi++){var f=floats[fi];cx.save();cx.globalAlpha=Math.max(0,f.t/0.9);cx.fillStyle=f.c;cx.font='bold 13px sans-serif';cx.textAlign='center';cx.fillText('-'+f.v,f.x,f.y);cx.restore()}
+
+  updateFog();cx.save();cx.globalAlpha=0.55;cx.drawImage(fogExp,0,0);cx.restore();cx.save();cx.globalAlpha=0.92;cx.drawImage(fogCur,0,0);cx.restore();
+}
+
+/* ===== LOOP ===== */
+function loop(n){tick(n);draw(n);if(!over)requestAnimationFrame(loop)}
+
+/* ===== INIT ===== */
+// Init level 1 state on load (without starting)
+(function initLevel1(){
+  var cfg=getLvlCfg();
+  var numTeams=1+cfg.numAI;
+  for(var t=0;t<numTeams;t++){
+    gold[t]=(t===P)?80:cfg.aiStartGold;
+    healT[t]=-1e9;ca[t]=0;
+    cmds[t]={warrior:'retreat',berserker:'retreat',miner:'mine',spy:'scout',archer:'retreat'};
+    base[t]={x:0,y:0,hp:1000,mhp:1000,r:42,sr:200};
+    if(t>0)aiState[t]=makeAiState(cfg);
+  }
+  // 3 mines + 3 towers per team, 2 teams
+  for(var i=0;i<3;i++){
+    mines.push({team:P,idx:i,unlocked:i===0,prod:MINE_D_BASE[i].prod,cost:MINE_D_BASE[i].cost,r:20,cap:5,list:[],x:0,y:0});
+    mines.push({team:1,idx:i,unlocked:i===0,prod:MINE_D_BASE[i].prod,cost:MINE_D_BASE[i].cost,r:20,cap:5,list:[],x:0,y:0});
+    twrs.push({team:P,idx:i,on:false,hp:0,mhp:TWR_HP,r:16,range:TWR_RANGE,ai:TWR_AI,last:0,dmg:TWR_DMG,x:0,y:0,hi:0,destroyed:false});
+    twrs.push({team:1,idx:i,on:false,hp:0,mhp:TWR_HP,r:16,range:TWR_RANGE,ai:TWR_AI,last:0,dmg:TWR_DMG,x:0,y:0,hi:0,destroyed:false});
+  }
+  // Update start screen
+  document.getElementById('sLvl').textContent='LEVEL '+currentLevel;
+  document.getElementById('sDesc').textContent=cfg.desc;
+  document.getElementById('lvlind').textContent='LEVEL '+currentLevel;
+  layout();initFog();
+  updBtn();
+})();
+
+window.addEventListener('resize',function(){
+  layout();
+  fogCur.width=W;fogCur.height=H;
+  var old=fogExp;fogExp=document.createElement('canvas');fogExp.width=W;fogExp.height=H;
+  fogExpCx=fogExp.getContext('2d');fogExpCx.fillStyle='#000';fogExpCx.fillRect(0,0,W,H);
+  try{fogExpCx.drawImage(old,0,0,W,H)}catch(e){}
+});
+
+function startGame(){
+  if(started)return;started=true;
+  document.getElementById('start').style.display='none';
+  document.getElementById('lvlind').style.display='block';
+  var cfg=getLvlCfg();
+  var pm=spawn(P,'miner');assignMine(pm);
+  for(var ait=1;ait<=cfg.numAI;ait++){var am=spawn(ait,'miner');assignMine(am)}
+  lt=performance.now();gameStartTime=lt;totalSpent=0;totalKills=0;
+  requestAnimationFrame(loop);
+}
+
+return{buy:buyUnit,buyMine:buyMineP,buyTower:buyTowerP,buyHeal:buyHealP,buyDummy:buyDummyP,cmd:setCmd,start:startGame,shopDone:shopDone};
+})();
+</script>
+</body>
+</html>

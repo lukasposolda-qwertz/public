@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NO – Kroppen</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --card-bg: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #64748b;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --correct-bg: #ecfdf5;
+  --correct-border: #059669;
+  --correct-text: #065f46;
+  --incorrect-bg: #fef2f2;
+  --incorrect-border: #dc2626;
+  --incorrect-text: #991b1b;
+  --partial: #d97706;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --card-radius: 16px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; line-height: 1.5; }
+.container { max-width: 720px; margin: 0 auto; padding: 1rem; }
+header { text-align: center; padding: 1rem 0 0.75rem; }
+h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.75rem; }
+#progress-text { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem; min-height: 1.3em; }
+.bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+.card { background: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: 2rem; margin-top: 1rem; }
+.qtext { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.5rem; }
+.qtype { font-size: 0.8rem; font-style: italic; color: var(--text-secondary); margin: 0 0 1rem; }
+.options { display: flex; flex-direction: column; gap: 0.75rem; }
+.opt, .row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.875rem 1rem; background: #fff; }
+.opt { display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer; font-size: 1rem; }
+.opt:hover { border-color: var(--accent); background: #f8f9ff; }
+.opt.sel { border-color: var(--accent); background: #eef2ff; }
+.opt input { accent-color: var(--accent); margin-top: 0.3rem; flex: none; width: 1rem; height: 1rem; }
+.mark { display: inline-block; min-width: 1.1em; font-weight: 700; }
+.right { border-color: var(--correct-border) !important; background: var(--correct-bg) !important; }
+.wrong { border-color: var(--incorrect-border) !important; background: var(--incorrect-bg) !important; }
+.rowtext .mark:empty { display: none; }
+.pool { margin: 0 0 1rem; padding: 0.75rem 1rem; background: #f8fafc; border-radius: 10px; font-size: 0.95rem; }
+.pool div { margin: 0.25rem 0; }
+.right .mark { color: var(--correct-border); }
+.wrong .mark { color: var(--incorrect-border); }
+.locked .opt { cursor: default; }
+.locked .opt:hover { background: #fff; border-color: #e2e8f0; }
+.locked .opt.sel:hover { background: #eef2ff; border-color: var(--accent); }
+.row { display: flex; flex-direction: column; gap: 0.5rem; }
+.rows { display: flex; flex-direction: column; gap: 0.75rem; }
+.rowtext { font-size: 1rem; }
+.note { font-size: 0.875rem; color: var(--correct-text); }
+select, input[type=text] { font: inherit; font-size: 1rem; padding: 0.5rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: var(--text-primary); max-width: 100%; }
+select:focus, input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+select:disabled, input[type=text]:disabled { opacity: 1; color: var(--text-primary); background: #f8fafc; }
+select.right, input.right { border-color: var(--correct-border); background: var(--correct-bg); }
+select.wrong, input.wrong { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+.tfbtns { display: flex; gap: 0.5rem; }
+.tfbtns label { flex: 1; text-align: center; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem; cursor: pointer; font-weight: 500; }
+.tfbtns label:hover { border-color: var(--accent); background: #f8f9ff; }
+.tfbtns label.sel { border-color: var(--accent); background: #eef2ff; }
+.tfbtns input { position: absolute; opacity: 0; pointer-events: none; }
+.tfbtns label.ans { border-color: var(--correct-border); background: var(--correct-bg); }
+.tfbtns label.bad { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+.locked .tfbtns label { cursor: default; }
+.orderrow { display: flex; align-items: center; gap: 0.75rem; }
+.orderrow .num { font-weight: 700; color: var(--text-secondary); min-width: 1.5rem; }
+.orderrow .rowtext { flex: 1; }
+.arrows { display: flex; gap: 0.35rem; }
+.arrows button { width: 2.2rem; height: 2.2rem; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; font-size: 1rem; cursor: pointer; color: var(--text-primary); }
+.arrows button:hover:not(:disabled) { border-color: var(--accent); background: #f8f9ff; }
+.arrows button:disabled { opacity: 0.35; cursor: not-allowed; }
+.cloze { font-size: 1.05rem; line-height: 2.4; }
+.cloze select { margin: 0 0.2rem; }
+.correct-line { margin-top: 0.75rem; font-size: 0.9rem; color: var(--correct-text); }
+.btn { background: var(--accent); color: #fff; border: 2px solid var(--accent); font: inherit; font-weight: 600; padding: 0.75rem 2rem; border-radius: 10px; cursor: pointer; }
+.btn:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.outline { background: transparent; color: var(--accent); }
+.btn.outline:hover:not(:disabled) { background: #eef2ff; border-color: var(--accent); }
+.actions { margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+.feedback { margin-top: 1.5rem; padding: 1rem 1.25rem; border-left: 4px solid; border-radius: 0 10px 10px 0; font-size: 0.95rem; }
+.feedback p { margin: 0.5rem 0 0; }
+.feedback.ok { border-color: var(--correct-border); background: rgba(5,150,105,0.05); }
+.feedback.no { border-color: var(--incorrect-border); background: rgba(220,38,38,0.05); }
+.feedback.mid { border-color: var(--partial); background: rgba(217,119,6,0.05); }
+.center { text-align: center; }
+.intro ul { padding-left: 1.2rem; margin: 0.5rem 0 0; }
+.intro li { margin-bottom: 0.35rem; }
+table.res { margin: 1rem auto 0; border-collapse: collapse; font-size: 0.95rem; }
+table.res td { padding: 0.3rem 1rem; border-bottom: 1px solid #e2e8f0; }
+table.res td:last-child { text-align: right; font-weight: 600; }
+@media (max-width: 480px) { .card { padding: 1.25rem; } .orderrow { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1 id="title"></h1>
+    <div id="progress-text"></div>
+    <div class="bar"><div class="bar-fill" id="bar"></div></div>
+  </header>
+  <main id="app"></main>
+</div>
+<script>
+(function () {
+'use strict';
+const META = {"id": "quiz-no-kroppen", "title": "NO – Kroppen", "intro": ["Quizet har 60 frågor i flera olika format om matspjälkning, energi och cellandning, andning, blod och hjärta, kroppens reningsverk och försvar, muskler, skelett och åldrande. Läs varje fråga noga: antalet rätta svar och sättet att svara skiljer sig mellan frågorna.", "En fråga räknas som rätt först när alla delar är rätt. Efter varje fråga visas facit med förklaring."], "types": ["single", "multi", "tf", "match", "order", "cloze", "short", "sort"]};
+const quizData = [{"type": "single", "q": "Vilket näringsämne behöver kroppen främst för att växa och för att reparera och byta ut slitna celler?", "options": ["Kolhydrater", "Proteiner", "Vitaminer", "Järn"], "correct": 1, "fb": "Proteiner är kroppens byggmaterial. De behövs när du växer och när slitna celler ska repareras eller bytas ut.\nKolhydrater ger främst energi (A). Vitaminer behövs för att kroppen ska fungera och må bra (C). Järn behövs för att blodet ska kunna ta upp syre (D)."}, {"type": "sort", "q": "Placera varje livsmedel under det näringsämne som det innehåller mycket av.", "categories": ["Kolhydrater", "Proteiner", "Fett"], "items": [{"t": "Potatis", "c": 0}, {"t": "Bröd", "c": 0}, {"t": "Frukt", "c": 0}, {"t": "Fisk", "c": 1}, {"t": "Bönor", "c": 1}, {"t": "Smör", "c": 2}, {"t": "Margarin", "c": 2}], "fb": "Potatis, ris, bröd och frukt innehåller mycket kolhydrater, som är kroppens främsta energikälla. Kött, fisk, mjölk och bönor innehåller mycket proteiner. Smör och margarin innehåller mycket fett, som ger både energi och ämnen för att bygga nya celler. Kroppen behöver alla näringsämnena, och därför är det viktigt att äta varierad mat."}, {"type": "order", "q": "Ordna delarna i mag-tarmkanalen i den ordning maten passerar dem.", "items": ["Munnen", "Matstrupen", "Magsäcken", "Tunntarmen", "Tjocktarmen", "Ändtarmen"], "fb": "I munnen tuggas maten och blandas med saliv. Genom matstrupen kommer den till magsäcken, där den knådas med sur magsaft. I tunntarmen bryts maten ner ytterligare och näringen tas upp av blodet. Tjocktarmen suger tillbaka vatten, och resten samlas i ändtarmen tills man går på toaletten."}, {"type": "tf", "q": "Bedöm om varje påstående om munnen och matstrupen är sant eller falskt.", "items": [{"t": "Ny saliv bildas när man tuggar och äter.", "a": true}, {"t": "Saliven gör det lättare att svälja tuggan.", "a": true}, {"t": "Det tar ungefär en minut för tuggan att passera genom matstrupen.", "a": false}, {"t": "Övre magmunnen stängs efter att tuggan släppts in, så att maten inte rinner tillbaka.", "a": true}], "fb": "Saliv är spottet i munnen. Det bildas mer när du tuggar, och det gör tuggan lätt att svälja. Genom matstrupen går det snabbt: bara ungefär två sekunder. Övre magmunnen öppnas och släpper in tuggan i magsäcken och stängs sedan igen. Därför rinner maten inte ut ens om man står på händer."}, {"type": "multi", "q": "Vilka påståenden om magsäcken stämmer?", "options": ["Den är en kraftig muskel som knådar maten", "Den rymmer ungefär tio liter", "Magsaften är mycket sur och löser upp maten till en välling", "Den sitter mest på höger sida av kroppen"], "correct": [0, 2], "fb": "A och C stämmer. Magsäcken liknar en påse av kraftig muskel. Den knådar maten och blandar den med magsaft, som är mycket sur och löser upp maten till en välling.\nB är fel: magsäcken rymmer ungefär en liter. D är fel: magsäcken sitter i övre delen av magen, mest på vänster sida."}, {"type": "short", "q": "Vad heter det när magsyra kommer upp i matstrupen så att det svider och bränner? Svara med ett ord.", "answers": ["halsbränna", "halsbrännan", "halsbränning"], "fb": "Det kallas halsbränna. Magsyran är mycket sur. Magsäcken tål den, men i matstrupen svider och bränner den."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Maten stannar i magsäcken i ungefär {0}. Sedan fortsätter den till {1} och vidare in i tunntarmen. Där blandas den med galla, {2} och tarmsaft, som bryter ner den ytterligare.", "blanks": [{"options": ["två till tre timmar", "två till tre minuter", "ett dygn", "en vecka"], "correct": 0}, {"options": ["tolvfingertarmen", "matstrupen", "ändtarmen", "urinblåsan"], "correct": 0}, {"options": ["bukspott", "saliv", "urin", "blodplasma"], "correct": 0}], "fb": "Efter två till tre timmar i magsäcken går maten vidare till tolvfingertarmen och sedan till tunntarmen. Där blandas den med tre vätskor, galla, bukspott och tarmsaft, som bryter ner den ännu mer. Det som var en hamburgare har då blivit en soppa av bland annat proteiner, kolhydrater och fetter."}, {"type": "single", "q": "Insidan av tunntarmen är veckad och luddig. Vad händer i det som kallas tarmluddet?", "options": ["Det mesta av vattnet i maten sugs tillbaka", "Maten knådas och blandas med sur magsaft", "Näringen från maten tas upp av små blodkärl", "Avföringen samlas tills det är dags att gå på toaletten"], "correct": 2, "fb": "I tarmluddet finns små blodkärl som tar upp näringen från maten och för den vidare med blodet. Tarmluddet fungerar som ett filter: ämnen som kroppen inte kan använda, eller som är för stora bitar, går vidare i tarmen.\nVattnet sugs tillbaka i tjocktarmen (A), maten knådas i magsäcken (B) och avföringen samlas i ändtarmen (D)."}, {"type": "match", "q": "Para ihop varje del av kroppen med vad den gör när vi äter. En beskrivning passar ingen av delarna.", "pairs": [["Tjocktarmen", "Suger tillbaka det mesta av vattnet"], ["Ändtarmen", "Hit kommer resterna när det är dags att gå på toaletten"], ["Tungan", "Blandar maten i munnen ungefär som en visp"], ["Kindtänderna", "Krossar och mal maten som en mortel"]], "extra": ["Renar blodet och bildar urin"], "fb": "Tungan blandar maten som en visp, och de knöliga kindtänderna krossar den (framtänderna biter av som en avbitartång). Tjocktarmen suger tillbaka vatten, och kvar blir en tjock smet som samlas i ändtarmen. Det är njurarna som renar blodet och bildar urin."}, {"type": "multi", "q": "Vilka påståenden om bakterierna i våra tarmar stämmer?", "options": ["Nyttiga bakterier i tarmen hjälper till att ta vara på näringen i maten", "Gaser kan bildas när bakterier i tarmen bryter ner matrester", "Alla bakterier i tarmen är skadliga och måste bekämpas med medicin", "Bakterierna gör att maten stannar längre i magsäcken"], "correct": [0, 1], "fb": "A och B stämmer. I tarmarna finns många nyttiga bakterier som hjälper oss att få ut viktiga ämnen ur maten, och utan dem skulle vi inte klara oss. När bakterierna bryter ner matrester kan det bildas gaser.\nC är fel eftersom tarmbakterierna är till nytta. D är fel: bakterierna arbetar i tarmen, inte i magsäcken."}, {"type": "single", "q": "Blodet för näringsämnena från tarmen till levern. Vad gör levern med dem?", "options": ["Bearbetar dem och lagrar en del som inte behövs just då", "Skickar ut dem ur kroppen med urinen", "Gör om dem till koldioxid som vi andas ut", "Bryter ner dem till en välling med hjälp av den sura magsyran"], "correct": 0, "fb": "Levern fungerar som en stor fabrik. Där sätts näringens byggstenar ihop så att de passar just din kropp, och sedan för blodet ut dem i hela kroppen. Näring som inte behövs just då kan lagras i levern och användas senare.\nUrin bildas i njurarna (B), koldioxid bildas när cellerna förbränner näring (C) och magsyran finns i magsäcken (D)."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Växter kan fånga solens energi och lagra den. Det kallas {0}. Djur som äter växter kallas {1}. Energin i maten frigörs i kroppen när den förbränns, och då behövs {2}.", "blanks": [{"options": ["fotosyntes", "matspjälkning", "cellandning", "förbränning"], "correct": 0}, {"options": ["växtätare", "rovdjur", "ryggradsdjur", "insekter"], "correct": 0}, {"options": ["syre", "koldioxid", "urin", "galla"], "correct": 0}], "fb": "Allt levande behöver energi, och den kommer från början från solen. Växterna fångar solens energi genom fotosyntes. Växtätare får i sig energin när de äter växter, och rovdjur när de äter växtätare. När maten förbränns i kroppen behövs syre, precis som vid all annan förbränning."}, {"type": "multi", "q": "Vilka påståenden om cellandningen stämmer?", "options": ["Den sker i alla levande celler i kroppen", "Den pågår både på dagen och på natten", "Kroppen behöver energi från den även när vi sover, till exempel för att hjärtat ska slå", "Utan cellandning skulle vi inte kunna leva"], "correct": [0, 1, 2, 3], "fb": "Alla fyra stämmer. Vid cellandningen gör cellerna energi av syre och druvsocker. Vi behöver energi hela tiden: när vi springer behöver musklerna energi, när vi tänker behöver hjärnan energi, och även när vi sover behövs energi för att hjärtat ska slå och för att vi ska andas."}, {"type": "sort", "q": "Placera varje påstående under fotosyntes, cellandning eller båda.", "categories": ["Fotosyntes", "Cellandning", "Båda"], "items": [{"t": "Använder solens energi.", "c": 0}, {"t": "Tar upp koldioxid och vatten.", "c": 0}, {"t": "Bildar syre och druvsocker.", "c": 0}, {"t": "Använder syre och druvsocker.", "c": 1}, {"t": "Bildar koldioxid och vatten.", "c": 1}, {"t": "Frigör energi som vi använder för att röra oss och tänka.", "c": 1}, {"t": "Sker hos växter.", "c": 2}], "fb": "Fotosyntes: koldioxid + vatten + solenergi → syre + druvsocker.\nCellandning: syre + druvsocker → koldioxid + vatten + energi.\nDe två hör ihop: det ena bildar precis det som det andra använder. Växter har både fotosyntes och cellandning, medan människor och djur bara har cellandning."}, {"type": "single", "q": "”Alla ämnen cirkulerar men energin flödar.” Vad betyder det?", "options": ["Energin används om och om igen i ett kretslopp, medan ämnen som kol och syre tar slut efter ett tag", "Ämnen som kol, syre och vatten används om och om igen, men ny energi kommer hela tiden från solen", "Både ämnena och energin stannar för alltid inne i växterna", "Solen skickar ut syre och vatten som cirkulerar runt jorden"], "correct": 1, "fb": "Ämnena går runt i ett kretslopp. Växterna tar upp koldioxid och vatten och bildar kolhydrater och syre. När vi förbränner maten blir det koldioxid och vatten igen, som växterna kan använda på nytt. Energin går däremot inte runt. Den kommer hela tiden ny från solen, och när vi har använt den har en del blivit värme. Därför säger man att energin flödar."}, {"type": "tf", "q": "Bedöm om varje påstående om förbränning i en bil och i kroppen är sant eller falskt.", "items": [{"t": "I både bensin och mat finns ämnen med kol som innehåller energi.", "a": true}, {"t": "Förbränningen i kroppen sker vid ungefär +37 °C, alltså mycket lägre temperatur än i en bilmotor.", "a": true}, {"t": "Förbränningen i kroppen går lika snabbt som i en bilmotor.", "a": false}, {"t": "När bensinen förbränns förenas kolet med syre, och då bildas koldioxid.", "a": true}, {"t": "Avgaserna från en bilmotor är helt rena.", "a": false}], "fb": "Både bil och kropp behöver bränsle: bilen bensin och kroppen mat. När kolämnena förbränns med syre frigörs energi och det bildas koldioxid.\nSkillnaden är att motorn är flera hundra grader varm och förbränner snabbt, så avgaserna inte blir helt rena. I kroppen är temperaturen bara +37 °C och förbränningen går långsamt."}, {"type": "short", "q": "Vad kallas ämnena i kroppen som gör att förbränningen kan ske vid låg temperatur och bli fullständig? Svara med ett ord.", "answers": ["enzymer", "enzym", "enzymerna"], "fb": "Ämnena kallas enzymer. Tack vare dem kan kroppen förbränna maten vid bara +37 °C. Enzymerna gör också att förbränningen blir fullständig, så att avgasen koldioxid blir ofarlig."}, {"type": "single", "q": "Var inne i cellerna används syret och druvsockret för att ge kroppen energi?", "options": ["I mitokondrierna", "I tarmluddet", "I lungblåsorna", "I de röda blodkropparna"], "correct": 0, "fb": "Inne i cellerna finns små delar som heter mitokondrier. De fungerar som små kraftverk: där används syret och druvsockret för att ge kroppen energi.\nTarmluddet finns i tunntarmen (B), lungblåsorna i lungorna (C) och de röda blodkropparna transporterar syre i blodet (D)."}, {"type": "multi", "q": "Vilka påståenden om kroppen och energi stämmer?", "options": ["När vi tänker behöver hjärnan energi", "Kroppen gör sitt eget druvsocker genom fotosyntes i huden", "Det är lungorna som gör om maten till energi", "Druvsockret får vi främst från luften vi andas in"], "correct": [0], "fb": "Bara A stämmer. Hjärnan behöver energi för att vi ska kunna tänka.\nB är fel: bara växter har fotosyntes. C är fel: energin frigörs i cellerna i hela kroppen, inte i lungorna. Lungorna tar in syret. D är fel: druvsockret kommer från maten, till exempel bröd, pasta, potatis och frukt. Från luften får vi syre."}, {"type": "order", "q": "Ordna luftens väg när du andas in genom näsan, från början till slut.", "items": ["Näsan", "Svalget", "Struphuvudet", "Luftstrupen", "Luftrören", "Lungblåsorna"], "fb": "Luften går in genom näsan och vidare ner genom svalget. Därefter passerar den struphuvudet och kommer in i luftstrupen. Luftstrupen grenar sig till luftrören, som delar sig i allt mindre grenar ända ut till lungblåsorna. Det är i lungblåsorna som blodet hämtar syret."}, {"type": "match", "q": "Para ihop varje del av andningsapparaten med rätt beskrivning. En beskrivning passar ingen av delarna.", "pairs": [["Struphuvudet", "Här finns stämbanden som gör att vi kan prata"], ["Mellangärdet", "Här sitter musklerna man använder när man andas"], ["Lungblåsorna", "Om man vecklade ut dem skulle de täcka en yta lika stor som en trerumslägenhet"], ["Luftstrupen", "Kraftigt rör med broskringar som delar sig i två grenar"]], "extra": ["Silar blodet genom miljoner små filter"], "fb": "I struphuvudet passerar luften mellan stämbanden, och det är de som gör att vi kan prata. Musklerna i mellangärdet används när vi andas. Luftstrupen är ett kraftigt rör med broskringar. Lungblåsorna är väldigt många, och därför blir ytan så stor. Det är njurarna som silar blodet genom små filter."}, {"type": "tf", "q": "Bedöm om varje påstående om lungorna och andningen är sant eller falskt.", "items": [{"t": "Ett barn andas oftare än en vuxen: ungefär 30 andetag i minuten, mot 15–20 för en vuxen.", "a": true}, {"t": "När man andas lugnt drar man in ungefär en halv liter luft i varje andetag.", "a": true}, {"t": "Lungorna innehåller ungefär 350 lungblåsor.", "a": false}, {"t": "Lungorna är hårda och stela, så att de inte går sönder.", "a": false}], "fb": "Ett barn tar ungefär 30 andetag i minuten och en vuxen 15–20. Lugnt drar man in ungefär en halv liter luft per andetag, och när man anstränger sig kan det bli mer än två liter.\nLungorna innehåller ungefär 350 miljoner lungblåsor. De är mjuka och ömtåliga, ungefär som skumgummi, och därför skyddas de av bröstkorgen."}, {"type": "single", "q": "Varför är det bra att andas in genom näsan?", "options": ["Luften får mer syre när den passerar genom näsan", "Näsan tar bort koldioxiden ur luften", "Luften renas, värms upp och blir fuktig", "Det finns stämband i näsan som hjälper oss att prata"], "correct": 2, "fb": "När man andas in genom näsan renas luften, värms upp och blir fuktig innan den når lungorna.\nNäsan tillför inget syre (A) och tar inte bort koldioxid (B). Stämbanden sitter i struphuvudet, inte i näsan (D)."}, {"type": "multi", "q": "Vilka påståenden om hosta och flimmerhår stämmer?", "options": ["Flimmerhåren sitter i lungblåsorna och tar upp syre", "Man hostar för att få in mer syre i lungorna", "Tobaksrök gör flimmerhåren starkare", "En hostning är ungefär lika snabb som en promenad"], "correct": [], "fb": "Inget av påståendena stämmer. Flimmerhåren sitter på luftstrupens insida. De rör sig hela tiden och skickar tillbaka skräp som kommer ner (A). Man hostar för att hindra farliga och irriterande ämnen från att hamna i lungorna (B). Tobaksrök förlamar eller förstör flimmerhåren (C). En hostning är nästan som en luftexplosion, med en hastighet på ungefär 150 km/h (D)."}, {"type": "single", "q": "När näringsämnena förbränns i kroppen bildas koldioxid. Vilken beskrivning passar koldioxiden?", "options": ["En gas som musklerna behöver för att kunna orka arbeta länge", "En vätska som njurarna silar bort ur blodet", "En röd gas som blodet hämtar i lungorna", "En osynlig och luktlös gas som kroppen inte behöver"], "correct": 3, "fb": "Koldioxid är en osynlig och luktlös gas som kroppen inte behöver. Den följer med blodet till lungorna, och när man andas ut lämnar den kroppen. Utandningsluften innehåller också vattenånga. Det syns när man andas på ett kallt fönster och det bildas imma.\nDet är syre som blodet hämtar i lungorna och som musklerna behöver."}, {"type": "sort", "q": "Placera varje beskrivning under det djur den passar.", "categories": ["Fiskar", "Daggmasken", "Getingen"], "items": [{"t": "Andas med gälar.", "c": 0}, {"t": "Pumpar ut vattnet genom gällocken.", "c": 0}, {"t": "Andas genom små hål i huden.", "c": 1}, {"t": "Kvävs om huden blir torr i solsken.", "c": 1}, {"t": "Har ett andningsorgan i bakkroppen, precis som alla insekter.", "c": 2}, {"t": "Pumpar med bakkroppen för att få in luft genom små hål.", "c": 2}], "fb": "Fiskar tar upp syre som är löst i vattnet. Vattnet sugs in genom munnen, passerar de fransiga gälarna och pumpas ut genom gällocken. Daggmasken andas genom huden, som måste vara fuktig, annars kvävs masken. Getingen har, liksom alla insekter, ett andningsorgan i bakkroppen."}, {"type": "short", "q": "Vad heter den allvarligare formen av allergi i luftvägarna, då man får andnöd och mycket svårt att andas? Svara med ett ord.", "answers": ["astma"], "fb": "Astma är en allvarligare form av allergi. Man får andnöd och mycket svårt att andas. Allergi får man om man är överkänslig mot något ämne, till exempel pollen. Mot både allergi och astma finns medicin som man kan äta eller andas in med en inhalator."}, {"type": "match", "q": "Para ihop varje del av blodet med vad den gör eller består av. En beskrivning passar ingen av delarna.", "pairs": [["Röda blodkroppar", "Transporterar syre från lungorna ut i kroppen"], ["Vita blodkroppar", "Rycker ut som en räddningspatrull och slukar bakterier"], ["Blodplättar", "Fastnar i ett nät vid ett sår och hindrar blodet att rinna"], ["Blodplasma", "Vätska av vatten och ämnen som är lösta i vattnet"]], "extra": ["Hjälper kroppen att bryta ner fett i maten"], "fb": "De röda blodkropparna får syret från lungorna ut i kroppen. De vita blodkropparna försvarar kroppen mot bakterier. Blodplättarna hjälper till att stoppa blödningar och bilda en sårskorpa. Blodplasman är vätskan i blodet. Det är gallan som hjälper till att bryta ner fett."}, {"type": "short", "q": "Vad heter färgämnet som innehåller järn och gör att de röda blodkropparna kan transportera syre? Svara med ett ord.", "answers": ["hemoglobin", "hemoglobinet"], "fb": "Färgämnet heter hemoglobin. Det innehåller järn och transporterar syret från lungorna ut i kroppen. Hemoglobinet gör också blodet rött. Det är en anledning till att kroppen behöver järn från maten."}, {"type": "order", "q": "Ordna vad som händer när man får ett sår, från först till sist.", "items": ["Huden skadas och blodkärl går sönder, så att det blöder", "De vita blodkropparna angriper bakterierna", "En sårskorpa skyddar medan ny vävnad bildas under den", "Sårskorpan faller bort och man kan se ett ärr"], "fb": "När huden, kroppens eget skydd, skadas blöder det. Det kan vara bra att det blöder lite, för då spolas en del bakterier bort. De vita blodkropparna angriper bakterierna, och de som dör blir till var. Blodet levrar sig till en sårskorpa, som är kroppens eget plåster. Under den bildas ny vävnad. När läkningen är klar faller sårskorpan bort. Ofta syns ett ärr, men de flesta ärren försvinner efter en tid."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka om det lilla kretsloppet.", "text": "Blodet med koldioxid kommer in i hjärtats högra {0}. Höger kammare pumpar blodet till {1}, där det lämnar koldioxid och fyller på syre. Sedan går blodet till vänster förmak och vänster kammare, som pumpar ut det i den stora kroppspulsådern, {2}.", "blanks": [{"options": ["förmak", "lunga", "artär", "njure"], "correct": 0}, {"options": ["lungorna", "njurarna", "levern", "tarmarna"], "correct": 0}, {"options": ["aorta", "kapillären", "venen", "luftstrupen"], "correct": 0}], "fb": "Hjärtat har ett förmak och en kammare på varje sida. Blodet med koldioxid kommer in i höger förmak, och höger kammare pumpar det till lungorna. Där lämnas koldioxiden, som vi andas ut, och blodet fyller på med syre. Det syrerika blodet går in i vänster förmak och vänster kammare, som pumpar ut det i aorta, den stora kroppspulsådern."}, {"type": "tf", "q": "Bedöm om varje påstående om hjärtat och blodomloppet är sant eller falskt.", "items": [{"t": "Hjärtat är ungefär lika stort som din knutna hand.", "a": true}, {"t": "Det tar ungefär en timme för blodet att strömma ett helt varv i kroppen.", "a": false}, {"t": "Pulsen är pumptagen från hjärtat, ungefär ett i sekunden.", "a": true}, {"t": "Blodet skvalpar fritt omkring i kroppen, utan att ligga i rör.", "a": false}, {"t": "Hjärtats två halvor är förbundna så att blodet blandas fritt mellan dem.", "a": false}], "fb": "Hjärtat är en flitig muskel, ungefär lika stor som en knuten hand. Pumptagen, ungefär ett i sekunden, är pulsen.\nBlodet strömmar ett helt varv på bara ungefär en minut. Det pumpas runt i rör som kallas blodkärl eller ådror. Hjärtats två halvor är skilda åt: den högra pumpar blod till lungorna och den vänstra pumpar syresatt blod ut i kroppen."}, {"type": "sort", "q": "Vad lämnar blodet till cellerna, och vad för det bort från dem?", "categories": ["Blodet lämnar det till cellerna", "Blodet för bort det från cellerna"], "items": [{"t": "Syre", "c": 0}, {"t": "Näringsämnen", "c": 0}, {"t": "Druvsocker från maten", "c": 0}, {"t": "Koldioxid", "c": 1}, {"t": "Avfallsämnen", "c": 1}], "fb": "Blodet är som kroppens järnväg. Det hämtar näring (bland annat druvsocker) från tarmen och syre från lungorna och lämnar dem till cellerna. Cellerna använder syret och druvsockret för att få energi, och då bildas koldioxid. Blodet för bort koldioxiden och andra avfallsämnen. Koldioxiden andas vi ut via lungorna."}, {"type": "single", "q": "Blodkärlen grenar sig och blir smalare och smalare. Vad heter de allra smalaste blodkärlen?", "options": ["Artärer", "Kapillärer", "Vener", "Förmak"], "correct": 1, "fb": "De allra smalaste blodkärlen, längst ut i blodomloppet, heter kapillärer. Artärer är blodkärlen som pressar ut blodet från hjärtat i kroppen, och vener leder blodet tillbaka till hjärtat. Förmak är inget blodkärl utan en del av hjärtat."}, {"type": "multi", "q": "Vilka påståenden om blodet stämmer?", "options": ["En människa har mellan fyra och fem liter blod", "Blodet lämnar döda blodkroppar och annat avfall i tarmarna", "Vätskan i blodet är egentligen gulaktig och genomskinlig", "När man blir förkyld bildas det fler vita blodkroppar"], "correct": [0, 1, 2, 3], "fb": "Alla fyra stämmer. En människa har mellan fyra och fem liter blod. Samtidigt som blodet hämtar näring i tarmarna lämnar det där döda blodkroppar och annat avfall. Att blodet ser rött ut beror på de röda blodkropparna. Själva vätskan är gulaktig och genomskinlig. Vid en infektion, till exempel en förkylning, bildas fler vita blodkroppar som bekämpar bakterierna."}, {"type": "single", "q": "Andningen, blodomloppet och maten hänger ihop. Hur då?", "options": ["Blodet hämtar syre i lungorna och näring i tarmen och för båda till cellerna, som får energi av dem", "Lungorna tar upp näringen ur maten vi sväljer och skickar den vidare ner till magsäcken tillsammans med luften", "Maten ger syre till blodet, och lungorna ger druvsocker till musklerna", "Hjärtat gör om luften till näring, som tarmarna sedan tar upp"], "correct": 0, "fb": "Näringen från maten tas upp av blodkärlen i tarmluddet. Syret från luften tas upp i lungblåsorna. Blodet, som hjärtat pumpar runt, för både syre och näring till kroppens celler. Där blir de till energi genom cellandning, och koldioxiden förs tillbaka till lungorna. Allt hänger ihop!\nLungorna tar inte upp näring (B), maten ger inte syre (C) och hjärtat är en pump, inte en fabrik (D)."}, {"type": "single", "q": "Vilka är kroppens två stora reningsverk?", "options": ["Hjärtat och lungorna", "Magsäcken och tjocktarmen", "Gallblåsan och urinblåsan", "Levern och njurarna"], "correct": 3, "fb": "Kroppens två stora reningsverk är levern och njurarna. De behövs för att kroppen ska bli av med oanvändbara eller farliga ämnen som vi kan få i oss när vi andas och äter. Lungorna hjälper också till när de släpper ut koldioxid, vår avgas."}, {"type": "tf", "q": "Bedöm om varje påstående om levern och gallan är sant eller falskt.", "items": [{"t": "Levern bryter ner giftiga ämnen innan de skickas vidare med blodet till njurarna.", "a": true}, {"t": "Levern väger ungefär ett och ett halvt kilo hos en vuxen.", "a": true}, {"t": "Gallan bildas i levern och lagras i gallblåsan.", "a": true}, {"t": "Gallans uppgift är att bryta ner proteiner i magsäcken.", "a": false}], "fb": "Levern väger ungefär 1,5 kilo hos en vuxen. Varje minut tar den emot ungefär en liter blod från tunntarmen. Giftiga ämnen i blodet bryts ner i levern innan blodet skickas vidare till njurarna.\nGallan bildas i levern och lagras i gallblåsan under levern. Den finfördelar fettet i maten så att det lättare kan brytas ner i tunntarmen, alltså inte proteiner i magsäcken."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "I njurarna silas allt blod genom miljoner små {0}. Ämnena som måste bort är lösta i en vätska som heter {1}. Den rinner från njurarna ner till {2}.", "blanks": [{"options": ["filter", "lungblåsor", "muskelfibrer", "flimmerhår"], "correct": 0}, {"options": ["urin", "galla", "saliv", "magsaft"], "correct": 0}, {"options": ["urinblåsan", "gallblåsan", "magsäcken", "ändtarmen"], "correct": 0}], "fb": "Njurarna fungerar som ett reningsverk med miljoner små filter, där farliga och onyttiga ämnen skiljs bort från blodet. Ämnena är lösta i urin (kiss), som rinner ner till urinblåsan. Urinblåsan är en elastisk påse, och när den är full blir man kissnödig."}, {"type": "single", "q": "Var i kroppen sitter njurarna?", "options": ["På varsin sida om ryggraden, ungefär i midjehöjd", "Under bröstbenet, mellan de två lungorna och nära hjärtat", "Längst ner i bäckenet, under urinblåsan", "Bredvid magsäcken, båda på vänster sida"], "correct": 0, "fb": "Vi har två njurar som sitter på varsin sida om ryggraden, ungefär i midjehöjd. Från dem rinner urinen ner till urinblåsan, som alltså sitter längre ner. Mellan lungorna sitter hjärtat."}, {"type": "multi", "q": "Vilka av följande blir en del av avföringen (bajset)?", "options": ["Döda blodkroppar", "Syre som cellerna inte använde", "Koldioxid från cellandningen", "Druvsocker som levern har lagrat"], "correct": [0], "fb": "Bara A stämmer. Samtidigt som blodet hämtar näring i tarmarna lämnar det skräp där, till exempel döda blodkroppar, bakterier och utslitna celler. Det blandas med ämnen från maten som kroppen inte kan använda och blir avföring.\nKoldioxid lämnar kroppen genom lungorna när vi andas ut (C). Syre och lagrat druvsocker är saker som kroppen behöver (B, D)."}, {"type": "sort", "q": "Placera varje påstående under bakterier, virus eller båda.", "categories": ["Bakterier", "Virus", "Båda"], "items": [{"t": "Små levande celler som inte syns med blotta ögat.", "c": 0}, {"t": "Sjukdomar de orsakar kan behandlas med penicillin.", "c": 0}, {"t": "Kan finnas i mat som har blivit dålig.", "c": 0}, {"t": "Orsakar förkylning.", "c": 1}, {"t": "Orsakar vattkoppor.", "c": 1}, {"t": "Kan göra oss sjuka.", "c": 2}, {"t": "Kan bekämpas av de vita blodkropparna.", "c": 2}], "fb": "Bakterier är små levande celler. De kan komma in i kroppen när vi andas, via dålig mat eller genom ett sår. Penicillin är en vanlig medicin mot bakteriesjukdomar. Virus är mycket mindre än bakterier och orsakar till exempel förkylning och vattkoppor. Både bakterier och virus kan göra oss sjuka, och de vita blodkropparna kan bekämpa båda."}, {"type": "short", "q": "De vita blodkropparna kan bilda antikroppar mot ett virus. Vad kallas det när man har antikroppar mot en sjukdom och inte blir sjuk av den igen? Man säger att man är …", "answers": ["immun", "immunt", "immuna"], "fb": "Man är immun. De vita blodkropparna lär sig känna igen virustypen och bildar antikroppar mot den. Har man haft vattkoppor får man dem därför inte igen. Det finns däremot många olika förkylningsvirus, och därför kan man bli förkyld många gånger."}, {"type": "single", "q": "Vad innehåller en vaccinspruta?", "options": ["Penicillin som dödar bakterierna direkt", "Färdiga antikroppar från en frisk person, som kroppen sedan kopierar", "Vita blodkroppar från en annan människa", "Döda eller mycket försvagade bakterier eller virus"], "correct": 3, "fb": "Sprutan innehåller döda eller mycket försvagade bakterier eller virus. De kan inte angripa dig, men kroppen börjar ändå tillverka antikroppar mot dem. Om du senare blir smittad av sjukdomen blir du därför inte sjuk.\nPenicillin är en medicin mot bakteriesjukdomar och inget vaccin (A). Antikropparna tillverkar kroppen själv (B, C)."}, {"type": "multi", "q": "Vilka påståenden om musklerna stämmer?", "options": ["Musklerna kan bara arbeta genom att dra ihop sig", "Musklerna sitter fast i skelettet med senor", "Ordet muskel kommer från latin och betyder stark tråd", "Muskelfibrerna är ungefär lika tjocka som ett finger"], "correct": [0, 1], "fb": "A och B stämmer. En muskel kan bara dra ihop sig, inte trycka, och därför arbetar musklerna ofta två och två. De sitter fast i skelettet med senor.\nC är fel: ordet muskel betyder liten råtta, eftersom en muskel som rör sig under huden ser ut som en liten råtta. D är fel: muskelfibrerna är ungefär lika tunna som hårstrån, men de kan bli 30 cm långa."}, {"type": "single", "q": "Vad händer när du böjer armen?", "options": ["Muskeln på undersidan av överarmen drar ihop sig", "Muskeln på ovansidan av överarmen drar ihop sig", "Båda musklerna trycker isär armens ben", "Senan i armvecket drar ihop sig som en muskel"], "correct": 1, "fb": "När du böjer armen drar muskeln på ovansidan ihop sig. Den heter biceps, armböjarmuskeln. När du sträcker ut armen drar i stället muskeln på undersidan ihop sig. Den heter triceps, armsträckarmuskeln. Senan i armvecket kan inte dra ihop sig. Den överför muskelns kraft till underarmsbenet."}, {"type": "sort", "q": "Placera varje muskel under rätt kategori.", "categories": ["Styrs med viljan", "Arbetar automatiskt"], "items": [{"t": "Musklerna i armarna", "c": 0}, {"t": "Musklerna runt munnen när du ler", "c": 0}, {"t": "Musklerna i benen när du sparkar en boll", "c": 0}, {"t": "Hjärtat", "c": 1}, {"t": "Musklerna i tarmarna", "c": 1}], "fb": "Viljestyrda muskler bestämmer du själv över, till exempel musklerna i armarna och benen och musklerna runt munnen. Andra muskler arbetar automatiskt, utan att du vet om det, till exempel hjärtat och musklerna i tarmarna. Hjärtat skulle inte kunna sluta slå bara för att du glömmer bort det."}, {"type": "tf", "q": "Bedöm om varje påstående om träning och muskler är sant eller falskt.", "items": [{"t": "Träningsvärk gör ont men är inte farligt.", "a": true}, {"t": "Det bästa sättet att bli av med träningsvärk är att aldrig träna den muskeln igen.", "a": false}, {"t": "När man tränar en tid bildas fler små blodkärl som kan ge musklerna mer syre.", "a": true}, {"t": "Om man ligger sjuk i sängen länge blir musklerna mindre och svagare.", "a": true}], "fb": "Träningsvärk kan man få efter att ha ansträngt sig mer än vanligt. Det gör ont men är inte farligt. Det bästa sättet att bota den är att göra rörelserna igen, fast lugnare och kortare, så att andningen hinner ge musklerna mer syre. Med tiden bildas fler små blodkärl. Ju mer man använder musklerna, desto starkare blir de, och används de inte blir de svagare."}, {"type": "single", "q": "Varför blir du varm och svettig när du spelar fotboll en stund?", "options": ["Musklerna tar upp värme från solen när man är ute", "Blodet slutar transportera syre när man springer", "Svetten bildas av all koldioxid som man inte hinner andas ut", "En hel del av energin som musklerna använder blir värme"], "correct": 3, "fb": "Musklerna är bra på att använda energin till rörelse, men en hel del av energin blir värme. Därför blir man extra varm och svettig när man anstränger sig.\nKroppen blir varm även inomhus (A). Blodet transporterar tvärtom mer syre när man anstränger sig (B). Koldioxiden andas man ut (C)."}, {"type": "match", "q": "Para ihop varje del av skelettet med det den skyddar eller bär upp. En beskrivning passar ingen av delarna.", "pairs": [["Kraniet", "Hjärnan"], ["Bröstkorgen", "Hjärtat och lungorna"], ["Kotorna", "Ryggmärgen"], ["Bäckenet", "Tarmarna och andra inälvor"]], "extra": ["Stämbanden"], "fb": "Kraniet (skallen) är kroppens egen hjälm som skyddar hjärnan. Att huvudet är runt gör skallen extra stark. Bröstkorgen, av revbenen och bröstbenet, skyddar hjärtat, lungorna och magsäcken. Genom kotorna går ryggmärgen, en viktig del av nervsystemet. Bäckenet är format som en skål och bär upp magen, tarmarna och andra inälvor. Stämbanden sitter i struphuvudet."}, {"type": "multi", "q": "Vilka påståenden om skelettet stämmer?", "options": ["Skelettet är en levande vävnad som hela tiden behöver näring och energi", "Alla däggdjur har sju halskotor, precis som vi", "Ryggraden är helt rak, och det gör den stark", "Rörbenen i armar och ben är nästan ihåliga men förstärkta av smala tvärslåar"], "correct": [0, 1, 3], "fb": "A, B och D stämmer. Skelettet verkar dött men är levande vävnad. Därför kan ett brutet ben läka när blodet kommer med reservdelar. Vi har sju halskotor precis som alla däggdjur. Rörbenen är nästan ihåliga, och därför är de inte så tunga.\nC är fel: ryggraden är svagt S-formad, och det gör den fjädrande och stark."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Höftleden är en {0} som kan vridas åt flera håll. Lederna i fingrar och knän fungerar i stället som {1} som bara kan böjas åt ett håll. Mellan ryggkotorna ligger skivor av {2}.", "blanks": [{"options": ["kulled", "sena", "disk", "kota"], "correct": 0}, {"options": ["gångjärn", "kulleder", "senor", "skålar"], "correct": 0}, {"options": ["brosk", "emalj", "hornämne", "benmärg"], "correct": 0}], "fb": "Skelettet består av hårda ben, men vi är ändå rörliga tack vare lederna. En kulled, som höftleden, kan vridas runt åt flera håll. Lederna i fingrar och knän fungerar som gångjärn. Skivorna mellan kotorna kallas diskar och är av brosk, ett segt och elastiskt ämne. Brosk finns också i näsan och i öronen."}, {"type": "short", "q": "Hur många par revben har en människa? Svara med en siffra.", "answers": ["12", "tolv"], "fb": "Vi har 12 par revben. Tillsammans med bröstbenet bildar de bröstkorgen. Den är elastisk, vilket man märker när man andas djupt."}, {"type": "tf", "q": "Bedöm om varje påstående om skelettet är sant eller falskt.", "items": [{"t": "Skelettet byggs främst upp av kalcium och fosfor, som bland annat finns i mjölk.", "a": true}, {"t": "Röntgenstrålning går igenom ben men inte igenom muskler.", "a": false}, {"t": "Ett brutet ben hålls stilla i rätt läge med gips eller skenor medan det läker.", "a": true}, {"t": "Benmärgen inuti benen bildar nya blodkroppar.", "a": true}, {"t": "En människa har samma skelett hela livet, utan att några delar byts ut.", "a": false}], "fb": "Skelettet byggs främst av kalcium (kalk) och fosfor. Inuti benen finns benmärgen, där nya blodkroppar bildas. Ett brutet ben måste hållas stilla i rätt läge med gips eller skenor.\nRöntgenstrålningen går igenom muskler men inte ben, och därför syns benen på bilden. Skelettet repareras hela tiden och smådelar byts ut. Man har räknat ut att en människa byter ut ungefär 40 skelett under sitt liv."}, {"type": "single", "q": "Vilket påstående om tänderna stämmer **INTE**?", "options": ["Emaljen är kroppens hårdaste material", "Längst in i tanden finns pulpan med blodkärl och nerver", "En vuxen person har 20 tänder", "Tandroten sitter nedsänkt i käkbenet"], "correct": 2, "fb": "Påstående C är fel. En vuxen har 32 tänder. Det är mjölktänderna som är 20.\nA, B och D stämmer. Emaljen är ett extra hårt hölje, och innanför den finns tandbenet. Längst in finns pulpan. Om man får ett hål ända in till pulpan gör det mycket ont. Tänderna lever och behöver näring från blodet."}, {"type": "sort", "q": "Placera varje påstående under handen eller foten.", "categories": ["Handen", "Foten"], "items": [{"t": "Leden vid tummen är särskilt rörlig.", "c": 0}, {"t": "Topparna hör till kroppens mest känsliga delar.", "c": 0}, {"t": "Rörelserna styrs av långa, starka senor från underarmens muskler.", "c": 0}, {"t": "Består av 26 olika småben.", "c": 1}, {"t": "Har ett fjädrande valv som hjälper oss att hålla balansen.", "c": 1}, {"t": "Den största tån är riktad framåt och ger en bra plattform att stå på.", "c": 1}], "fb": "I handen gör den rörliga tumleden att vi kan använda händerna på många sätt. Fingertopparna är så känsliga att den som är synskadad kan läsa punktskrift. Fingrarna styrs av senor från underarmens muskler.\nFoten har 26 småben som tillsammans med senor, muskler och ledband bildar ett fjädrande fotvalv. Eftersom vi går på två ben behöver vi ganska långa fötter för att hålla balansen."}, {"type": "order", "q": "Ordna händelserna i en människas liv, från tidigast till senast.", "items": ["Man har fått sina 20 mjölktänder", "De permanenta tänderna börjar tränga ut mjölktänderna", "Visdomständerna växer fram", "Uppbyggnaden och nedslitningen av kroppen går lika fort", "Nya celler bildas inte längre i samma takt som de gamla slits ut"], "fb": "Vid ungefär tre års ålder har man sina 20 mjölktänder, och vid sex till sju år börjar de permanenta tänderna tränga ut dem. Visdomständerna kommer sent, vid ungefär 20 år. De första 30 åren byggs kroppen upp, och sedan följer ungefär 30 år när uppbyggnaden och nedslitningen går lika fort. Därefter kommer åldrandet, när uppbyggnaden av nya celler inte hinner med förslitningen."}, {"type": "multi", "q": "Vilka förändringar är vanliga när en människa blir gammal?", "options": ["Håret blir grått när luft ersätter färgpigmentet", "Huden blir rynkig när underhudsfettet minskar", "Linsen i ögat blir stelare, så att många behöver glasögon", "Närminnet blir bättre, medan minnen från ungdomen försvinner"], "correct": [0, 1, 2], "fb": "A, B och C stämmer. När man blir äldre får man grått hår, huden blir rynkig och mindre elastisk, och linsen i ögat kan inte ställa in skärpan lika bra. Lederna slits och skivorna mellan kotorna blir tunnare, så man sjunker ihop lite.\nD är fel: ofta blir närminnet sämre, medan gamla människor ofta minns mycket tydligt vad de var med om när de var unga."}, {"type": "single", "q": "Fostren hos till exempel fiskar, fåglar och människor är mycket lika varandra i början. Vad visar det?", "options": ["Att alla djur blir likadana när de föds", "Att ryggradsdjuren är ganska nära släkt med varandra", "Att fostren ännu inte består av några celler", "Att alla foster först utvecklas till små fiskar innan de föds"], "correct": 1, "fb": "Alla djur börjar som små embryon i ett ägg, och när de utvecklas kallas de foster. I början är fostren mycket lika varandra, och det visar att ryggradsdjuren är ganska nära släkt. Efterhand syns skillnaderna, och när de är färdiga att födas är de helt olika."}, {"type": "tf", "q": "Bedöm om varje påstående om kroppens celler är sant eller falskt.", "items": [{"t": "Alla växter och djur är uppbyggda av celler.", "a": true}, {"t": "En människa består av många tusen miljarder celler.", "a": true}, {"t": "Cellerna i tarmarna byts ut ungefär en gång i veckan.", "a": true}, {"t": "Alla celler i kroppen ser likadana ut och har samma uppgift.", "a": false}, {"t": "Cellerna delar sig bara tills man har slutat växa.", "a": false}], "fb": "Allt levande består av celler, och en människa består av många tusen miljarder. Cellerna är programmerade för olika uppgifter: det finns till exempel muskelceller, nervceller, fettceller, hudceller och blodkroppar, och de ser olika ut. Cellerna delar sig under hela livet, så att nya bildas och gamla byts ut. I tarmarna byts cellerna en gång i veckan."}];
+const KEY = 'quiz-progress-' + META.id;
+const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const TYPE_LABEL = {
+  single: 'Enval – välj ett alternativ',
+  multi: 'Flerval – ett eller flera alternativ kan vara rätta, och ibland inget',
+  tf: 'Sant eller falskt – bedöm varje påstående för sig',
+  match: 'Para ihop – välj rätt förklaring till varje begrepp. Alla förklaringar behöver inte användas.',
+  order: 'Ordna – flytta posterna med pilarna till rätt ordning',
+  cloze: 'Lucktext – välj rätt ord för varje lucka',
+  short: 'Kort svar – skriv svaret',
+  sort: 'Sortera – placera varje påstående i rätt kategori'
+};
+const TYPE_NAME = { single: 'Enval', multi: 'Flerval', tf: 'Sant eller falskt', match: 'Para ihop', order: 'Ordna', cloze: 'Lucktext', short: 'Kort svar', sort: 'Sortera' };
+
+const app = document.getElementById('app');
+const bar = document.getElementById('bar');
+const progressText = document.getElementById('progress-text');
+document.getElementById('title').textContent = META.title;
+document.title = META.title;
+
+let idx = 0, score = 0, answers = [];
+
+/* ---------- helpers ---------- */
+function h(tag, props) {
+  const e = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (let i = 2; i < arguments.length; i++) {
+    const kids = [].concat(arguments[i]);
+    for (const c of kids) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  }
+  return e;
+}
+function rich(text) { // **fet** -> <strong>
+  const frag = document.createDocumentFragment();
+  String(text).split('**').forEach((part, i) => {
+    if (!part) return;
+    frag.append(i % 2 ? h('strong', null, part) : document.createTextNode(part));
+  });
+  return frag;
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function norm(s) { return String(s).toLowerCase().replace(/[^0-9a-zåäöéü]/g, ''); }
+function same(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
+function select(options, onChange, placeholder) {
+  const s = h('select', { onchange: onChange }, h('option', { value: '' }, placeholder || 'Välj …'));
+  options.forEach(o => s.append(h('option', { value: o.v }, o.t)));
+  return s;
+}
+function mark(el, sym) { const m = el.querySelector('.mark'); if (m) m.textContent = sym; }
+
+/* ---------- question builders ----------
+   Each returns { el, complete(), evaluate() -> {correct, partial}, reveal() } */
+function buildSingle(q, change) {
+  const name = 'q' + idx, labels = [], inputs = [];
+  const wrap = h('div', { class: 'options' });
+  q.options.forEach((t, i) => {
+    const inp = h('input', { type: 'radio', name, value: i, onchange: () => { sync(); change(); } });
+    const lab = h('label', { class: 'opt' }, inp, h('span', { class: 'mark' }), h('span', null, LETTERS[i] + ') ' + t));
+    inputs.push(inp); labels.push(lab); wrap.append(lab);
+  });
+  function sync() { labels.forEach((l, i) => l.classList.toggle('sel', inputs[i].checked)); }
+  return {
+    el: wrap,
+    complete: () => inputs.some(i => i.checked),
+    evaluate() { return { correct: inputs[q.correct].checked, partial: false }; },
+    reveal() {
+      wrap.classList.add('locked');
+      inputs.forEach((inp, i) => {
+        inp.disabled = true;
+        if (i === q.correct) { labels[i].classList.add('right'); mark(labels[i], '✓'); }
+        else if (inp.checked) { labels[i].classList.add('wrong'); mark(labels[i], '✗'); }
+      });
+    }
+  };
+}
+function buildMulti(q, change) {
+  const labels = [], inputs = [];
+  const wrap = h('div', { class: 'options' });
+  q.options.forEach((t, i) => {
+    const inp = h('input', { type: 'checkbox', value: i, onchange: () => { sync(); change(); } });
+    const lab = h('label', { class: 'opt' }, inp, h('span', { class: 'mark' }), h('span', null, LETTERS[i] + ') ' + t));
+    inputs.push(inp); labels.push(lab); wrap.append(lab);
+  });
+  function sync() { labels.forEach((l, i) => l.classList.toggle('sel', inputs[i].checked)); }
+  const picked = () => inputs.map((x, i) => x.checked ? i : -1).filter(i => i >= 0);
+  return {
+    el: wrap,
+    complete: () => true,
+    evaluate() {
+      const p = picked(), exact = same(p, q.correct);
+      return { correct: exact, partial: !exact && p.some(i => q.correct.includes(i)) };
+    },
+    reveal() {
+      wrap.classList.add('locked');
+      inputs.forEach((inp, i) => {
+        inp.disabled = true;
+        const c = q.correct.includes(i);
+        if (c) { labels[i].classList.add('right'); mark(labels[i], '✓'); }
+        else if (inp.checked) { labels[i].classList.add('wrong'); mark(labels[i], '✗'); }
+      });
+    }
+  };
+}
+function buildTF(q, change) {
+  const rows = h('div', { class: 'rows' }), state = [], items = [];
+  q.items.forEach((it, i) => {
+    const name = 'tf' + idx + '_' + i;
+    const mk = (val, text) => {
+      const inp = h('input', { type: 'radio', name, value: val, onchange: () => { state[i] = val; sync(i); change(); } });
+      return { inp, lab: h('label', null, inp, text), val };
+    };
+    const yes = mk('1', 'Sant'), no = mk('0', 'Falskt');
+    const note = h('div', { class: 'note' });
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), (i + 1) + '. ' + it.t),
+      h('div', { class: 'tfbtns' }, yes.lab, no.lab), note);
+    items.push({ yes, no, row, note, it }); rows.append(row);
+  });
+  function sync(i) { const r = items[i]; r.yes.lab.classList.toggle('sel', state[i] === '1'); r.no.lab.classList.toggle('sel', state[i] === '0'); }
+  return {
+    el: rows,
+    complete: () => q.items.every((_, i) => state[i] != null),
+    evaluate() {
+      const n = q.items.filter((it, i) => (state[i] === '1') === it.a).length;
+      return { correct: n === q.items.length, partial: n > 0 && n < q.items.length };
+    },
+    reveal() {
+      rows.classList.add('locked');
+      items.forEach((r, i) => {
+        r.yes.inp.disabled = r.no.inp.disabled = true;
+        const ok = (state[i] === '1') === r.it.a;
+        r.row.classList.add(ok ? 'right' : 'wrong'); mark(r.row, ok ? '✓ ' : '✗ ');
+        (r.it.a ? r.yes : r.no).lab.classList.add('ans');
+        if (!ok) { (r.it.a ? r.no : r.yes).lab.classList.add('bad'); r.note.textContent = 'Rätt svar: ' + (r.it.a ? 'Sant' : 'Falskt'); }
+      });
+    }
+  };
+}
+function buildMatch(q, change) {
+  const rights = q.pairs.map(p => p[1]).concat(q.extra || []);
+  const order = shuffle(rights.map((t, i) => ({ i, t })));
+  const letterOf = {}; order.forEach((o, k) => { letterOf[o.i] = LETTERS[k]; });
+  const opts = order.map((o, k) => ({ v: o.i, t: LETTERS[k] }));
+  const pool = h('div', { class: 'pool' }, order.map((o, k) => h('div', null, LETTERS[k] + ') ' + o.t)));
+  const rows = h('div', { class: 'rows' }), sels = [], notes = [], rowEls = [];
+  q.pairs.forEach((p, i) => {
+    const s = select(opts, change); sels.push(s);
+    const note = h('div', { class: 'note' }); notes.push(note);
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), p[0]), s, note);
+    rowEls.push(row); rows.append(row);
+  });
+  const all = h('div', null, pool, rows);
+  return {
+    el: all,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const n = sels.filter((s, i) => Number(s.value) === i).length;
+      return { correct: n === sels.length, partial: n > 0 && n < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, i) => {
+        s.disabled = true;
+        const ok = Number(s.value) === i;
+        rowEls[i].classList.add(ok ? 'right' : 'wrong'); mark(rowEls[i], ok ? '✓ ' : '✗ ');
+        if (!ok) notes[i].textContent = 'Rätt: ' + letterOf[i] + ') ' + q.pairs[i][1];
+      });
+    }
+  };
+}
+function buildOrder(q, change) {
+  const n = q.items.length;
+  let arr = shuffle([...q.items.keys()]);
+  while (n > 1 && arr.every((v, i) => v === i)) arr = shuffle(arr);
+  const list = h('div', { class: 'rows' });
+  let locked = false;
+  function draw() {
+    list.replaceChildren();
+    arr.forEach((v, pos) => {
+      const up = h('button', { type: 'button', 'aria-label': 'Flytta upp', disabled: locked || pos === 0, onclick: () => { [arr[pos - 1], arr[pos]] = [arr[pos], arr[pos - 1]]; draw(); } }, '↑');
+      const down = h('button', { type: 'button', 'aria-label': 'Flytta ner', disabled: locked || pos === n - 1, onclick: () => { [arr[pos + 1], arr[pos]] = [arr[pos], arr[pos + 1]]; draw(); } }, '↓');
+      const row = h('div', { class: 'row orderrow' }, h('span', { class: 'num' }, (pos + 1) + '.'), h('span', { class: 'rowtext' }, q.items[v]), locked ? null : h('div', { class: 'arrows' }, up, down));
+      if (locked) { const ok = v === pos; row.classList.add(ok ? 'right' : 'wrong'); row.prepend(h('span', { class: 'mark' }, ok ? '✓' : '✗')); }
+      list.append(row);
+    });
+  }
+  draw();
+  return {
+    el: list,
+    complete: () => true,
+    evaluate() {
+      const k = arr.filter((v, i) => v === i).length;
+      return { correct: k === n, partial: k > 0 && k < n };
+    },
+    reveal() {
+      locked = true; draw();
+      list.append(h('div', { class: 'correct-line' }, 'Rätt ordning: ' + q.items.map((t, i) => (i + 1) + '. ' + t).join('  →  ')));
+    }
+  };
+}
+function buildCloze(q, change) {
+  const wrap = h('div'), line = h('div', { class: 'cloze' }), sels = [];
+  q.text.split(/\{(\d+)\}/).forEach((part, i) => {
+    if (i % 2 === 0) { line.append(document.createTextNode(part)); return; }
+    const b = q.blanks[Number(part)];
+    const opts = shuffle(b.options.map((t, k) => ({ v: k, t })));
+    const s = select(opts, change, '…'); sels[Number(part)] = s; line.append(s);
+  });
+  wrap.append(line);
+  return {
+    el: wrap,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const k = sels.filter((s, i) => Number(s.value) === q.blanks[i].correct).length;
+      return { correct: k === sels.length, partial: k > 0 && k < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, i) => { s.disabled = true; s.classList.add(Number(s.value) === q.blanks[i].correct ? 'right' : 'wrong'); });
+      const full = q.text.replace(/\{(\d+)\}/g, (m, n) => q.blanks[Number(n)].options[q.blanks[Number(n)].correct]);
+      wrap.append(h('div', { class: 'correct-line' }, 'Rätt: ' + full));
+    }
+  };
+}
+function buildShort(q, change) {
+  const inp = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', oninput: change, 'aria-label': 'Ditt svar' });
+  const wrap = h('div', null, inp);
+  return {
+    el: wrap,
+    complete: () => inp.value.trim() !== '',
+    evaluate() { return { correct: q.answers.map(norm).includes(norm(inp.value)), partial: false }; },
+    reveal() {
+      inp.disabled = true;
+      const ok = q.answers.map(norm).includes(norm(inp.value));
+      inp.classList.add(ok ? 'right' : 'wrong');
+      if (!ok) wrap.append(h('div', { class: 'correct-line' }, 'Rätt svar: ' + q.answers[0]));
+    }
+  };
+}
+function buildSort(q, change) {
+  const cats = q.categories.map((t, i) => ({ v: i, t }));
+  const rows = h('div', { class: 'rows' }), sels = [], notes = [], rowEls = [];
+  const order = shuffle([...q.items.keys()]);
+  const pos = {};
+  order.forEach((orig, p) => {
+    const it = q.items[orig];
+    const s = select(cats, change); sels[p] = s; pos[p] = orig;
+    const note = h('div', { class: 'note' }); notes[p] = note;
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), it.t), s, note);
+    rowEls[p] = row; rows.append(row);
+  });
+  return {
+    el: rows,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const k = sels.filter((s, p) => Number(s.value) === q.items[pos[p]].c).length;
+      return { correct: k === sels.length, partial: k > 0 && k < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, p) => {
+        s.disabled = true;
+        const ok = Number(s.value) === q.items[pos[p]].c;
+        rowEls[p].classList.add(ok ? 'right' : 'wrong'); mark(rowEls[p], ok ? '✓ ' : '✗ ');
+        if (!ok) notes[p].textContent = 'Rätt: ' + q.categories[q.items[pos[p]].c];
+      });
+    }
+  };
+}
+const BUILDERS = { single: buildSingle, multi: buildMulti, tf: buildTF, match: buildMatch, order: buildOrder, cloze: buildCloze, short: buildShort, sort: buildSort };
+
+/* ---------- storage ---------- */
+function load() { try { const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ currentQuestion: idx + 1, score, answers })); } catch (e) {} }
+function clear() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+/* ---------- screens ---------- */
+function setProgress(text, pct) { progressText.textContent = text; bar.style.width = pct + '%'; }
+function show(card) { app.replaceChildren(card); window.scrollTo(0, 0); }
+
+function showIntro() {
+  setProgress('', 0);
+  const card = h('div', { class: 'card intro' },
+    h('p', { class: 'qtext' }, META.title),
+    (META.intro || []).map(t => h('p', null, t)),
+    h('p', null, 'Frågetyperna i det här quizet:'),
+    h('ul', null, META.types.map(t => h('li', null, h('strong', null, TYPE_NAME[t] + ': '), TYPE_LABEL[t].split(' – ').slice(1).join(' – ')))),
+    h('div', { class: 'actions' }, h('button', { class: 'btn', type: 'button', onclick: () => { idx = 0; score = 0; answers = []; showQuestion(); } }, 'Starta')));
+  show(card);
+}
+function showResume(saved) {
+  setProgress('', 0);
+  show(h('div', { class: 'card center' },
+    h('p', { class: 'qtext' }, 'Du har kommit till fråga ' + (saved.currentQuestion + 1) + ' av ' + quizData.length + ' (' + saved.score + ' rätt hittills)'),
+    h('div', { class: 'actions' },
+      h('button', { class: 'btn', type: 'button', onclick: () => { idx = saved.currentQuestion; score = saved.score; answers = saved.answers; showQuestion(); } }, 'Fortsätt'),
+      h('button', { class: 'btn outline', type: 'button', onclick: () => { clear(); showIntro(); } }, 'Börja om'))));
+}
+function showQuestion() {
+  const q = quizData[idx];
+  setProgress('Fråga ' + (idx + 1) + ' av ' + quizData.length, (idx / quizData.length) * 100);
+  const checkBtn = h('button', { class: 'btn', type: 'button', disabled: true }, 'Kontrollera');
+  const fbBox = h('div');
+  const actions = h('div', { class: 'actions' }, checkBtn);
+  const ctl = BUILDERS[q.type](q, () => { checkBtn.disabled = !ctl.complete(); });
+  checkBtn.disabled = !ctl.complete();
+  checkBtn.addEventListener('click', () => {
+    const res = ctl.evaluate();
+    ctl.reveal();
+    answers[idx] = res.correct ? 1 : 0;
+    if (res.correct) score++;
+    save();
+    const cls = res.correct ? 'ok' : res.partial ? 'mid' : 'no';
+    const head = res.correct ? 'Rätt.' : res.partial ? 'Delvis rätt.' : 'Fel.';
+    fbBox.className = 'feedback ' + cls;
+    fbBox.replaceChildren(h('strong', null, head), ...String(q.fb).split('\n').map(p => h('p', null, rich(p))));
+    const last = idx === quizData.length - 1;
+    actions.replaceChildren(h('button', { class: 'btn', type: 'button', onclick: () => { if (last) showResults(); else { idx++; showQuestion(); } } }, last ? 'Visa resultat' : 'Nästa fråga →'));
+    fbBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  show(h('div', { class: 'card' }, h('p', { class: 'qtext' }, rich(q.q)), h('p', { class: 'qtype' }, TYPE_LABEL[q.type]), ctl.el, actions, fbBox));
+}
+function showResults() {
+  clear();
+  setProgress('Klart', 100);
+  const by = {};
+  quizData.forEach((q, i) => { by[q.type] = by[q.type] || [0, 0]; by[q.type][1]++; if (answers[i]) by[q.type][0]++; });
+  const wrongNums = quizData.map((q, i) => answers[i] ? null : i + 1).filter(Boolean);
+  show(h('div', { class: 'card center' },
+    h('p', { class: 'qtext' }, 'Resultat'),
+    h('p', null, 'Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor'),
+    h('table', { class: 'res' }, META.types.filter(t => by[t]).map(t => h('tr', null, h('td', null, TYPE_NAME[t]), h('td', null, by[t][0] + ' av ' + by[t][1])))),
+    wrongNums.length ? h('p', { class: 'qtype' }, 'Frågor att repetera: ' + wrongNums.join(', ')) : null,
+    h('div', { class: 'actions' }, h('button', { class: 'btn', type: 'button', onclick: () => { clear(); showIntro(); } }, 'Starta om'))));
+}
+
+/* ---------- start ---------- */
+const saved = load();
+if (saved && saved.currentQuestion < quizData.length && saved.currentQuestion > 0) showResume(saved); else showIntro();
+})();
+</script>
+</body>
+</html>

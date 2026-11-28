@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geografi – Jordytan förändras</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --card-bg: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #64748b;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --correct-bg: #ecfdf5;
+  --correct-border: #059669;
+  --correct-text: #065f46;
+  --incorrect-bg: #fef2f2;
+  --incorrect-border: #dc2626;
+  --incorrect-text: #991b1b;
+  --partial: #d97706;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --card-radius: 16px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; line-height: 1.5; }
+.container { max-width: 720px; margin: 0 auto; padding: 1rem; }
+header { text-align: center; padding: 1rem 0 0.75rem; }
+h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.75rem; }
+#progress-text { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem; min-height: 1.3em; }
+.bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+.card { background: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: 2rem; margin-top: 1rem; }
+.qtext { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.5rem; }
+.qtype { font-size: 0.8rem; font-style: italic; color: var(--text-secondary); margin: 0 0 1rem; }
+.options { display: flex; flex-direction: column; gap: 0.75rem; }
+.opt, .row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.875rem 1rem; background: #fff; }
+.opt { display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer; font-size: 1rem; }
+.opt:hover { border-color: var(--accent); background: #f8f9ff; }
+.opt.sel { border-color: var(--accent); background: #eef2ff; }
+.opt input { accent-color: var(--accent); margin-top: 0.3rem; flex: none; width: 1rem; height: 1rem; }
+.mark { display: inline-block; min-width: 1.1em; font-weight: 700; }
+.right { border-color: var(--correct-border) !important; background: var(--correct-bg) !important; }
+.wrong { border-color: var(--incorrect-border) !important; background: var(--incorrect-bg) !important; }
+.rowtext .mark:empty { display: none; }
+.pool { margin: 0 0 1rem; padding: 0.75rem 1rem; background: #f8fafc; border-radius: 10px; font-size: 0.95rem; }
+.pool div { margin: 0.25rem 0; }
+.right .mark { color: var(--correct-border); }
+.wrong .mark { color: var(--incorrect-border); }
+.locked .opt { cursor: default; }
+.locked .opt:hover { background: #fff; border-color: #e2e8f0; }
+.locked .opt.sel:hover { background: #eef2ff; border-color: var(--accent); }
+.row { display: flex; flex-direction: column; gap: 0.5rem; }
+.rows { display: flex; flex-direction: column; gap: 0.75rem; }
+.rowtext { font-size: 1rem; }
+.note { font-size: 0.875rem; color: var(--correct-text); }
+select, input[type=text] { font: inherit; font-size: 1rem; padding: 0.5rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: var(--text-primary); max-width: 100%; }
+select:focus, input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+select:disabled, input[type=text]:disabled { opacity: 1; color: var(--text-primary); background: #f8fafc; }
+select.right, input.right { border-color: var(--correct-border); background: var(--correct-bg); }
+select.wrong, input.wrong { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+.tfbtns { display: flex; gap: 0.5rem; }
+.tfbtns label { flex: 1; text-align: center; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem; cursor: pointer; font-weight: 500; }
+.tfbtns label:hover { border-color: var(--accent); background: #f8f9ff; }
+.tfbtns label.sel { border-color: var(--accent); background: #eef2ff; }
+.tfbtns input { position: absolute; opacity: 0; pointer-events: none; }
+.tfbtns label.ans { border-color: var(--correct-border); background: var(--correct-bg); }
+.tfbtns label.bad { border-color: var(--incorrect-border); background: var(--incorrect-bg); }
+.locked .tfbtns label { cursor: default; }
+.orderrow { display: flex; align-items: center; gap: 0.75rem; }
+.orderrow .num { font-weight: 700; color: var(--text-secondary); min-width: 1.5rem; }
+.orderrow .rowtext { flex: 1; }
+.arrows { display: flex; gap: 0.35rem; }
+.arrows button { width: 2.2rem; height: 2.2rem; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; font-size: 1rem; cursor: pointer; color: var(--text-primary); }
+.arrows button:hover:not(:disabled) { border-color: var(--accent); background: #f8f9ff; }
+.arrows button:disabled { opacity: 0.35; cursor: not-allowed; }
+.cloze { font-size: 1.05rem; line-height: 2.4; }
+.cloze select { margin: 0 0.2rem; }
+.correct-line { margin-top: 0.75rem; font-size: 0.9rem; color: var(--correct-text); }
+.btn { background: var(--accent); color: #fff; border: 2px solid var(--accent); font: inherit; font-weight: 600; padding: 0.75rem 2rem; border-radius: 10px; cursor: pointer; }
+.btn:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.outline { background: transparent; color: var(--accent); }
+.btn.outline:hover:not(:disabled) { background: #eef2ff; border-color: var(--accent); }
+.actions { margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+.feedback { margin-top: 1.5rem; padding: 1rem 1.25rem; border-left: 4px solid; border-radius: 0 10px 10px 0; font-size: 0.95rem; }
+.feedback p { margin: 0.5rem 0 0; }
+.feedback.ok { border-color: var(--correct-border); background: rgba(5,150,105,0.05); }
+.feedback.no { border-color: var(--incorrect-border); background: rgba(220,38,38,0.05); }
+.feedback.mid { border-color: var(--partial); background: rgba(217,119,6,0.05); }
+.center { text-align: center; }
+.intro ul { padding-left: 1.2rem; margin: 0.5rem 0 0; }
+.intro li { margin-bottom: 0.35rem; }
+table.res { margin: 1rem auto 0; border-collapse: collapse; font-size: 0.95rem; }
+table.res td { padding: 0.3rem 1rem; border-bottom: 1px solid #e2e8f0; }
+table.res td:last-child { text-align: right; font-weight: 600; }
+@media (max-width: 480px) { .card { padding: 1.25rem; } .orderrow { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1 id="title"></h1>
+    <div id="progress-text"></div>
+    <div class="bar"><div class="bar-fill" id="bar"></div></div>
+  </header>
+  <main id="app"></main>
+</div>
+<script>
+(function () {
+'use strict';
+const META = {"id": "quiz-geografi-jordytan", "title": "Geografi – Jordytan förändras", "intro": ["Quizet har 60 frågor i flera olika format om jordens inre, kontinenternas rörelser, inre och yttre krafter, jordbävningar och vulkaner, människans påverkan och spåren efter inlandsisen. Läs varje fråga noga: antalet rätta svar och sättet att svara skiljer sig mellan frågorna.", "En fråga räknas som rätt först när alla delar är rätt. Efter varje fråga visas facit med förklaring."], "types": ["single", "multi", "tf", "match", "order", "cloze", "short", "sort"]};
+const quizData = [{"type": "single", "q": "Vilken nytta gör gräset som växer på en sanddyn?", "options": ["Det gör sanden tyngre genom att suga upp salt ur havet och lagra det mellan sandkornen", "Rötterna håller kvar sanden så att den inte blåser bort", "Det kyler ner sanden så att den fryser ihop", "Det löser upp sanden till fet lera"], "correct": 1, "fb": "Växternas rötter binder sand och jord. Där växtligheten saknas kan vinden lättare ta tag i sandkornen och flytta dem."}, {"type": "short", "q": "Vad heter instrumentet som forskare använder för att mäta skakningar i berggrunden? Svara med ett ord.", "answers": ["seismograf", "seismografen", "en seismograf", "seismometer", "seismometern", "seismograph"], "fb": "Instrumentet heter seismograf. Det är fäst i berggrunden och är så känsligt att det kan registrera skalv på andra sidan jorden."}, {"type": "single", "q": "Var är jordskorpan i regel tunnast?", "options": ["Under de stora haven", "Under höga bergskedjor", "Under Sverige och Norden", "Ingenstans, för hela klotet svalnade i samma takt och skorpan blev jämntjock"], "correct": 0, "fb": "Under haven är jordskorpan ofta bara 5–10 km tjock. Under kontinenterna är den betydligt tjockare, i Sverige omkring 40–50 km, och under höga bergskedjor kan den vara ännu tjockare."}, {"type": "multi", "q": "Vilka påståenden om inlandsisen för ungefär 20 000 år sedan stämmer?", "options": ["Den täckte stora delar av norra Europa", "Den bildades av havsvatten som frös under en enda vinter", "På vissa ställen var den flera kilometer tjock", "Havsytan var då mycket högre än i dag"], "correct": [0, 2], "fb": "Inlandsisen byggdes upp under mycket lång tid av snö som inte smälte. Den täckte norra Europa och var på sina håll omkring tre kilometer tjock. Eftersom så mycket vatten var bundet i is var havsytan lägre än i dag."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Berg och sten kan delas sönder i mindre bitar. Då säger man att de {0}. Där temperaturen växlar mycket {1} berget under den varma dagen och {2} under den kalla natten. Spänningarna kan till slut få berget att {3}.", "blanks": [{"options": ["vittrar", "stelnar", "avdunstar", "kondenserar"], "correct": 0}, {"options": ["utvidgar sig", "drar ihop sig", "löser upp sig", "förångas"], "correct": 0}, {"options": ["drar ihop sig", "utvidgar sig", "smälter", "växer"], "correct": 0}, {"options": ["spricka", "glöda", "flyta bort", "bli mjukt"], "correct": 0}], "fb": "Berg utvidgas av värme och drar ihop sig i kyla. Upprepade växlingar skapar spänningar som kan spräcka stenen. Det är en form av vittring."}, {"type": "single", "q": "Hur har bergskedjan Himalaya bildats?", "options": ["Två plattor har glidit isär och lämnat en hög kant", "En enda jättevulkan har byggt kedjan av lava", "Plattan med Indien har krockat med den eurasiska plattan", "Vind och regn har samlat sand i höga ryggar"], "correct": 2, "fb": "Plattan som Indien ligger på har pressats in i den eurasiska plattan. Jordskorpan har tryckts ihop och lyfts till världens högsta bergskedja. Krocken pågår fortfarande."}, {"type": "multi", "q": "Vilka händelser är exempel på erosion?", "options": ["En älv gräver en allt djupare fåra och för bort grus", "Magma stelnar till nytt berg på havsbotten", "Vågor nöter på en strand och drar med sig sand", "Två plattor krockar så att berg trycks upp"], "correct": [0, 2], "fb": "Erosion betyder att material nöts loss och förs bort, till exempel av rinnande vatten eller vågor. Stelnande magma och krockande plattor beror på inre krafter och bygger i stället upp jordytan."}, {"type": "order", "q": "Ordna hur jordens landområden har sett ut, från äldst till nyast.", "items": ["Allt land sitter ihop i en enda superkontinent", "Superkontinenten har delats i en nordlig och en sydlig del", "Landmassorna är splittrade i många delar med hav emellan", "Världskartan ser ut som vi känner igen den"], "fb": "För ungefär 200 miljoner år sedan satt landet samlat. Sedan sprack det upp, först i större delar och därefter i allt fler, tills kontinenterna hamnade där de ligger i dag. Rörelsen pågår fortfarande."}, {"type": "single", "q": "Vad får jordskorpans plattor att röra sig?", "options": ["Vindar som trycker mot höga berg", "Långsamma strömmar i manteln under plattorna", "Tidvattnet som drar i kontinenterna", "Att jorden växer sig större för varje år, så att skorpan hela tiden måste spricka upp"], "correct": 1, "fb": "I manteln finns mycket långsamma strömmar. De för med sig plattorna som ligger ovanpå. Vind och tidvatten är alldeles för svaga för att flytta plattor, och jorden växer inte."}, {"type": "tf", "q": "Bedöm varje påstående om jorden och dess yta.", "items": [{"t": "Marken vi går på är en del av jordskorpan.", "a": true}, {"t": "Jorden har svalnat så mycket att den numera är kall ända in i mitten.", "a": false}, {"t": "Ju djupare ner i jordskorpan man kommer, desto varmare blir det.", "a": true}, {"t": "Det djupaste hål människor har borrat går rakt igenom jordskorpan och långt ner i manteln.", "a": false}], "fb": "Marken är jordskorpans översta del. Jorden är fortfarande mycket het inuti, och temperaturen stiger ju längre ner man kommer. Det djupaste borrhålet, på Kolahalvön i Ryssland, är drygt 12 km djupt. Borrningen avbröts på grund av hettan innan man kommit igenom jordskorpan."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "År {0} fick vulkanen {1} i Italien ett häftigt utbrott. Den romerska staden Pompeji begravdes under {2} och glömdes bort. På {3} började man gräva fram den.", "blanks": [{"options": ["79", "1066", "1523", "1912"], "correct": 0}, {"options": ["Vesuvius", "Etna", "Hekla", "Fuji"], "correct": 0}, {"options": ["aska", "is", "havsvatten", "ökensand"], "correct": 0}, {"options": ["1700-talet", "100-talet", "1100-talet", "2000-talet"], "correct": 0}], "fb": "Vesuvius utbrott år 79 täckte Pompeji med flera meter aska och sten. Utgrävningarna, som började på 1700-talet, har gett stor kunskap om hur romarna levde."}, {"type": "sort", "q": "Inre eller yttre kraft? Placera varje händelse.", "categories": ["Inre kraft", "Yttre kraft"], "items": [{"t": "Ett vulkanutbrott", "c": 0}, {"t": "En jordbävning vid en plattgräns", "c": 0}, {"t": "Två plattor som krockar", "c": 0}, {"t": "En glaciär sliter loss sten", "c": 1}, {"t": "Vågor nöter på en klippa", "c": 1}, {"t": "Vinden flyttar sand i en öken", "c": 1}], "fb": "Inre krafter kommer från jordens inre och ger plattrörelser, vulkanutbrott och jordskalv. Yttre krafter, som is, vatten och vind, verkar på jordens yta och nöter ner den."}, {"type": "match", "q": "Para ihop varje ord med rätt förklaring.", "pairs": [["Krater", "Öppningen högst upp på en vulkan"], ["Sidokrater", "Mindre öppning på vulkanens sluttning"], ["Tsunami", "Jättevåg som kan uppstå när havsbotten rör sig vid ett skalv"], ["Askmoln", "Fint material och gas som slungas högt upp i luften vid ett utbrott"]], "extra": ["Het vattenstråle som sprutar upp ur marken"], "fb": "Kratern sitter överst på vulkanen och sidokratrar på dess sidor. Vid utbrott kan aska och gas bilda stora moln. En tsunami är en mycket stor havsvåg, till exempel den som drabbade Japan 2011."}, {"type": "single", "q": "Varför ser Sydamerikas östkust och Afrikas västkust ut att passa ihop?", "options": ["De har suttit ihop och sedan glidit isär", "Havets vågor har slipat dem till samma form", "De bildades av samma vulkan under ett enda jättelikt utbrott för några tusen år sedan", "Kartritare har jämnat till kusterna så att de ska likna varandra"], "correct": 0, "fb": "Sydamerika och Afrika satt en gång ihop. När plattorna rörde sig bort från varandra öppnades Atlanten mellan dem. Kusternas form är ett spår av det."}, {"type": "short", "q": "Vad kallas det när vatten fryser i en spricka och isen spränger sönder berget? Svara med ett ord.", "answers": ["frostsprängning", "frostsprängningen", "frostsprängningar", "frost sprängning"], "fb": "Det kallas frostsprängning. Vatten tar större plats när det fryser till is, och trycket kan vidga sprickan tills berget går sönder."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Jordens kärna innehåller mycket {0}. Därför fungerar jorden som en jättestor {1}. Manteln rör sig {2}, ungefär {3} per år.", "blanks": [{"options": ["järn", "kalk", "glas", "sand"], "correct": 0}, {"options": ["magnet", "glödlampa", "högtalare", "spegel"], "correct": 0}, {"options": ["mycket långsamt", "mycket snabbt", "bara om natten", "i plötsliga jättehopp"], "correct": 0}, {"options": ["några centimeter", "några kilometer", "hundra meter", "tio mil"], "correct": 0}], "fb": "Kärnan är rik på järn, och det gör att jorden har ett magnetfält. Det är därför en kompassnål pekar mot norr. Manteln rör sig i långsamma strömmar, bara några centimeter per år."}, {"type": "tf", "q": "Bedöm varje påstående om jordens inre krafter.", "items": [{"t": "Plattorna rör sig helt jämnt, utan några ryck.", "a": false}, {"t": "Mittatlantiska ryggen är en bergskedja som till största delen ligger under havet.", "a": true}, {"t": "Inre krafter kan förändra havsbotten men inte land.", "a": false}, {"t": "Där plattor glider isär kan het magma tränga upp och stelna.", "a": true}], "fb": "Plattornas rörelser är långsamma och ryckiga. Mittatlantiska ryggen löper längs nästan hela Atlantens botten och har byggts upp av magma som stelnat där plattor glider isär. Inre krafter förändrar både land och havsbotten."}, {"type": "single", "q": "Vad innebar det att människor blev bofasta?", "options": ["De flyttade vidare så fort maten tog slut", "De stannade och bodde kvar på samma plats", "De byggde båtar och bodde ute till havs", "De bodde i grottor under vintern och i tält på sommaren"], "correct": 1, "fb": "Att vara bofast betyder att man bor kvar på samma plats. När människor började odla och hålla tamdjur blev det möjligt och ofta nödvändigt att stanna."}, {"type": "short", "q": "Vad kallas det att marken efter istiden långsamt stiger? Svara med ett ord.", "answers": ["landhöjning", "landhöjningen", "land höjning"], "fb": "Det kallas landhöjning. På vissa håll vid Bottenhavet och Bottenviken stiger marken fortfarande nästan en centimeter om året."}, {"type": "order", "q": "Ordna händelserna i jordens historia, från den äldsta till den yngsta.", "items": ["Universum bildas vid big bang", "Jorden formas ur ett moln av gas och stoft", "Jorden är ett glödande klot", "Ytan svalnar och en hård skorpa bildas", "Stora hav täcker delar av ytan"], "fb": "Först kom universum. Flera miljarder år senare bildades jorden ur gas och stoft. Den var länge glödhet, svalnade sedan så att en skorpa kunde bildas, och därefter kunde vatten samlas till hav."}, {"type": "tf", "q": "Bedöm varje påstående om hur kontinenterna rör sig.", "items": [{"t": "I Sahara finns spår efter is, vilket tyder på att området en gång låg nära Sydpolen.", "a": true}, {"t": "Afrika rör sig långsamt norrut, så att Medelhavet trycks ihop.", "a": true}, {"t": "Kontinenterna slutade röra sig innan människan fanns.", "a": false}, {"t": "Jordens alla plattor rör sig åt samma håll.", "a": false}], "fb": "Spår av gammal is i Sahara visar att området har flyttats från ett mycket kallare läge. Plattorna rör sig fortfarande, och de rör sig åt olika håll. Därför kan vissa områden dras isär medan andra trycks ihop."}, {"type": "sort", "q": "Vilken plattrörelse passar beskrivningen?", "categories": ["Plattor krockar", "Plattor glider isär", "Plattor glider längs varandra"], "items": [{"t": "Den tyngre plattan pressas ner under den andra", "c": 0}, {"t": "Jordskorpan trycks ihop och veckas upp till höga berg", "c": 0}, {"t": "En spricka öppnas och magma väller upp", "c": 1}, {"t": "En ny bergskedja av stelnad lava växer fram på havsbotten", "c": 1}, {"t": "Två plattkanter skjuts i sidled förbi varandra", "c": 2}, {"t": "Skorpan varken pressas ner eller öppnas, men kanterna rör sig åt motsatta håll", "c": 2}], "fb": "Vid en krock trycks skorpan ihop och en tung platta kan pressas ner. När plattor glider isär kommer magma upp och bygger nytt berg. När plattor rör sig i sidled förbi varandra bildas varken ny eller nedpressad skorpa, men jordskalv kan uppstå."}, {"type": "tf", "q": "Bedöm varje påstående om tiden efter istiden.", "items": [{"t": "Landet i stora delar av Sverige stiger fortfarande långsamt.", "a": true}, {"t": "Landets rörelse efter istiden kan ibland ge små jordskalv.", "a": true}, {"t": "Inlandsisen försvann från Sverige för ungefär 100 år sedan.", "a": false}, {"t": "Marken har sjunkit stadigt i hela Sverige sedan isen försvann.", "a": false}], "fb": "Inlandsisen försvann för ungefär 10 000 år sedan. När tyngden var borta började marken fjädra tillbaka uppåt, och det pågår fortfarande i stora delar av landet. Spänningarna kan ge små skalv."}, {"type": "sort", "q": "Mekanisk eller kemisk vittring? Placera varje beskrivning.", "categories": ["Mekanisk vittring", "Kemisk vittring"], "items": [{"t": "Ett stenblock klyvs av vatten som har frusit inuti det", "c": 0}, {"t": "Värme och kyla får ytan på ett berg att flagna loss", "c": 0}, {"t": "En spricka vidgas när is tar mer plats än vatten", "c": 0}, {"t": "Surt vatten löser upp delar av bergarten", "c": 1}, {"t": "Gropar uppstår när ämnen i regnet fräter på berget", "c": 1}, {"t": "En spricka i kalksten blir bredare när stenen löses i vattnet", "c": 1}], "fb": "Vid mekanisk vittring delas berget i bitar av krafter, till exempel is eller temperaturväxlingar, utan att stenens ämnen ändras. Vid kemisk vittring löses berget upp eller förändras av ämnen i vattnet."}, {"type": "single", "q": "Varför bor många människor nära vulkaner trots riskerna?", "options": ["Jorden som bildas av askan är ofta bördig", "Utbrotten kan förutsägas flera år i förväg", "Lavan stannar alltid innan den når hus", "Marken där skakar mindre än på andra platser"], "correct": 0, "fb": "Vulkanaska kan ge näringsrik jord som passar bra för jordbruk. Utbrott går däremot inte att förutsäga långt i förväg, lavan kan nå bebyggelse och marken nära vulkaner kan skaka ofta."}, {"type": "short", "q": "Vad kallas de ämnen som bergarter är uppbyggda av, till exempel kvarts och fältspat? Svara med ett ord.", "answers": ["mineral", "mineraler", "mineralet", "mineralerna", "ett mineral"], "fb": "De kallas mineral. Bergarter består av ett eller flera mineral. Kvarts, fältspat och glimmer är vanliga i Sverige. Vissa mineral, som guld och silver, är rena grundämnen."}, {"type": "tf", "q": "Bedöm varje påstående om jordskalv.", "items": [{"t": "Före ett större jordskalv kommer det ofta mindre skakningar.", "a": true}, {"t": "Turkiet och Japan ligger i områden där kraftiga jordskalv kan inträffa.", "a": true}, {"t": "Forskare kan förutsäga varje jordskalv flera veckor i förväg.", "a": false}, {"t": "Ett jordskalv till havs kan aldrig drabba människor på land.", "a": false}], "fb": "Små förskalv kan varna för ett större skalv, men långt ifrån alltid. Turkiet och Japan ligger nära plattgränser. Skalv under havet kan sätta vattnet i rörelse så att stora vågor når land."}, {"type": "match", "q": "Para ihop varje begrepp med rätt förklaring.", "pairs": [["Plattektonik", "Läran om jordskorpans plattor och hur de rör sig"], ["Rauk", "Stenpelare som står kvar när vågor har nött bort berget runt om"], ["Korallrev", "Byggs upp i havet av små djur som bildar hårda skelett av kalk"], ["Kontinentalplatta", "En stor bit av jordskorpan som långsamt flyttar sig"]], "extra": ["Djup spricka som fylls med is under vintern"], "fb": "Plattektonik beskriver plattornas rörelser. Kontinentalplattorna är själva bitarna av jordskorpan. Korallrev byggs av små havsdjur, och raukar är rester av berg som vågorna inte har hunnit nöta bort."}, {"type": "multi", "q": "Vad gjorde människor i Sverige för ungefär 200 år sedan som förändrade landskapet?", "options": ["De högg ner skog för att få virke och odlingsmark", "De byggde motorvägar för bilar", "De anlade banor för snabbtåg", "De satte upp stora parker med vindkraftverk"], "correct": [0], "fb": "Under 1800-talet höggs mycket skog ner för virke, ved och ny åkermark. Motorvägar, snabbtåg och stora vindkraftsparker kom långt senare."}, {"type": "match", "q": "Para ihop varje ord med rätt förklaring.", "pairs": [["Flyttblock", "Stort stenblock som isen har fört med sig och lämnat kvar"], ["Isräfflor", "Repor i berghällar efter stenar i isens undersida"], ["Inlandsis", "Mycket stort istäcke som breder ut sig över land"], ["Smältvatten", "Vatten som rinner från is som tinar"]], "extra": ["Grotta där kalksten har lösts upp av surt regn"], "fb": "Flyttblock och isräfflor är spår som isen har lämnat. Stenar som satt fastfrusna i isens botten ristade räfflorna. Smältvattnet bildades när istäcket tinade."}, {"type": "multi", "q": "Vad är typiskt för områden vid gränsen mellan två plattor?", "options": ["Jordskalv är vanligare där än långt från gränserna", "Vulkaner saknas där eftersom skorpan är tät", "Marken ligger stilla eftersom plattorna låser varandra för gott", "Berg kan inte bildas där"], "correct": [0], "fb": "Vid plattgränserna rör sig skorpan, och därför är jordskalv vanliga där. Vulkaner och bergskedjor finns också ofta vid plattgränser. Plattor kan haka fast en tid, men förr eller senare släpper spänningen."}, {"type": "order", "q": "Ordna stegen när ett delta bildas.", "items": ["Bäckar och floder tar med sig grus, sand och lera högre upp i landet", "Floden bär materialet nedåt tills den når havet", "Vattnet saktar in och materialet sjunker till botten", "Sand och lera samlas till små öar", "Floden delar sig i flera fåror mellan öarna"], "fb": "Rinnande vatten flyttar material från högre till lägre områden. Vid havet saktar vattnet in och materialet sjunker. Till slut bildas öar som delar floden i flera grenar: ett delta."}, {"type": "multi", "q": "Vilka påståenden om kontinenter och världsdelar stämmer?", "options": ["Människor har bestämt var gränserna mellan världsdelarna går", "Europa och Asien ligger på samma sammanhängande landmassa", "Eurasien är en världsdel mellan Afrika och Amerika", "Antalet världsdelar och antalet kontinenter måste alltid vara detsamma"], "correct": [0, 1], "fb": "Kontinenter är stora landmassor formade av naturen, medan världsdelar är en indelning som människor har gjort. Europa och Asien räknas som två världsdelar men ligger på en och samma kontinent, Eurasien. Därför blir antalen olika."}, {"type": "single", "q": "Vilken yttre kraft förändrar landskapet mest?", "options": ["Vinden", "Solljuset", "Åskan", "Vattnet"], "correct": 3, "fb": "Vatten är den yttre kraft som förändrar landskapet mest. Regn, floder, vågor och is nöter på berget och flyttar material. Vinden har störst betydelse där marken är torr och bar."}, {"type": "sort", "q": "Sköldvulkan eller stratovulkan? Placera varje beskrivning.", "categories": ["Sköldvulkan", "Stratovulkan"], "items": [{"t": "Lavan är lättflytande", "c": 0}, {"t": "Berget blir lågt och brett", "c": 0}, {"t": "Vanlig typ på Hawaii", "c": 0}, {"t": "Lavan är trögflytande", "c": 1}, {"t": "Berget blir högt och toppigt", "c": 1}, {"t": "Lager av både aska och lava bygger upp branta sidor", "c": 1}], "fb": "I en sköldvulkan rinner tunn lava långt, så berget blir lågt och brett, som på Hawaii. I en stratovulkan är lavan seg och varvas med aska, så att ett brant och toppigt berg bildas."}, {"type": "single", "q": "Hur har ön Island till stor del bildats?", "options": ["Två kontinenter har krockat och veckat upp havsbotten", "Isen har fört dit stora mängder sten och grus", "Koraller har byggt upp ett högt rev i kallt vatten", "Lava från vulkaner har byggts på tills den nått över havsytan"], "correct": 3, "fb": "Island ligger där två plattor glider isär. Magma har trängt upp och stelnat, lager på lager, tills berget nådde över havsytan. Därför finns det många vulkaner på ön."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "Inlandsisen var så {0} att marken under den {1}. När isen smälte låg därför stora delar av Sverige {2}.", "blanks": [{"options": ["tung", "varm", "tunn", "mjuk"], "correct": 0}, {"options": ["trycktes ner", "lyftes upp", "började glöda", "blev till sand"], "correct": 0}, {"options": ["under vatten", "högt över havet", "täckta av öken", "täckta av lava"], "correct": 0}], "fb": "Den tjocka isen vägde så mycket att jordskorpan pressades ner. Områden som i dag är land låg därför under vatten när isen just hade smält."}, {"type": "match", "q": "Para ihop varje tid med det som stämmer bäst för människorna i det som i dag är Sverige.", "pairs": [["Före jordbruket", "Jägare och samlare flyttar mellan tillfälliga boplatser"], ["För ungefär 6 000 år sedan", "Bönder börjar odla marken och hålla tamdjur"], ["För ungefär 200 år sedan", "Hästar och oxar drar människor och varor på vägarna"], ["I vår tid", "Bilar och tåg är vanliga och skogen sköts i stor skala"]], "extra": ["Ett tjockt istäcke gör att ingen kan bo i landet"], "fb": "Först levde människor av jakt och insamling. För omkring 6 000 år sedan kom jordbruket. På 1800-talet var hästar och oxar viktiga för transporter, och i dag präglas landskapet av städer, trafik och skogsbruk."}, {"type": "order", "q": "Ordna jordens delar utifrån och in mot mitten.", "items": ["Jordskorpan", "Manteln", "Yttre kärnan", "Inre kärnan"], "fb": "Ytterst ligger den tunna, hårda jordskorpan. Innanför finns den tjocka manteln, och längst in ligger kärnan som delas i en yttre och en inre del."}, {"type": "single", "q": "Hur bildades rullstensåsarna?", "options": ["Smältvatten i tunnlar under isen lämnade kvar sten, grus och sand", "Vinden blåste ihop sanden till långa dyner", "Två plattor trycktes ihop och veckade upp långa, smala bergsryggar tvärs över Sverige", "Människor byggde upp dem som vägbankar"], "correct": 0, "fb": "När inlandsisen smälte forsade vatten i tunnlar under isen. Sten, grus och sand lade sig på botten av tunnlarna. När isen var borta fanns de kvar som långa, smala höjder."}, {"type": "match", "q": "Para ihop varje ord med rätt förklaring.", "pairs": [["Magma", "Het smält bergmassa nere under jordytan"], ["Lava", "Smält bergmassa som har runnit ut på jordytan"], ["Jordskalv", "Skakningar när spänningar i jordskorpan plötsligt släpper"], ["Anderna", "Bergskedja längs Sydamerikas västkust"]], "extra": ["Slätt av sand och lera som en flod har byggt upp"], "fb": "Samma smälta bergmassa heter magma under ytan och lava när den kommit ut. Ett jordskalv uppstår när spänningar släpper. Anderna sträcker sig längs Sydamerikas västkust, där en oceanplatta pressas ner under en kontinentplatta."}, {"type": "single", "q": "Varför kan människan räknas som en yttre kraft?", "options": ["Människor kan få plattorna att röra sig snabbare", "Människor skapar strömmarna i manteln", "Människor förändrar jordytan utifrån, till exempel genom att spränga och gräva", "Människor lever på jordens yta utan att påverka hur den ser ut"], "correct": 2, "fb": "Människor gräver, spränger, odlar och bygger, och det förändrar jordytan utifrån. Plattornas och mantelns rörelser styrs av krafter i jordens inre som människan inte påverkar på det sättet."}, {"type": "short", "q": "Vad kallar forskarna den superkontinent som fanns för ungefär 200 miljoner år sedan?", "answers": ["Pangea", "Pangaea", "Pangéa", "Pangeia"], "fb": "Den kallas Pangea. Namnet kommer från grekiskan och betyder ungefär ”allt land”."}, {"type": "match", "q": "Para ihop varje ord med rätt förklaring.", "pairs": [["Erosion", "Material nöts loss och förs bort av till exempel vatten eller vind"], ["Flodmynning", "Platsen där en flod rinner ut i ett hav"], ["Kalksten", "Bergart som surt vatten förhållandevis lätt löser upp"], ["Sanddyn", "Hög av sand som vinden har byggt upp"]], "extra": ["Salt vatten som samlas i en grund havsvik"], "fb": "Erosion är nötning och transport av material. Floden slutar i sin mynning. Kalksten löses upp av surt vatten, och sanddyner byggs när vinden samlar sand."}, {"type": "single", "q": "Varför är kraftiga jordskalv mycket ovanliga i Sverige?", "options": ["Berggrunden är för kall för att kunna röra sig, eftersom vintrarna är långa och tjälen går djupt", "Sverige ligger inte på någon platta", "Sverige ligger långt från gränserna mellan plattorna", "Skogarnas rötter håller ihop berggrunden"], "correct": 2, "fb": "De starkaste spänningarna uppstår vid plattgränserna, och Sverige ligger långt från dem. Små skalv förekommer ändå. Vinterkylan och trädrötterna når inte tillräckligt djupt för att påverka berggrundens rörelser."}, {"type": "multi", "q": "Vilka påståenden om rinnande vatten och vågor stämmer?", "options": ["Floder för grus och sand uppåt, från låga till höga områden", "Rinnande vatten är för svagt för att forma dalar", "I branta berg rinner vattnet oftast långsammare än på en slätt", "Vågor mot en strand får stenarna att växa med tiden"], "correct": [], "fb": "Inget av alternativen stämmer. Floder för material nedåt, och under lång tid kan de gräva ut stora dalar. I branta berg rinner vattnet snabbt. Vågor nöter ner stenar så att de blir mindre och rundare."}, {"type": "single", "q": "Vad visar de urgamla korallreven i Gotlands berggrund?", "options": ["Att Östersjön då var istäckt året om", "Att människor har fraktat dit koraller", "Att Gotland är resterna av en vulkan", "Att området en gång låg i ett varmt hav"], "correct": 3, "fb": "Korallrev bildas i varma, grunda hav. Eftersom Gotlands berggrund innehåller gamla korallrev måste området tidigare ha legat närmare ekvatorn, i ett tropiskt klimat."}, {"type": "multi", "q": "Hur har forskare skaffat sig kunskap om jordens inre?", "options": ["Genom att studera hur skakningar från jordbävningar färdas", "Genom att undersöka material som kommer upp vid vulkanutbrott", "Genom att borra djupa hål ner i jordskorpan", "Genom att skicka ner människor till kärnan i särskilda farkoster"], "correct": [0, 1, 2], "fb": "Ingen har varit nere i jordens inre. Kunskapen kommer från mätningar av jordbävningars skakningar, från material som vulkaner för upp och från djupa borrhål. Borrhålen når bara en liten bit ner i jordskorpan."}, {"type": "order", "q": "Ordna hur en glaciär uppstår och förändrar marken.", "items": ["Snö faller i ett kallt bergsområde och hinner inte smälta bort", "Snön packas ihop till is", "Ismassan blir så tjock att den börjar glida nedåt", "Stenar i isens botten sliter loss material från berget", "Isen smälter och materialet blir liggande på en ny plats"], "fb": "En glaciär bildas när snö samlas år efter år och pressas till is. Den rör sig sakta nedför, nöter på underlaget som en hyvel och lämnar kvar materialet där isen smälter."}, {"type": "cloze", "q": "Välj rätt ord i varje lucka.", "text": "När två plattor glider längs med varandra kan de {0}. Plattorna fortsätter ändå att dra, och till slut {1}. Då uppstår {2}.", "blanks": [{"options": ["haka fast i varandra", "smälta bort", "byta plats", "lyfta från manteln"], "correct": 0}, {"options": ["spricker jordskorpan", "stannar jorden", "fryser marken", "försvinner havet"], "correct": 0}, {"options": ["en jordbävning", "en glaciär", "ett delta", "en rullstensås"], "correct": 0}], "fb": "Plattkanter kan fastna i varandra. Spänningen byggs då upp tills skorpan spricker eller rycker loss. Rörelsen får marken att skaka: en jordbävning."}, {"type": "multi", "q": "Vilka påståenden om vulkanutbrott stämmer?", "options": ["Heta gaser och aska kan vara ännu farligare än lavan", "En vulkan kan vara lugn länge och sedan plötsligt få ett utbrott", "Utbrott sker bara på platser där plattor krockar", "Högt gastryck kan få en vulkan att explodera"], "correct": [0, 1, 3], "fb": "Gaser och aska sprids snabbt och är ofta farligare än den långsammare lavan. En vulkan kan vara stilla i många år, och högt gastryck kan ge explosiva utbrott. Vulkaner finns inte bara vid plattkrockar utan även där plattor glider isär."}, {"type": "single", "q": "Ungefär hur varmt är det i jordens inre kärna?", "options": ["Ungefär 60 grader", "Ungefär 6 000 grader", "Ungefär 600 grader", "Ungefär 600 000 grader"], "correct": 1, "fb": "I den inre kärnan är temperaturen flera tusen grader, upp mot cirka 6 000 grader. Jorden är kall på ytan men mycket het inuti."}, {"type": "tf", "q": "Bedöm varje påstående om människan och landskapet.", "items": [{"t": "I dag har människan påverkat det mesta av naturen i Sverige.", "a": true}, {"t": "Gammal havsbotten som har höjts upp har kunnat bli bra jordbruksmark.", "a": true}, {"t": "Landskapet i Sverige har sett likadant ut de senaste 6 000 åren.", "a": false}, {"t": "I dag bor de flesta människor i Sverige långt ute på landsbygden.", "a": false}], "fb": "Skogsbruk, jordbruk, vägar och städer har förändrat landskapet mycket under tusentals år. Finkorniga jordar på gammal havsbotten är ofta bra att odla i. De flesta i Sverige bor i dag i städer och tätorter."}, {"type": "multi", "q": "Vilka påståenden om jordskorpans plattor i dag stämmer?", "options": ["Jordskorpan är uppdelad i några stora och flera mindre plattor", "Plattorna rör sig vanligen några centimeter per år", "En och samma platta kan bestå av både land och havsbotten", "Avståndet mellan Europa och Nordamerika ökar långsamt"], "correct": [0, 1, 2, 3], "fb": "Alla fyra stämmer. Jordskorpan är sprucken i stora och små plattor som rör sig långsamt. Många plattor har både land och havsbotten. Europa och Nordamerika glider isär, så Atlanten blir bredare."}, {"type": "single", "q": "Var i Sverige har landet höjt sig allra mest sedan istiden?", "options": ["Längs Skånes sydkust", "Runt sjön Vänern", "På södra Gotland", "Vid Höga kusten i Ångermanland"], "correct": 3, "fb": "Vid Höga kusten har landet stigit nästan 300 meter sedan isen försvann. Där var isen tjock och tryckte ner marken mycket. Längst i söder är förändringen mycket mindre."}, {"type": "multi", "q": "Vad kan minska skadorna vid en jordbävning?", "options": ["Att bygga husen så höga och smala som möjligt", "Att bygga hus som är konstruerade för att tåla skakningar", "Att borra hål så att alla spänningar i skorpan försvinner", "Att vänta med allt byggande tills plattorna har slutat röra sig"], "correct": [1], "fb": "Jordbävningssäkra byggnader klarar skakningar mycket bättre. Spänningarna går inte att borra bort, och plattorna kommer inte att sluta röra sig under överskådlig tid. Höga, smala hus som inte är särskilt förstärkta är utsatta."}, {"type": "short", "q": "Vad kallas de krafter från jordens inre som förändrar jordytan? Svara med det geografiska fackordet.", "answers": ["endogena", "endogena krafter", "endogen", "endogen kraft", "endogena krafterna"], "fb": "De kallas endogena krafter. Till dem hör plattrörelser, vulkanutbrott och jordbävningar. De bygger ofta upp jordytan."}, {"type": "single", "q": "Hur gammal är jorden ungefär?", "options": ["4,5 miljoner år", "14 miljarder år", "4,5 miljarder år", "450 000 år"], "correct": 2, "fb": "Jorden är ungefär 4,5 miljarder år gammal. Universum är äldre, omkring 14 miljarder år. En miljard är tusen miljoner, så 4,5 miljoner år är tusen gånger för kort tid."}, {"type": "sort", "q": "Naturlandskap eller kulturlandskap? Placera varje plats.", "categories": ["Naturlandskap", "Kulturlandskap"], "items": [{"t": "En urskog som får växa orörd", "c": 0}, {"t": "En vildmark utan vägar och hus", "c": 0}, {"t": "En fjälltopp som människor inte har förändrat", "c": 0}, {"t": "En åker", "c": 1}, {"t": "Ett stenbrott", "c": 1}, {"t": "En skog där alla granar har planterats i raka rader", "c": 1}], "fb": "Ett naturlandskap har människan inte förändrat. Ett kulturlandskap har människor använt och format. Även en skog kan vara ett kulturlandskap om den har planterats och sköts."}, {"type": "tf", "q": "Bedöm varje påstående om hur yttre krafter verkar.", "items": [{"t": "Yttre krafter arbetar så snabbt att man alltid kan se förändringen medan den sker.", "a": false}, {"t": "Regn kan bli surare av föroreningar i luften.", "a": true}, {"t": "Surt vatten har ett pH-värde som är högre än 7.", "a": false}, {"t": "En grotta i kalksten kan ta tusentals år att bildas.", "a": true}], "fb": "Många förändringar går så långsamt att de knappt märks. Surt vatten har pH under 7, och luftföroreningar kan göra regnet surare. Att lösa upp så mycket berg att en grotta bildas tar mycket lång tid."}];
+const KEY = 'quiz-progress-' + META.id;
+const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const TYPE_LABEL = {
+  single: 'Enval – välj ett alternativ',
+  multi: 'Flerval – ett eller flera alternativ kan vara rätta, och ibland inget',
+  tf: 'Sant eller falskt – bedöm varje påstående för sig',
+  match: 'Para ihop – välj rätt förklaring till varje begrepp. Alla förklaringar behöver inte användas.',
+  order: 'Ordna – flytta posterna med pilarna till rätt ordning',
+  cloze: 'Lucktext – välj rätt ord för varje lucka',
+  short: 'Kort svar – skriv svaret',
+  sort: 'Sortera – placera varje påstående i rätt kategori'
+};
+const TYPE_NAME = { single: 'Enval', multi: 'Flerval', tf: 'Sant eller falskt', match: 'Para ihop', order: 'Ordna', cloze: 'Lucktext', short: 'Kort svar', sort: 'Sortera' };
+
+const app = document.getElementById('app');
+const bar = document.getElementById('bar');
+const progressText = document.getElementById('progress-text');
+document.getElementById('title').textContent = META.title;
+document.title = META.title;
+
+let idx = 0, score = 0, answers = [];
+
+/* ---------- helpers ---------- */
+function h(tag, props) {
+  const e = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (let i = 2; i < arguments.length; i++) {
+    const kids = [].concat(arguments[i]);
+    for (const c of kids) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  }
+  return e;
+}
+function rich(text) { // **fet** -> <strong>
+  const frag = document.createDocumentFragment();
+  String(text).split('**').forEach((part, i) => {
+    if (!part) return;
+    frag.append(i % 2 ? h('strong', null, part) : document.createTextNode(part));
+  });
+  return frag;
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function norm(s) { return String(s).toLowerCase().replace(/[^0-9a-zåäöéü]/g, ''); }
+function same(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
+function select(options, onChange, placeholder) {
+  const s = h('select', { onchange: onChange }, h('option', { value: '' }, placeholder || 'Välj …'));
+  options.forEach(o => s.append(h('option', { value: o.v }, o.t)));
+  return s;
+}
+function mark(el, sym) { const m = el.querySelector('.mark'); if (m) m.textContent = sym; }
+
+/* ---------- question builders ----------
+   Each returns { el, complete(), evaluate() -> {correct, partial}, reveal() } */
+function buildSingle(q, change) {
+  const name = 'q' + idx, labels = [], inputs = [];
+  const wrap = h('div', { class: 'options' });
+  q.options.forEach((t, i) => {
+    const inp = h('input', { type: 'radio', name, value: i, onchange: () => { sync(); change(); } });
+    const lab = h('label', { class: 'opt' }, inp, h('span', { class: 'mark' }), h('span', null, LETTERS[i] + ') ' + t));
+    inputs.push(inp); labels.push(lab); wrap.append(lab);
+  });
+  function sync() { labels.forEach((l, i) => l.classList.toggle('sel', inputs[i].checked)); }
+  return {
+    el: wrap,
+    complete: () => inputs.some(i => i.checked),
+    evaluate() { return { correct: inputs[q.correct].checked, partial: false }; },
+    reveal() {
+      wrap.classList.add('locked');
+      inputs.forEach((inp, i) => {
+        inp.disabled = true;
+        if (i === q.correct) { labels[i].classList.add('right'); mark(labels[i], '✓'); }
+        else if (inp.checked) { labels[i].classList.add('wrong'); mark(labels[i], '✗'); }
+      });
+    }
+  };
+}
+function buildMulti(q, change) {
+  const labels = [], inputs = [];
+  const wrap = h('div', { class: 'options' });
+  q.options.forEach((t, i) => {
+    const inp = h('input', { type: 'checkbox', value: i, onchange: () => { sync(); change(); } });
+    const lab = h('label', { class: 'opt' }, inp, h('span', { class: 'mark' }), h('span', null, LETTERS[i] + ') ' + t));
+    inputs.push(inp); labels.push(lab); wrap.append(lab);
+  });
+  function sync() { labels.forEach((l, i) => l.classList.toggle('sel', inputs[i].checked)); }
+  const picked = () => inputs.map((x, i) => x.checked ? i : -1).filter(i => i >= 0);
+  return {
+    el: wrap,
+    complete: () => true,
+    evaluate() {
+      const p = picked(), exact = same(p, q.correct);
+      return { correct: exact, partial: !exact && p.some(i => q.correct.includes(i)) };
+    },
+    reveal() {
+      wrap.classList.add('locked');
+      inputs.forEach((inp, i) => {
+        inp.disabled = true;
+        const c = q.correct.includes(i);
+        if (c) { labels[i].classList.add('right'); mark(labels[i], '✓'); }
+        else if (inp.checked) { labels[i].classList.add('wrong'); mark(labels[i], '✗'); }
+      });
+    }
+  };
+}
+function buildTF(q, change) {
+  const rows = h('div', { class: 'rows' }), state = [], items = [];
+  q.items.forEach((it, i) => {
+    const name = 'tf' + idx + '_' + i;
+    const mk = (val, text) => {
+      const inp = h('input', { type: 'radio', name, value: val, onchange: () => { state[i] = val; sync(i); change(); } });
+      return { inp, lab: h('label', null, inp, text), val };
+    };
+    const yes = mk('1', 'Sant'), no = mk('0', 'Falskt');
+    const note = h('div', { class: 'note' });
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), (i + 1) + '. ' + it.t),
+      h('div', { class: 'tfbtns' }, yes.lab, no.lab), note);
+    items.push({ yes, no, row, note, it }); rows.append(row);
+  });
+  function sync(i) { const r = items[i]; r.yes.lab.classList.toggle('sel', state[i] === '1'); r.no.lab.classList.toggle('sel', state[i] === '0'); }
+  return {
+    el: rows,
+    complete: () => q.items.every((_, i) => state[i] != null),
+    evaluate() {
+      const n = q.items.filter((it, i) => (state[i] === '1') === it.a).length;
+      return { correct: n === q.items.length, partial: n > 0 && n < q.items.length };
+    },
+    reveal() {
+      rows.classList.add('locked');
+      items.forEach((r, i) => {
+        r.yes.inp.disabled = r.no.inp.disabled = true;
+        const ok = (state[i] === '1') === r.it.a;
+        r.row.classList.add(ok ? 'right' : 'wrong'); mark(r.row, ok ? '✓ ' : '✗ ');
+        (r.it.a ? r.yes : r.no).lab.classList.add('ans');
+        if (!ok) { (r.it.a ? r.no : r.yes).lab.classList.add('bad'); r.note.textContent = 'Rätt svar: ' + (r.it.a ? 'Sant' : 'Falskt'); }
+      });
+    }
+  };
+}
+function buildMatch(q, change) {
+  const rights = q.pairs.map(p => p[1]).concat(q.extra || []);
+  const order = shuffle(rights.map((t, i) => ({ i, t })));
+  const letterOf = {}; order.forEach((o, k) => { letterOf[o.i] = LETTERS[k]; });
+  const opts = order.map((o, k) => ({ v: o.i, t: LETTERS[k] }));
+  const pool = h('div', { class: 'pool' }, order.map((o, k) => h('div', null, LETTERS[k] + ') ' + o.t)));
+  const rows = h('div', { class: 'rows' }), sels = [], notes = [], rowEls = [];
+  q.pairs.forEach((p, i) => {
+    const s = select(opts, change); sels.push(s);
+    const note = h('div', { class: 'note' }); notes.push(note);
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), p[0]), s, note);
+    rowEls.push(row); rows.append(row);
+  });
+  const all = h('div', null, pool, rows);
+  return {
+    el: all,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const n = sels.filter((s, i) => Number(s.value) === i).length;
+      return { correct: n === sels.length, partial: n > 0 && n < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, i) => {
+        s.disabled = true;
+        const ok = Number(s.value) === i;
+        rowEls[i].classList.add(ok ? 'right' : 'wrong'); mark(rowEls[i], ok ? '✓ ' : '✗ ');
+        if (!ok) notes[i].textContent = 'Rätt: ' + letterOf[i] + ') ' + q.pairs[i][1];
+      });
+    }
+  };
+}
+function buildOrder(q, change) {
+  const n = q.items.length;
+  let arr = shuffle([...q.items.keys()]);
+  while (n > 1 && arr.every((v, i) => v === i)) arr = shuffle(arr);
+  const list = h('div', { class: 'rows' });
+  let locked = false;
+  function draw() {
+    list.replaceChildren();
+    arr.forEach((v, pos) => {
+      const up = h('button', { type: 'button', 'aria-label': 'Flytta upp', disabled: locked || pos === 0, onclick: () => { [arr[pos - 1], arr[pos]] = [arr[pos], arr[pos - 1]]; draw(); } }, '↑');
+      const down = h('button', { type: 'button', 'aria-label': 'Flytta ner', disabled: locked || pos === n - 1, onclick: () => { [arr[pos + 1], arr[pos]] = [arr[pos], arr[pos + 1]]; draw(); } }, '↓');
+      const row = h('div', { class: 'row orderrow' }, h('span', { class: 'num' }, (pos + 1) + '.'), h('span', { class: 'rowtext' }, q.items[v]), locked ? null : h('div', { class: 'arrows' }, up, down));
+      if (locked) { const ok = v === pos; row.classList.add(ok ? 'right' : 'wrong'); row.prepend(h('span', { class: 'mark' }, ok ? '✓' : '✗')); }
+      list.append(row);
+    });
+  }
+  draw();
+  return {
+    el: list,
+    complete: () => true,
+    evaluate() {
+      const k = arr.filter((v, i) => v === i).length;
+      return { correct: k === n, partial: k > 0 && k < n };
+    },
+    reveal() {
+      locked = true; draw();
+      list.append(h('div', { class: 'correct-line' }, 'Rätt ordning: ' + q.items.map((t, i) => (i + 1) + '. ' + t).join('  →  ')));
+    }
+  };
+}
+function buildCloze(q, change) {
+  const wrap = h('div'), line = h('div', { class: 'cloze' }), sels = [];
+  q.text.split(/\{(\d+)\}/).forEach((part, i) => {
+    if (i % 2 === 0) { line.append(document.createTextNode(part)); return; }
+    const b = q.blanks[Number(part)];
+    const opts = shuffle(b.options.map((t, k) => ({ v: k, t })));
+    const s = select(opts, change, '…'); sels[Number(part)] = s; line.append(s);
+  });
+  wrap.append(line);
+  return {
+    el: wrap,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const k = sels.filter((s, i) => Number(s.value) === q.blanks[i].correct).length;
+      return { correct: k === sels.length, partial: k > 0 && k < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, i) => { s.disabled = true; s.classList.add(Number(s.value) === q.blanks[i].correct ? 'right' : 'wrong'); });
+      const full = q.text.replace(/\{(\d+)\}/g, (m, n) => q.blanks[Number(n)].options[q.blanks[Number(n)].correct]);
+      wrap.append(h('div', { class: 'correct-line' }, 'Rätt: ' + full));
+    }
+  };
+}
+function buildShort(q, change) {
+  const inp = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', oninput: change, 'aria-label': 'Ditt svar' });
+  const wrap = h('div', null, inp);
+  return {
+    el: wrap,
+    complete: () => inp.value.trim() !== '',
+    evaluate() { return { correct: q.answers.map(norm).includes(norm(inp.value)), partial: false }; },
+    reveal() {
+      inp.disabled = true;
+      const ok = q.answers.map(norm).includes(norm(inp.value));
+      inp.classList.add(ok ? 'right' : 'wrong');
+      if (!ok) wrap.append(h('div', { class: 'correct-line' }, 'Rätt svar: ' + q.answers[0]));
+    }
+  };
+}
+function buildSort(q, change) {
+  const cats = q.categories.map((t, i) => ({ v: i, t }));
+  const rows = h('div', { class: 'rows' }), sels = [], notes = [], rowEls = [];
+  const order = shuffle([...q.items.keys()]);
+  const pos = {};
+  order.forEach((orig, p) => {
+    const it = q.items[orig];
+    const s = select(cats, change); sels[p] = s; pos[p] = orig;
+    const note = h('div', { class: 'note' }); notes[p] = note;
+    const row = h('div', { class: 'row' }, h('div', { class: 'rowtext' }, h('span', { class: 'mark' }), it.t), s, note);
+    rowEls[p] = row; rows.append(row);
+  });
+  return {
+    el: rows,
+    complete: () => sels.every(s => s.value !== ''),
+    evaluate() {
+      const k = sels.filter((s, p) => Number(s.value) === q.items[pos[p]].c).length;
+      return { correct: k === sels.length, partial: k > 0 && k < sels.length };
+    },
+    reveal() {
+      sels.forEach((s, p) => {
+        s.disabled = true;
+        const ok = Number(s.value) === q.items[pos[p]].c;
+        rowEls[p].classList.add(ok ? 'right' : 'wrong'); mark(rowEls[p], ok ? '✓ ' : '✗ ');
+        if (!ok) notes[p].textContent = 'Rätt: ' + q.categories[q.items[pos[p]].c];
+      });
+    }
+  };
+}
+const BUILDERS = { single: buildSingle, multi: buildMulti, tf: buildTF, match: buildMatch, order: buildOrder, cloze: buildCloze, short: buildShort, sort: buildSort };
+
+/* ---------- storage ---------- */
+function load() { try { const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ currentQuestion: idx + 1, score, answers })); } catch (e) {} }
+function clear() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+/* ---------- screens ---------- */
+function setProgress(text, pct) { progressText.textContent = text; bar.style.width = pct + '%'; }
+function show(card) { app.replaceChildren(card); window.scrollTo(0, 0); }
+
+function showIntro() {
+  setProgress('', 0);
+  const card = h('div', { class: 'card intro' },
+    h('p', { class: 'qtext' }, META.title),
+    (META.intro || []).map(t => h('p', null, t)),
+    h('p', null, 'Frågetyperna i det här quizet:'),
+    h('ul', null, META.types.map(t => h('li', null, h('strong', null, TYPE_NAME[t] + ': '), TYPE_LABEL[t].split(' – ').slice(1).join(' – ')))),
+    h('div', { class: 'actions' }, h('button', { class: 'btn', type: 'button', onclick: () => { idx = 0; score = 0; answers = []; showQuestion(); } }, 'Starta')));
+  show(card);
+}
+function showResume(saved) {
+  setProgress('', 0);
+  show(h('div', { class: 'card center' },
+    h('p', { class: 'qtext' }, 'Du har kommit till fråga ' + (saved.currentQuestion + 1) + ' av ' + quizData.length + ' (' + saved.score + ' rätt hittills)'),
+    h('div', { class: 'actions' },
+      h('button', { class: 'btn', type: 'button', onclick: () => { idx = saved.currentQuestion; score = saved.score; answers = saved.answers; showQuestion(); } }, 'Fortsätt'),
+      h('button', { class: 'btn outline', type: 'button', onclick: () => { clear(); showIntro(); } }, 'Börja om'))));
+}
+function showQuestion() {
+  const q = quizData[idx];
+  setProgress('Fråga ' + (idx + 1) + ' av ' + quizData.length, (idx / quizData.length) * 100);
+  const checkBtn = h('button', { class: 'btn', type: 'button', disabled: true }, 'Kontrollera');
+  const fbBox = h('div');
+  const actions = h('div', { class: 'actions' }, checkBtn);
+  const ctl = BUILDERS[q.type](q, () => { checkBtn.disabled = !ctl.complete(); });
+  checkBtn.disabled = !ctl.complete();
+  checkBtn.addEventListener('click', () => {
+    const res = ctl.evaluate();
+    ctl.reveal();
+    answers[idx] = res.correct ? 1 : 0;
+    if (res.correct) score++;
+    save();
+    const cls = res.correct ? 'ok' : res.partial ? 'mid' : 'no';
+    const head = res.correct ? 'Rätt.' : res.partial ? 'Delvis rätt.' : 'Fel.';
+    fbBox.className = 'feedback ' + cls;
+    fbBox.replaceChildren(h('strong', null, head), ...String(q.fb).split('\n').map(p => h('p', null, rich(p))));
+    const last = idx === quizData.length - 1;
+    actions.replaceChildren(h('button', { class: 'btn', type: 'button', onclick: () => { if (last) showResults(); else { idx++; showQuestion(); } } }, last ? 'Visa resultat' : 'Nästa fråga →'));
+    fbBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  show(h('div', { class: 'card' }, h('p', { class: 'qtext' }, rich(q.q)), h('p', { class: 'qtype' }, TYPE_LABEL[q.type]), ctl.el, actions, fbBox));
+}
+function showResults() {
+  clear();
+  setProgress('Klart', 100);
+  const by = {};
+  quizData.forEach((q, i) => { by[q.type] = by[q.type] || [0, 0]; by[q.type][1]++; if (answers[i]) by[q.type][0]++; });
+  const wrongNums = quizData.map((q, i) => answers[i] ? null : i + 1).filter(Boolean);
+  show(h('div', { class: 'card center' },
+    h('p', { class: 'qtext' }, 'Resultat'),
+    h('p', null, 'Du svarade rätt på ' + score + ' av ' + quizData.length + ' frågor'),
+    h('table', { class: 'res' }, META.types.filter(t => by[t]).map(t => h('tr', null, h('td', null, TYPE_NAME[t]), h('td', null, by[t][0] + ' av ' + by[t][1])))),
+    wrongNums.length ? h('p', { class: 'qtype' }, 'Frågor att repetera: ' + wrongNums.join(', ')) : null,
+    h('div', { class: 'actions' }, h('button', { class: 'btn', type: 'button', onclick: () => { clear(); showIntro(); } }, 'Starta om'))));
+}
+
+/* ---------- start ---------- */
+const saved = load();
+if (saved && saved.currentQuestion < quizData.length && saved.currentQuestion > 0) showResume(saved); else showIntro();
+})();
+</script>
+</body>
+</html>
